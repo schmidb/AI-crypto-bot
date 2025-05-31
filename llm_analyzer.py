@@ -344,3 +344,52 @@ Based on this information, provide a trading recommendation in the following JSO
 Respond with ONLY the JSON object and no other text.
 """
         return base_prompt
+    def analyze_market(self, data: Dict) -> Dict:
+        """
+        Alias for analyze_market_data to maintain compatibility with trading_strategy.py
+        
+        Args:
+            data: Dictionary containing market data and indicators
+            
+        Returns:
+            Dictionary with trading decision and analysis
+        """
+        try:
+            # Extract required data from the input dictionary
+            product_id = data.get("product_id", "")
+            current_price = data.get("current_price", 0.0)
+            historical_data = pd.DataFrame(data.get("historical_data", []))
+            indicators = data.get("indicators", {})
+            market_data = data.get("market_data", {})
+            
+            # If historical_data is empty, create a minimal DataFrame
+            if historical_data.empty:
+                logger.warning(f"No historical data provided for {product_id}, using minimal data")
+                historical_data = pd.DataFrame({
+                    'close': [current_price],
+                    'open': [current_price],
+                    'high': [current_price],
+                    'low': [current_price],
+                    'volume': [0]
+                })
+            
+            # Create additional context from indicators
+            additional_context = {
+                "indicators": indicators,
+                "market_data": market_data
+            }
+            
+            # Call the actual analysis method
+            return self.analyze_market_data(
+                market_data=historical_data,
+                current_price=current_price,
+                trading_pair=product_id,
+                additional_context=additional_context
+            )
+        except Exception as e:
+            logger.error(f"Error in analyze_market: {e}")
+            return {
+                "decision": "HOLD",
+                "confidence": 0,
+                "reasoning": [f"Error during analysis: {str(e)}"]
+            }
