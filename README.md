@@ -123,6 +123,29 @@ Run the bot on an AWS EC2 instance as a systemd service using our setup script.
    # Run the AWS setup script
    bash aws_setup/setup_ec2.sh
    ```
+
+3. **Configure your API keys**:
+   ```bash
+   # Edit your .env file with your API keys
+   nano .env
+   ```
+   Note: The setup script creates a template .env file for you, but you need to add your own API keys.
+
+4. **Start the service**:
+   ```bash
+   sudo systemctl start crypto-bot
+   ```
+
+5. **Check the status**:
+   ```bash
+   sudo systemctl status crypto-bot
+   ```
+
+6. **View logs**:
+   ```bash
+   sudo journalctl -u crypto-bot -f
+   ```
+
 ### Option 2: Google Compute Engine Deployment
 
 Run the bot on a Google Compute Engine VM instance using our setup script.
@@ -154,12 +177,12 @@ Run the bot on a Google Compute Engine VM instance using our setup script.
    bash gcp_setup/setup_gce.sh
    ```
 
-4. **Configure your environment**:
+4. **Configure your API keys**:
    ```bash
-   # Create and edit your .env file
-   cp .env.example .env
+   # Edit your .env file with your API keys
    nano .env
    ```
+   Note: The setup script creates a template .env file for you, but you need to add your own API keys.
 
 5. **Access the dashboard**:
    - The setup script installs Apache and configures a web dashboard
@@ -218,6 +241,19 @@ The project includes a comprehensive test suite to ensure the reliability and co
 
 ### Running Tests
 
+First, make sure you're using a virtual environment to avoid conflicts with system packages:
+
+```bash
+# Create a virtual environment if you haven't already
+python3 -m venv venv
+
+# Activate the virtual environment
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
 To run all tests:
 
 ```bash
@@ -227,7 +263,7 @@ python -m unittest discover -s tests
 To run a specific test file:
 
 ```bash
-python -m unittest tests/test_coinbase.py
+python -m unittest tests.test_coinbase
 ```
 
 To run a specific test case:
