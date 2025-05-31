@@ -52,6 +52,7 @@ AI-crypto-bot/
 - Google Cloud account with Vertex AI API enabled
 - Google Cloud service account with Vertex AI permissions
 - Basic understanding of cryptocurrency trading
+- (Optional) Server in Google Cloud or AWS for 24/7 operation
 
 ### Installation
 
@@ -211,3 +212,60 @@ The backtesting module provides comprehensive performance metrics:
 - **Trade Statistics**: Number of trades, average profit/loss, etc.
 
 Results are saved as JSON files in the `backtest_results` directory.
+## Testing
+
+The project includes a comprehensive test suite to ensure the reliability and correctness of the trading bot components.
+
+### Running Tests
+
+To run all tests:
+
+```bash
+python -m unittest discover -s tests
+```
+
+To run a specific test file:
+
+```bash
+python -m unittest tests/test_coinbase.py
+```
+
+To run a specific test case:
+
+```bash
+python -m unittest tests.test_coinbase.TestCoinbaseClient.test_get_product_price
+```
+
+### Test Coverage
+
+The test suite covers the following components:
+
+#### Coinbase Client Tests
+- API authentication and signature generation
+- HTTP request handling
+- Market data retrieval
+- Order placement
+
+#### Trading Strategy Tests
+- Strategy initialization
+- Decision making for different market conditions (buy, sell, hold)
+- Error handling
+
+#### Data Collector Tests
+- Historical data retrieval
+- Current market data collection
+- Technical indicator calculation
+
+#### Backtesting Tests
+- Backtest result tracking
+- Trade simulation
+- Performance metrics calculation
+
+### Adding New Tests
+
+When adding new features to the bot, corresponding tests should be added to maintain code quality and prevent regressions.
+
+1. Create a new test file in the `tests` directory if needed
+2. Follow the naming convention: `test_*.py` for files and `test_*` for methods
+3. Use the `unittest` framework and appropriate assertions
+4. Mock external dependencies to isolate the component being tested
