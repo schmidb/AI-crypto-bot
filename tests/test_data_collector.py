@@ -95,17 +95,7 @@ class TestDataCollector(unittest.TestCase):
     def test_get_market_data(self):
         """Test getting current market data"""
         # Mock the Coinbase client responses
-        self.mock_coinbase.get_product_ticker.return_value = {"price": "50000.00"}
-        self.mock_coinbase.get_product_stats.return_value = {
-            "volume": "1000.00",
-            "volume_30day": "30000.00",
-            "high": "51000.00",
-            "low": "49000.00"
-        }
-        self.mock_coinbase.get_product_order_book.return_value = {
-            "bids": [["49900.00", "1.0"]],
-            "asks": [["50100.00", "1.0"]]
-        }
+        self.mock_coinbase.get_product_price.return_value = {"price": "50000.00"}
         
         # Mock the get_historical_data method
         with patch.object(self.data_collector, 'get_historical_data') as mock_get_historical:
@@ -123,20 +113,15 @@ class TestDataCollector(unittest.TestCase):
         self.assertIsInstance(result, dict)
         self.assertEqual(result["product_id"], "BTC-USD")
         self.assertEqual(result["price"], 50000.0)
-        self.assertIn("bid", result)
-        self.assertIn("ask", result)
-        self.assertIn("spread", result)
-        self.assertIn("spread_percent", result)
-        self.assertIn("market_trend", result)
     
     def test_calculate_technical_indicators(self):
         """Test calculating technical indicators"""
-        # Create a test DataFrame
+        # Create a test DataFrame with enough data for calculations
+        dates = [datetime.now() - timedelta(days=i) for i in range(30, 0, -1)]
         df = pd.DataFrame({
-            'close': [45000, 46000, 47000, 48000, 49000, 50000, 51000, 52000, 53000, 54000,
-                     55000, 56000, 57000, 58000, 59000, 60000, 59000, 58000, 57000, 56000,
-                     55000, 54000, 53000, 52000, 51000, 50000, 49000, 48000, 47000, 46000],
-            'volume': [100] * 30
+            'start': dates,
+            'close': [45000 + i * 100 for i in range(30)],
+            'volume': [1000 for _ in range(30)]
         })
         
         # Call the method

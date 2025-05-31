@@ -1,20 +1,18 @@
-import time
-import hmac
-import hashlib
-import base64
-import json
-import requests
-from typing import Dict, List, Optional, Union, Any
+"""
+Client for interacting with Coinbase Advanced Trade API using the official coinbase-advanced-py package
+"""
+
 import logging
+import time
+from typing import Dict, List, Optional, Union, Any
+from datetime import datetime, timedelta
+from coinbase.rest import RESTClient
 from config import COINBASE_API_KEY, COINBASE_API_SECRET
 
 logger = logging.getLogger(__name__)
 
 class CoinbaseClient:
     """Client for interacting with Coinbase Advanced Trade API"""
-    
-    BASE_URL = "https://api.coinbase.com"
-    ADVANCED_TRADE_URL = "https://api.coinbase.com/api/v3/brokerage"
     
     def __init__(self, api_key: str = COINBASE_API_KEY, api_secret: str = COINBASE_API_SECRET):
         """Initialize the Coinbase client with API credentials"""
@@ -24,69 +22,44 @@ class CoinbaseClient:
         if not self.api_key or not self.api_secret:
             raise ValueError("Coinbase API key and secret are required")
             
-        logger.info("Coinbase client initialized")
-    
-    def _generate_signature(self, timestamp: str, method: str, request_path: str, body: str = "") -> str:
-        """Generate signature for API request authentication"""
-        message = timestamp + method + request_path + body
-        signature = hmac.new(
-            self.api_secret.encode('utf-8'),
-            message.encode('utf-8'),
-            digestmod=hashlib.sha256
-        ).digest()
-        return base64.b64encode(signature).decode('utf-8')
-    
-    def _request(self, method: str, endpoint: str, params: Dict = None, data: Dict = None) -> Dict:
-        """Make an authenticated request to the Coinbase API"""
-        url = f"{self.ADVANCED_TRADE_URL}{endpoint}"
-        timestamp = str(int(time.time()))
-        
-        body = ""
-        if data:
-            body = json.dumps(data)
-        
-        signature = self._generate_signature(timestamp, method, endpoint, body)
-        
-        headers = {
-            "CB-ACCESS-KEY": self.api_key,
-            "CB-ACCESS-SIGN": signature,
-            "CB-ACCESS-TIMESTAMP": timestamp,
-            "Content-Type": "application/json"
-        }
-        
         try:
-            response = requests.request(
-                method=method,
-                url=url,
-                headers=headers,
-                params=params,
-                data=body if data else None
-            )
-            response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            logger.error(f"API request error: {e}")
-            if hasattr(e, 'response') and e.response:
-                logger.error(f"Response: {e.response.text}")
+            self.client = RESTClient(api_key=api_key, api_secret=api_secret)
+            logger.info("Coinbase Advanced Trade client initialized")
+        except Exception as e:
+            logger.error(f"Error initializing Coinbase client: {e}")
             raise
     
     def get_accounts(self) -> List[Dict]:
         """Get list of accounts/wallets"""
-        response = self._request("GET", "/accounts")
-        return response.get("accounts", [])
+        try:
+            response = self.client.get_accounts()
+            return response.get("accounts", [])
+        except Exception as e:
+            logger.error(f"Error getting accounts: {e}")
+            return []
     
     def get_account_balance(self, currency: str) -> float:
         """Get balance for a specific currency"""
-        accounts = self.get_accounts()
-        for account in accounts:
-            if account.get("currency") == currency:
-                return float(account.get("available_balance", {}).get("value", 0))
-        return 0.0
+        try:
+            accounts = self.get_accounts()
+            for account in accounts:
+                if account.get("currency") == currency:
+                    return float(account.get("available_balance", {}).get("value", 0))
+            return 0.0
+        except Exception as e:
+            logger.error(f"Error getting account balance for {currency}: {e}")
+            return 0.0
     
     def get_product_price(self, product_id: str) -> Dict:
         """Get current price for a product (e.g., 'BTC-USD')"""
-        response = self._request("GET", f"/products/{product_id}/ticker")
-        return response
+        try:
+            response = self.client.get_product(product_id=product_id)
+            # Extract price from product data
+            price = response.get("price", "0")
+            return {"price": price}
+        except Exception as e:
+            logger.error(f"Error getting product price for {product_id}: {e}")
+            return {"price": "0"}
     
     def place_market_order(self, product_id: str, side: str, size: float) -> Dict:
         """
@@ -100,19 +73,28 @@ class CoinbaseClient:
         Returns:
             Order details
         """
-        data = {
-            "client_order_id": f"bot-order-{int(time.time())}",
-            "product_id": product_id,
-            "side": side,
-            "order_configuration": {
-                "market_market_ioc": {
-                    "quote_size": str(size) if side == "BUY" else None,
-                    "base_size": str(size) if side == "SELL" else None
-                }
-            }
-        }
-        
-        return self._request("POST", "/orders", data=data)
+        try:
+            client_order_id = f"bot-order-{int(time.time())}"
+            
+            if side.upper() == "BUY":
+                # For buy orders, specify quote size (USD amount)
+                response = self.client.create_market_order(
+                    product_id=product_id,
+                    side=side.upper(),
+                    quote_size=str(size)
+                )
+            else:
+                # For sell orders, specify base size (crypto amount)
+                response = self.client.create_market_order(
+                    product_id=product_id,
+                    side=side.upper(),
+                    base_size=str(size)
+                )
+                
+            return response
+        except Exception as e:
+            logger.error(f"Error placing market order for {product_id}: {e}")
+            return {"success": False, "error": str(e)}
     
     def get_market_data(self, product_id: str, granularity: str, start_time: str, end_time: str) -> List[Dict]:
         """
@@ -127,78 +109,74 @@ class CoinbaseClient:
         Returns:
             List of candles with OHLCV data
         """
-        params = {
-            "product_id": product_id,
-            "granularity": granularity,
-            "start": start_time,
-            "end": end_time
-        }
-        
-        response = self._request("GET", "/products/candles", params=params)
-        return response.get("candles", [])
+        try:
+            # Convert ISO string to datetime if needed
+            if isinstance(start_time, str):
+                start_time = start_time.replace('Z', '+00:00')
+            if isinstance(end_time, str):
+                end_time = end_time.replace('Z', '+00:00')
+                
+            response = self.client.get_candles(
+                product_id=product_id,
+                start=start_time,
+                end=end_time,
+                granularity=granularity
+            )
+            
+            return response.get("candles", [])
+        except Exception as e:
+            logger.error(f"Error getting market data for {product_id}: {e}")
+            return []
+    
+    # Compatibility methods for existing code
     def get_product_candles(self, product_id: str, start: str, end: str, granularity: str) -> List[Dict]:
-        """
-        Get historical candle data (alias for get_market_data for compatibility)
-        
-        Args:
-            product_id: Trading pair (e.g., 'BTC-USD')
-            start: ISO 8601 start time
-            end: ISO 8601 end time
-            granularity: Time interval
-            
-        Returns:
-            List of candles with OHLCV data
-        """
+        """Alias for get_market_data for backward compatibility"""
         return self.get_market_data(product_id, granularity, start, end)
+    
     def get_product_ticker(self, product_id: str) -> Dict:
-        """
-        Get product ticker (alias for get_product_price for compatibility)
-        
-        Args:
-            product_id: Trading pair (e.g., 'BTC-USD')
-            
-        Returns:
-            Ticker information
-        """
+        """Alias for get_product_price for backward compatibility"""
         return self.get_product_price(product_id)
-        
+    
     def get_product_stats(self, product_id: str) -> Dict:
-        """
-        Get 24h stats for a product
-        
-        Args:
-            product_id: Trading pair (e.g., 'BTC-USD')
+        """Get 24h stats for a product"""
+        try:
+            # Get product details which include stats
+            response = self.client.get_product(product_id=product_id)
             
-        Returns:
-            Stats information with default values
-        """
-        # This is a placeholder since we don't have a direct equivalent
-        # in the current implementation
-        return {
-            "volume": "0",
-            "volume_30day": "0",
-            "high": "0",
-            "low": "0"
-        }
-        
+            # Extract relevant stats
+            return {
+                "volume": response.get("volume_24h", "0"),
+                "volume_30day": response.get("volume_30d", "0"),
+                "high": response.get("price_high_24h", "0"),
+                "low": response.get("price_low_24h", "0")
+            }
+        except Exception as e:
+            logger.error(f"Error getting product stats for {product_id}: {e}")
+            return {
+                "volume": "0",
+                "volume_30day": "0",
+                "high": "0",
+                "low": "0"
+            }
+    
     def get_product_order_book(self, product_id: str, level: int = 1) -> Dict:
-        """
-        Get order book for a product
-        
-        Args:
-            product_id: Trading pair (e.g., 'BTC-USD')
-            level: Order book level
+        """Get order book for a product"""
+        try:
+            response = self.client.get_product_book(product_id=product_id, limit=level)
             
-        Returns:
-            Order book information with default values
-        """
-        # This is a placeholder since we don't have a direct equivalent
-        # Get the current price as a reference
-        ticker = self.get_product_price(product_id)
-        price = float(ticker.get("price", 0))
-        
-        # Create a simple order book with estimated values
-        return {
-            "bids": [[str(price * 0.999), "1.0"]],
-            "asks": [[str(price * 1.001), "1.0"]]
-        }
+            # Format the response to match expected structure
+            return {
+                "bids": [[bid.get("price"), bid.get("size")] for bid in response.get("bids", [])],
+                "asks": [[ask.get("price"), ask.get("size")] for ask in response.get("asks", [])]
+            }
+        except Exception as e:
+            logger.error(f"Error getting order book for {product_id}: {e}")
+            # Get current price as fallback
+            price_data = self.get_product_price(product_id)
+            price = float(price_data.get("price", 0))
+            
+            # Return estimated values
+            return {
+                "bids": [[str(price * 0.999), "1.0"]],
+                "asks": [[str(price * 1.001), "1.0"]]
+            }

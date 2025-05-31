@@ -305,3 +305,23 @@ When adding new features to the bot, corresponding tests should be added to main
 2. Follow the naming convention: `test_*.py` for files and `test_*` for methods
 3. Use the `unittest` framework and appropriate assertions
 4. Mock external dependencies to isolate the component being tested
+### API Key Setup
+
+The bot uses the Coinbase Advanced Trade API, which requires specific API credentials:
+
+1. **Generate API Keys**:
+   - Log in to your Coinbase account
+   - Go to Settings > API > Advanced Trade API
+   - Create a new API key with appropriate permissions (View and Trade)
+
+2. **API Key Format**:
+   The Coinbase Advanced Trade API uses a specific format for credentials:
+   ```
+   # API Key format: organizations/{org_id}/apiKeys/{key_id}
+   COINBASE_API_KEY=organizations/your-org-id/apiKeys/your-key-id
+   
+   # API Secret format: EC private key in PEM format
+   COINBASE_API_SECRET=-----BEGIN EC PRIVATE KEY-----\nYOUR PRIVATE KEY\n-----END EC PRIVATE KEY-----\n
+   ```
+
+3. **Update your .env file** with these credentials
