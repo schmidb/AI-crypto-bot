@@ -6,3 +6,4 @@ matplotlib==3.7.2
 coinbase-advanced-py==1.0.2
 google-cloud-aiplatform==1.36.0
 schedule==1.2.0
+dataclasses==0.6

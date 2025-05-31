@@ -27,6 +27,8 @@ AI-crypto-bot/
 ├── llm_analyzer.py         # LLM-based analysis and decision making
 ├── trading_strategy.py     # Trading strategy implementation
 ├── data_collector.py       # Market data collection
+├── backtesting.py          # Backtesting module for strategy evaluation
+├── backtest_cli.py         # Command-line interface for backtesting
 ├── aws_setup/              # AWS deployment scripts
 │   └── setup_ec2.sh        # Automated setup script for EC2
 ├── gcp_setup/              # Google Cloud deployment scripts
@@ -162,3 +164,50 @@ Run the bot on a Google Compute Engine VM instance using our setup script.
    - The setup script installs Apache and configures a web dashboard
    - Access it at http://YOUR_VM_IP/crypto-bot/
    - Make sure your firewall rules allow HTTP traffic (port 80)
+
+## Backtesting
+
+The bot includes a backtesting module that allows you to test your trading strategies against historical data before risking real capital.
+
+### Features
+
+- Test trading strategies on historical price data
+- Calculate performance metrics (returns, win rate, profit factor, etc.)
+- Compare performance across different cryptocurrencies
+- Save detailed trade history and performance metrics
+
+### Usage
+
+#### Running a Backtest
+
+```bash
+# Basic backtest for BTC-USD
+python backtest_cli.py backtest --product BTC-USD --start 2023-01-01 --end 2023-12-31
+
+# Specify initial balance and trade size
+python backtest_cli.py backtest --product ETH-USD --start 2023-01-01 --end 2023-12-31 --balance 5000 --trade-size 500
+
+# Custom output file
+python backtest_cli.py backtest --product BTC-USD --start 2023-01-01 --end 2023-12-31 --output btc_2023_results.json
+```
+
+#### Comparing Multiple Assets
+
+```bash
+# Compare BTC and ETH performance
+python backtest_cli.py compare --products BTC-USD ETH-USD --start 2023-01-01 --end 2023-12-31
+
+# Compare multiple assets with custom output
+python backtest_cli.py compare --products BTC-USD ETH-USD SOL-USD --start 2023-01-01 --end 2023-12-31 --output crypto_comparison_2023.json
+```
+
+### Interpreting Results
+
+The backtesting module provides comprehensive performance metrics:
+
+- **Total Return**: Overall percentage return for the period
+- **Win Rate**: Percentage of profitable trades
+- **Profit Factor**: Ratio of gross profits to gross losses
+- **Trade Statistics**: Number of trades, average profit/loss, etc.
+
+Results are saved as JSON files in the `backtest_results` directory.
