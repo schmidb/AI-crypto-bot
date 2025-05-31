@@ -11,6 +11,8 @@ from llm_analyzer import LLMAnalyzer
 from data_collector import DataCollector
 from trading_strategy import TradingStrategy
 from utils.dashboard_updater import DashboardUpdater
+from utils.tax_report import TaxReportGenerator
+from utils.strategy_evaluator import StrategyEvaluator
 from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, LOG_LEVEL, LOG_FILE
 
 # Configure logging
@@ -35,6 +37,7 @@ class TradingBot:
         # Create necessary directories
         os.makedirs("logs", exist_ok=True)
         os.makedirs("data", exist_ok=True)
+        os.makedirs("reports", exist_ok=True)
         
         # Initialize components
         self.coinbase_client = CoinbaseClient()
@@ -48,6 +51,12 @@ class TradingBot:
         
         # Initialize dashboard updater
         self.dashboard_updater = DashboardUpdater()
+        
+        # Initialize tax report generator
+        self.tax_report_generator = TaxReportGenerator()
+        
+        # Initialize strategy evaluator
+        self.strategy_evaluator = StrategyEvaluator()
         
         logger.info(f"Trading bot initialized with trading pairs: {TRADING_PAIRS}")
     
@@ -114,10 +123,53 @@ class TradingBot:
         # Schedule regular runs
         schedule.every(DECISION_INTERVAL_MINUTES).minutes.do(self.run_trading_cycle)
         
+        # Schedule daily tax report generation at midnight
+        schedule.every().day.at("00:00").do(self.generate_tax_report)
+        
+        # Schedule weekly strategy performance report on Sunday at 1 AM
+        schedule.every().sunday.at("01:00").do(self.generate_strategy_report)
+        
         # Keep the script running
         while True:
             schedule.run_pending()
             time.sleep(1)
+            
+    def generate_tax_report(self):
+        """Generate a tax report with current year's data"""
+        try:
+            current_year = datetime.now().year
+            output_file = f"reports/tax_report_{current_year}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            
+            logger.info(f"Generating tax report for year {current_year}")
+            success = self.tax_report_generator.generate_report(output_file, current_year)
+            
+            if success:
+                logger.info(f"Tax report generated successfully: {output_file}")
+            else:
+                logger.error("Failed to generate tax report")
+                
+            return success
+        except Exception as e:
+            logger.error(f"Error generating tax report: {e}")
+            return False
+            
+    def generate_strategy_report(self):
+        """Generate a strategy performance report"""
+        try:
+            output_file = f"reports/strategy_performance_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            
+            logger.info("Generating strategy performance report")
+            success = self.strategy_evaluator.generate_performance_report(output_file)
+            
+            if success:
+                logger.info(f"Strategy performance report generated successfully: {output_file}")
+            else:
+                logger.error("Failed to generate strategy performance report")
+                
+            return success
+        except Exception as e:
+            logger.error(f"Error generating strategy performance report: {e}")
+            return False
 
 if __name__ == "__main__":
     try:

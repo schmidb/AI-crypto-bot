@@ -6,6 +6,7 @@
     <title>Crypto Trading Bot Dashboard</title>
     <meta http-equiv="refresh" content="300"> <!-- Auto-refresh every 5 minutes -->
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header>
@@ -13,33 +14,132 @@
         <p class="last-update">Last updated: <span id="update-time">{{UPDATE_TIME}}</span></p>
     </header>
     
+    <nav class="dashboard-nav">
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#trading-pairs">Trading Pairs</a></li>
+            <li><a href="#trade-history">Trade History</a></li>
+            <li><a href="#performance">Performance</a></li>
+        </ul>
+    </nav>
+    
     <main>
-        <section class="status-section">
+        <section id="overview" class="status-section">
             <h2>Bot Status</h2>
             <div class="status-indicator">
                 <span class="status-badge {{BOT_STATUS}}">{{BOT_STATUS}}</span>
             </div>
             <p>The bot is currently {{BOT_STATUS}}. Last update was at {{UPDATE_TIME}}.</p>
+            
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h3>Total Trades</h3>
+                    <p class="summary-value">{{TOTAL_TRADES}}</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Win Rate</h3>
+                    <p class="summary-value">{{WIN_RATE}}%</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Profit/Loss</h3>
+                    <p class="summary-value">{{TOTAL_PNL}} USD</p>
+                </div>
+                <div class="summary-card">
+                    <h3>Last Trade</h3>
+                    <p class="summary-value">{{LAST_TRADE_TIME}}</p>
+                </div>
+            </div>
         </section>
         
-        <section class="trading-pairs">
+        <section id="trading-pairs" class="trading-pairs">
             <h2>Trading Pairs</h2>
             <div class="pairs-container">
                 {{TRADING_PAIRS}}
             </div>
         </section>
         
-        <section class="recent-trades">
-            <h2>Recent Trades</h2>
-            <div class="trades-container">
-                {{RECENT_TRADES}}
+        <section id="trade-history" class="trade-history">
+            <h2>Trade History</h2>
+            <div class="chart-container">
+                <canvas id="trade-history-chart"></canvas>
+            </div>
+            <div class="trades-table">
+                <h3>Recent Trades</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Pair</th>
+                            <th>Type</th>
+                            <th>Price</th>
+                            <th>Size</th>
+                            <th>Value (USD)</th>
+                            <th>Fee (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{TRADE_HISTORY}}
+                    </tbody>
+                </table>
             </div>
         </section>
         
-        <section class="performance">
-            <h2>Performance</h2>
-            <div class="performance-container">
-                {{PERFORMANCE_METRICS}}
+        <section id="performance" class="performance">
+            <h2>Strategy Performance</h2>
+            
+            <div class="performance-metrics">
+                <div class="metric-card">
+                    <h3>Win/Loss Ratio</h3>
+                    <p class="metric-value">{{WIN_LOSS_RATIO}}</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Avg. Profit (Win)</h3>
+                    <p class="metric-value">{{AVG_WIN}} USD</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Avg. Loss</h3>
+                    <p class="metric-value">{{AVG_LOSS}} USD</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Profit Factor</h3>
+                    <p class="metric-value">{{PROFIT_FACTOR}}</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Max Drawdown</h3>
+                    <p class="metric-value">{{MAX_DRAWDOWN}} USD</p>
+                </div>
+                <div class="metric-card">
+                    <h3>Avg. Hold Time</h3>
+                    <p class="metric-value">{{AVG_HOLD_TIME}} hrs</p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Cumulative Profit/Loss</h3>
+                <canvas id="pnl-chart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Performance by Market Condition</h3>
+                <canvas id="market-condition-chart"></canvas>
+            </div>
+        </section>
+        
+        <section class="reports">
+            <h2>Reports</h2>
+            <div class="reports-container">
+                <div class="report-links">
+                    <h3>Tax Reports</h3>
+                    <ul>
+                        {{TAX_REPORTS}}
+                    </ul>
+                </div>
+                <div class="report-links">
+                    <h3>Strategy Reports</h3>
+                    <ul>
+                        {{STRATEGY_REPORTS}}
+                    </ul>
+                </div>
             </div>
         </section>
     </main>
@@ -47,5 +147,68 @@
     <footer>
         <p>AI Crypto Trading Bot &copy; 2025</p>
     </footer>
+    
+    <script>
+        // Trade history chart data
+        const tradeHistoryData = {{TRADE_HISTORY_CHART_DATA}};
+        
+        // Create trade history chart
+        const tradeHistoryCtx = document.getElementById('trade-history-chart').getContext('2d');
+        new Chart(tradeHistoryCtx, {
+            type: 'line',
+            data: {
+                labels: tradeHistoryData.labels,
+                datasets: tradeHistoryData.datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+        
+        // PnL chart data
+        const pnlData = {{PNL_CHART_DATA}};
+        
+        // Create PnL chart
+        const pnlCtx = document.getElementById('pnl-chart').getContext('2d');
+        new Chart(pnlCtx, {
+            type: 'line',
+            data: {
+                labels: pnlData.labels,
+                datasets: pnlData.datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        // Market condition chart data
+        const marketConditionData = {{MARKET_CONDITION_CHART_DATA}};
+        
+        // Create market condition chart
+        const marketConditionCtx = document.getElementById('market-condition-chart').getContext('2d');
+        new Chart(marketConditionCtx, {
+            type: 'bar',
+            data: {
+                labels: marketConditionData.labels,
+                datasets: marketConditionData.datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

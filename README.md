@@ -180,17 +180,19 @@ Extend the `calculate_technical_indicators` method in `data_collector.py` to add
 ### Logs
 
 Check the log files in the `logs/` directory for detailed information about the bot's operation and any errors that occur.
-## Deployment on AWS EC2
+## Cloud Deployment Options
 
-You can run this bot on an AWS EC2 instance as a systemd service for 24/7 operation.
+You can deploy this bot on either AWS EC2 or Google Compute Engine for 24/7 operation.
 
-### Setting up an EC2 Instance
+### Option 1: AWS EC2 Deployment
+
+Run the bot on an AWS EC2 instance as a systemd service.
 
 1. **Launch an EC2 instance**:
    - Log in to your AWS Management Console
    - Navigate to EC2 and click "Launch Instance"
    - Choose Amazon Linux 2023 AMI
-   - Select an instance type (t2.micro for testing, t2.medium or better for production)
+   - Select an instance type (t2.medium or better recommended for production)
    - Configure security groups to allow SSH access (port 22)
    - Launch the instance and connect to it via SSH
 
@@ -231,7 +233,7 @@ You can run this bot on an AWS EC2 instance as a systemd service for 24/7 operat
    sudo journalctl -u crypto-bot -f
    ```
 
-### Managing the Service
+#### Managing the AWS EC2 Service
 
 - **Start the service**: `sudo systemctl start crypto-bot`
 - **Stop the service**: `sudo systemctl stop crypto-bot`
@@ -239,15 +241,114 @@ You can run this bot on an AWS EC2 instance as a systemd service for 24/7 operat
 - **Enable at boot**: `sudo systemctl enable crypto-bot`
 - **Disable at boot**: `sudo systemctl disable crypto-bot`
 
-### Security Considerations
-
-When running on AWS EC2:
+#### AWS Security Considerations
 
 1. Use IAM roles instead of storing AWS credentials on the instance
 2. Keep your instance updated with `sudo yum update -y`
 3. Use security groups to restrict access to your instance
 4. Consider using AWS Secrets Manager for API keys
 5. Enable CloudWatch monitoring for your EC2 instance
+
+### Option 2: Google Compute Engine Deployment
+
+Run the bot on a Google Compute Engine VM instance.
+
+1. **Create a VM Instance**:
+   - Log in to Google Cloud Console
+   - Navigate to Compute Engine > VM instances
+   - Click "Create Instance"
+   - Choose a name for your instance
+   - Select a region and zone (e.g., us-central1-a)
+   - Choose machine type (e2-medium recommended)
+   - Select Debian or Ubuntu as the boot disk
+   - Allow HTTP/HTTPS traffic if you plan to use the dashboard
+   - Click "Create"
+
+2. **Connect to your VM**:
+   ```bash
+   # Connect via SSH from Cloud Console or using gcloud
+   gcloud compute ssh crypto-trading-bot --zone=us-central1-a
+   ```
+
+3. **Install dependencies and clone the repository**:
+   ```bash
+   # Update package lists
+   sudo apt-get update
+   
+   # Install required packages
+   sudo apt-get install -y python3-pip python3-venv git supervisor
+   
+   # Clone the repository
+   git clone https://github.com/yourusername/AI-crypto-bot.git
+   cd AI-crypto-bot
+   
+   # Create a virtual environment
+   python3 -m venv venv
+   source venv/bin/activate
+   
+   # Install dependencies
+   pip install -r requirements.txt
+   ```
+
+4. **Configure your environment**:
+   ```bash
+   # Create and edit your .env file
+   cp .env.example .env
+   nano .env
+   ```
+
+5. **Set up supervisor to manage the bot process**:
+   ```bash
+   # Create supervisor configuration
+   sudo bash -c 'cat > /etc/supervisor/conf.d/crypto-bot.conf << EOL
+   [program:crypto-bot]
+   command=/home/$USER/AI-crypto-bot/venv/bin/python /home/$USER/AI-crypto-bot/main.py
+   directory=/home/$USER/AI-crypto-bot
+   autostart=true
+   autorestart=true
+   startretries=10
+   user=$USER
+   redirect_stderr=true
+   stdout_logfile=/home/$USER/AI-crypto-bot/logs/supervisor.log
+   stdout_logfile_maxbytes=50MB
+   stdout_logfile_backups=10
+   environment=HOME="/home/$USER",USER="$USER"
+   EOL'
+   
+   # Create log directory
+   mkdir -p ~/AI-crypto-bot/logs
+   
+   # Reload supervisor configuration
+   sudo supervisorctl reread
+   sudo supervisorctl update
+   ```
+
+6. **Start and monitor the bot**:
+   ```bash
+   # Start the bot
+   sudo supervisorctl start crypto-bot
+   
+   # Check status
+   sudo supervisorctl status crypto-bot
+   
+   # View logs
+   tail -f ~/AI-crypto-bot/logs/supervisor.log
+   ```
+
+#### Managing the Google Compute Engine Service
+
+- **Start the service**: `sudo supervisorctl start crypto-bot`
+- **Stop the service**: `sudo supervisorctl stop crypto-bot`
+- **Restart the service**: `sudo supervisorctl restart crypto-bot`
+- **View logs**: `tail -f ~/AI-crypto-bot/logs/supervisor.log`
+
+#### Google Cloud Security Considerations
+
+1. Use service accounts with minimal permissions
+2. Keep your VM updated with `sudo apt-get update && sudo apt-get upgrade`
+3. Use firewall rules to restrict access to your VM
+4. Consider using Secret Manager for API keys
+5. Enable Cloud Monitoring for your VM instance
 ## Web Dashboard
 
 The bot includes a web-based dashboard for monitoring trading activities:
@@ -265,3 +366,98 @@ After deploying on AWS EC2:
 1. Navigate to `http://your-ec2-public-ip/crypto-bot/` in your browser
 2. Enter the username and password you configured during setup
 3. The dashboard refreshes automatically every 5 minutes
+
+## Trade Logging and Tax Reporting
+
+The bot automatically logs all trading activities to CSV files for record keeping and tax reporting purposes:
+
+1. **Trade History**: All buy and sell activities are logged to `logs/trade_history.csv` with the following information:
+   - Timestamp
+   - Trade ID
+   - Product ID (e.g., BTC-USD)
+   - Side (buy or sell)
+   - Price
+   - Size (amount of cryptocurrency)
+   - Value in USD
+   - Fee in USD
+   - Cost basis in USD
+   - Tax year
+
+2. **Automated Tax Reports**: The bot generates daily tax reports in Excel format with:
+   - Complete trade history
+   - Separate sheets for buys and sells
+   - Summary statistics
+   - Asset-specific summaries
+
+3. **Manual Report Generation**: You can also generate tax reports on demand:
+   ```python
+   from utils.tax_report import TaxReportGenerator
+   
+   # Generate report for specific year
+   generator = TaxReportGenerator()
+   generator.generate_report("my_tax_report_2024.xlsx", tax_year=2024)
+   
+   # Generate report for all years
+   generator.generate_report("all_trades_report.xlsx")
+   ```
+
+All reports are saved in the `reports` directory by default.
+## Strategy Evaluation and Performance Tracking
+
+The bot includes comprehensive strategy evaluation and performance tracking features:
+
+1. **Detailed Strategy Logging**: Every trade decision is logged with extensive metrics:
+   - Market conditions (volatility, volume, trend)
+   - Technical indicators (RSI, MACD, Bollinger Bands, etc.)
+   - LLM analysis details (confidence, key factors, reasoning)
+   - Trade performance (profit/loss, holding period)
+
+2. **Performance Metrics**: The system tracks key performance indicators:
+   - Win/loss ratio
+   - Average profit on winning trades
+   - Average loss on losing trades
+   - Maximum drawdown
+   - Profit factor
+   - Holding period statistics
+
+3. **Automated Reports**: The bot generates weekly strategy performance reports in Excel format:
+   - Overall performance summary
+   - Detailed trade analysis
+   - Winning and losing trades breakdown
+   - Asset-specific performance
+   - Correlation analysis between indicators and outcomes
+
+4. **Strategy Optimization**: The detailed logging enables:
+   - Identifying which market conditions your strategy performs best in
+   - Determining which technical indicators are most predictive
+   - Understanding when the LLM's reasoning is most accurate
+   - Optimizing risk levels and position sizing
+
+All strategy performance data is saved in `logs/strategy_performance.csv` with detailed logs in `logs/detailed_logs/`. Weekly reports are automatically generated in the `reports` directory.
+## Dashboard
+
+The bot includes a web-based dashboard for monitoring trading activities:
+
+1. **Real-time monitoring**: View the current status of the bot and recent trading decisions
+2. **Trading pair overview**: See performance metrics for each trading pair
+3. **Trade history**: View detailed history of all buy and sell transactions with interactive charts
+4. **Performance metrics**: Track success rates, win/loss ratio, profit factor, and other key metrics
+5. **Strategy analysis**: Visualize performance across different market conditions
+6. **Report access**: Download tax and strategy performance reports directly from the dashboard
+
+The dashboard automatically updates after each trading cycle and refreshes every 5 minutes in your browser.
+
+### Accessing the Dashboard
+
+After deploying on AWS EC2 or Google Compute Engine:
+1. Navigate to `http://your-server-ip/crypto-bot/` in your browser
+2. The dashboard will display the latest trading information and performance metrics
+3. Use the navigation menu to access different sections of the dashboard
+
+### Dashboard Features
+
+- **Overview**: Quick summary of bot status, total trades, win rate, and total profit/loss
+- **Trading Pairs**: Current price and latest trading decision for each pair
+- **Trade History**: Interactive chart of price history and table of recent trades
+- **Performance**: Detailed metrics and visualizations of strategy performance
+- **Reports**: Links to download tax and strategy performance reports
