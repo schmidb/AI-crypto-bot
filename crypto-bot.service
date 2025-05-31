@@ -1,0 +1,18 @@
+[Unit]
+Description=AI Crypto Trading Bot
+After=network.target
+
+[Service]
+Type=simple
+User=ec2-user
+WorkingDirectory=/home/ec2-user/AI-crypto-bot
+ExecStart=/home/ec2-user/miniconda3/envs/crypto-bot/bin/python /home/ec2-user/AI-crypto-bot/main.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=crypto-bot
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Bot Dashboard</title>
+    <meta http-equiv="refresh" content="300"> <!-- Auto-refresh every 5 minutes -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Crypto Trading Bot Dashboard</h1>
+        <p class="last-update">Last updated: <span id="update-time">{{UPDATE_TIME}}</span></p>
+    </header>
+    
+    <main>
+        <section class="status-section">
+            <h2>Bot Status</h2>
+            <div class="status-indicator">
+                <span class="status-badge {{BOT_STATUS}}">{{BOT_STATUS}}</span>
+            </div>
+            <p>The bot is currently {{BOT_STATUS}}. Last update was at {{UPDATE_TIME}}.</p>
+        </section>
+        
+        <section class="trading-pairs">
+            <h2>Trading Pairs</h2>
+            <div class="pairs-container">
+                {{TRADING_PAIRS}}
+            </div>
+        </section>
+        
+        <section class="recent-trades">
+            <h2>Recent Trades</h2>
+            <div class="trades-container">
+                {{RECENT_TRADES}}
+            </div>
+        </section>
+        
+        <section class="performance">
+            <h2>Performance</h2>
+            <div class="performance-container">
+                {{PERFORMANCE_METRICS}}
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>AI Crypto Trading Bot &copy; 2025</p>
+    </footer>
+</body>
+</html>

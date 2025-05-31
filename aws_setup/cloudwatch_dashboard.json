@@ -1,0 +1,86 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "CWAgent", "cpu_usage_idle", "InstanceId", "${InstanceId}" ],
+          [ ".", "cpu_usage_user", ".", "." ],
+          [ ".", "cpu_usage_system", ".", "." ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${Region}",
+        "title": "CPU Usage",
+        "period": 300,
+        "stat": "Average"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "CWAgent", "mem_used_percent", "InstanceId", "${InstanceId}" ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${Region}",
+        "title": "Memory Usage",
+        "period": 300,
+        "stat": "Average"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "CWAgent", "disk_used_percent", "InstanceId", "${InstanceId}", "device", "xvda1", "fstype", "xfs", "path", "/" ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "${Region}",
+        "title": "Disk Usage",
+        "period": 300,
+        "stat": "Average"
+      }
+    },
+    {
+      "type": "log",
+      "x": 12,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "query": "SOURCE 'crypto-bot-logs' | fields @timestamp, @message\n| sort @timestamp desc\n| limit 100",
+        "region": "${Region}",
+        "title": "Trading Bot Logs",
+        "view": "table"
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 12,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "query": "SOURCE 'crypto-bot-logs' | filter @message like /ERROR/\n| fields @timestamp, @message\n| sort @timestamp desc\n| limit 100",
+        "region": "${Region}",
+        "title": "Trading Bot Errors",
+        "view": "table"
+      }
+    }
+  ]
+}
