@@ -110,16 +110,27 @@ class CoinbaseClient:
             List of candles with OHLCV data
         """
         try:
-            # Convert ISO string to datetime if needed
+            # Convert ISO string to unix timestamp (seconds since epoch)
             if isinstance(start_time, str):
+                # Remove the 'Z' and convert to datetime
                 start_time = start_time.replace('Z', '+00:00')
+                start_dt = datetime.fromisoformat(start_time)
+                start_timestamp = int(start_dt.timestamp())
+            else:
+                start_timestamp = int(start_time)
+                
             if isinstance(end_time, str):
+                # Remove the 'Z' and convert to datetime
                 end_time = end_time.replace('Z', '+00:00')
+                end_dt = datetime.fromisoformat(end_time)
+                end_timestamp = int(end_dt.timestamp())
+            else:
+                end_timestamp = int(end_time)
                 
             response = self.client.get_candles(
                 product_id=product_id,
-                start=start_time,
-                end=end_time,
+                start=start_timestamp,
+                end=end_timestamp,
                 granularity=granularity
             )
             
