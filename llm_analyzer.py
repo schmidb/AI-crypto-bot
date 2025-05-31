@@ -3,8 +3,14 @@ import json
 from typing import Dict, List, Any
 import pandas as pd
 import os
+import requests
+import google.auth
+import google.auth.transport.requests
 
 from google.cloud import aiplatform
+from google.cloud.aiplatform.gapic.schema import predict
+from google.protobuf import json_format
+from google.protobuf.struct_pb2 import Value
 from google.oauth2 import service_account
 
 from config import (
@@ -103,26 +109,43 @@ class LLMAnalyzer:
             }
     
     def _call_vertex_ai(self, prompt: str) -> Dict:
-        """Call Vertex AI for text generation"""
+        """Call Vertex AI for text generation using REST API"""
         try:
-            # Get the model
-            model = aiplatform.TextGenerationModel.from_pretrained(self.model)
+            # Create the endpoint URL
+            url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{self.model}:predict"
             
-            # Generate response
-            system_instruction = "You are a cryptocurrency trading expert. Analyze the provided market data and make a trading recommendation based on technical analysis, market trends, and sentiment."
+            # Create the request payload
+            payload = {
+                "instances": [{"prompt": prompt}],
+                "parameters": {
+                    "temperature": 0.2,
+                    "maxOutputTokens": 1024,
+                    "topP": 0.8,
+                    "topK": 40
+                }
+            }
             
-            response = model.predict(
-                prompt=prompt,
-                temperature=0.2,
-                max_output_tokens=1024,
-                top_k=40,
-                top_p=0.8,
-            )
+            # Get the access token
+            credentials, project = google.auth.default()
+            auth_req = google.auth.transport.requests.Request()
+            credentials.refresh(auth_req)
+            
+            # Make the request
+            headers = {
+                "Authorization": f"Bearer {credentials.token}",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            # Extract the prediction text
+            prediction_text = response.json()["predictions"][0]
             
             # Parse the response
             try:
                 # Try to parse as JSON
-                result_text = response.text
+                result_text = prediction_text
                 # Find JSON content between curly braces
                 start_idx = result_text.find('{')
                 end_idx = result_text.rfind('}') + 1
@@ -140,7 +163,7 @@ class LLMAnalyzer:
                         "risk_assessment": "medium"
                     }
             except json.JSONDecodeError:
-                logger.warning(f"Failed to parse JSON from response: {response.text}")
+                logger.warning(f"Failed to parse JSON from response: {str(prediction_text)}")
                 analysis_result = {
                     "decision": "HOLD",
                     "confidence": 50,
