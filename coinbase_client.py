@@ -136,3 +136,69 @@ class CoinbaseClient:
         
         response = self._request("GET", "/products/candles", params=params)
         return response.get("candles", [])
+    def get_product_candles(self, product_id: str, start: str, end: str, granularity: str) -> List[Dict]:
+        """
+        Get historical candle data (alias for get_market_data for compatibility)
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            start: ISO 8601 start time
+            end: ISO 8601 end time
+            granularity: Time interval
+            
+        Returns:
+            List of candles with OHLCV data
+        """
+        return self.get_market_data(product_id, granularity, start, end)
+    def get_product_ticker(self, product_id: str) -> Dict:
+        """
+        Get product ticker (alias for get_product_price for compatibility)
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            
+        Returns:
+            Ticker information
+        """
+        return self.get_product_price(product_id)
+        
+    def get_product_stats(self, product_id: str) -> Dict:
+        """
+        Get 24h stats for a product
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            
+        Returns:
+            Stats information with default values
+        """
+        # This is a placeholder since we don't have a direct equivalent
+        # in the current implementation
+        return {
+            "volume": "0",
+            "volume_30day": "0",
+            "high": "0",
+            "low": "0"
+        }
+        
+    def get_product_order_book(self, product_id: str, level: int = 1) -> Dict:
+        """
+        Get order book for a product
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            level: Order book level
+            
+        Returns:
+            Order book information with default values
+        """
+        # This is a placeholder since we don't have a direct equivalent
+        # Get the current price as a reference
+        ticker = self.get_product_price(product_id)
+        price = float(ticker.get("price", 0))
+        
+        # Create a simple order book with estimated values
+        return {
+            "bids": [[str(price * 0.999), "1.0"]],
+            "asks": [[str(price * 1.001), "1.0"]]
+        }
