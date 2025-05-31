@@ -357,21 +357,35 @@ Respond with ONLY the JSON object and no other text.
         try:
             # Extract required data from the input dictionary
             product_id = data.get("product_id", "")
-            current_price = data.get("current_price", 0.0)
-            historical_data = pd.DataFrame(data.get("historical_data", []))
-            indicators = data.get("indicators", {})
-            market_data = data.get("market_data", {})
             
-            # If historical_data is empty, create a minimal DataFrame
-            if historical_data.empty:
-                logger.warning(f"No historical data provided for {product_id}, using minimal data")
-                historical_data = pd.DataFrame({
+            # Ensure current_price is a float
+            try:
+                current_price = float(data.get("current_price", 0.0))
+            except (ValueError, TypeError):
+                current_price = 0.0
+                
+            # Get historical data
+            historical_data = data.get("historical_data", [])
+            
+            # Convert historical data to DataFrame and ensure numeric columns
+            if historical_data:
+                historical_df = pd.DataFrame(historical_data)
+                # Convert numeric columns to float
+                for col in ['close', 'open', 'high', 'low', 'volume']:
+                    if col in historical_df.columns:
+                        historical_df[col] = pd.to_numeric(historical_df[col], errors='coerce')
+            else:
+                historical_df = pd.DataFrame({
                     'close': [current_price],
                     'open': [current_price],
                     'high': [current_price],
                     'low': [current_price],
-                    'volume': [0]
+                    'volume': [0.0]
                 })
+            
+            # Get indicators and market data
+            indicators = data.get("indicators", {})
+            market_data = data.get("market_data", {})
             
             # Create additional context from indicators
             additional_context = {
@@ -381,7 +395,7 @@ Respond with ONLY the JSON object and no other text.
             
             # Call the actual analysis method
             return self.analyze_market_data(
-                market_data=historical_data,
+                market_data=historical_df,
                 current_price=current_price,
                 trading_pair=product_id,
                 additional_context=additional_context
