@@ -54,8 +54,8 @@ class DataCollector:
             # Rename columns
             df.columns = ['start', 'low', 'high', 'open', 'close', 'volume']
             
-            # Convert timestamp to datetime
-            df['start'] = pd.to_datetime(df['start'], unit='s')
+            # Convert timestamp to datetime - first convert to numeric type, then to datetime
+            df['start'] = pd.to_datetime(pd.to_numeric(df['start']), unit='s')
             
             # Sort by time
             df = df.sort_values('start')
