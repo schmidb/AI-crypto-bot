@@ -81,30 +81,40 @@ class DataCollector:
             # Get product ticker (price)
             ticker = self.client.get_product_price(product_id)
             
-            # Since we don't have direct methods for stats and order book,
-            # we'll use what's available and provide reasonable defaults
-            price = float(ticker.get("price", 0))
+            # Ensure price is converted to float
+            try:
+                price = float(ticker.get("price", "0"))
+            except (ValueError, TypeError):
+                price = 0.0
             
-            # Create market data with available information
+            # Create market data with available information - ensure all values are float
             market_data = {
                 "product_id": product_id,
                 "price": price,
                 "bid": price * 0.999,  # Estimate bid as slightly below price
                 "ask": price * 1.001,  # Estimate ask as slightly above price
-                "volume_24h": 0,  # We don't have this data
-                "volume_30d": 0,  # We don't have this data
-                "high_24h": 0,  # We don't have this data
-                "low_24h": 0,  # We don't have this data
+                "volume_24h": 0.0,  # We don't have this data
+                "volume_30d": 0.0,  # We don't have this data
+                "high_24h": 0.0,  # We don't have this data
+                "low_24h": 0.0,  # We don't have this data
                 "timestamp": datetime.now().isoformat()
             }
             
-            # Calculate additional metrics
-            market_data["spread"] = market_data["ask"] - market_data["bid"]
-            market_data["spread_percent"] = (market_data["spread"] / market_data["price"]) * 100
+            # Calculate additional metrics - ensure we're using float values
+            market_data["spread"] = float(market_data["ask"]) - float(market_data["bid"])
+            
+            # Avoid division by zero
+            if price > 0:
+                market_data["spread_percent"] = (float(market_data["spread"]) / float(market_data["price"])) * 100
+            else:
+                market_data["spread_percent"] = 0.0
             
             # Get historical data for volatility calculation
             historical_data = self.get_historical_data(product_id, "ONE_HOUR", 1)
             if not historical_data.empty:
+                # Ensure close prices are numeric
+                historical_data["close"] = pd.to_numeric(historical_data["close"], errors='coerce')
+                
                 # Calculate volatility (standard deviation of returns)
                 returns = historical_data["close"].pct_change().dropna()
                 market_data["volatility_24h"] = returns.std() * 100  # Convert to percentage
@@ -139,6 +149,11 @@ class DataCollector:
             # Make a copy to avoid modifying the original dataframe
             df = df.copy()
             
+            # Ensure all price columns are numeric
+            for col in ['close', 'open', 'high', 'low']:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+            
             # Calculate RSI (Relative Strength Index)
             delta = df['close'].diff()
             gain = delta.where(delta > 0, 0)
@@ -147,9 +162,10 @@ class DataCollector:
             avg_gain = gain.rolling(window=14).mean()
             avg_loss = loss.rolling(window=14).mean()
             
-            rs = avg_gain / avg_loss
+            # Avoid division by zero
+            rs = avg_gain / avg_loss.replace(0, float('nan'))
             rsi = 100 - (100 / (1 + rs))
-            current_rsi = rsi.iloc[-1]
+            current_rsi = rsi.iloc[-1] if not pd.isna(rsi.iloc[-1]) else 50.0
             
             # Calculate MACD (Moving Average Convergence Divergence)
             ema12 = df['close'].ewm(span=12, adjust=False).mean()
@@ -158,9 +174,9 @@ class DataCollector:
             signal_line = macd_line.ewm(span=9, adjust=False).mean()
             macd_histogram = macd_line - signal_line
             
-            current_macd = macd_line.iloc[-1]
-            current_signal = signal_line.iloc[-1]
-            current_histogram = macd_histogram.iloc[-1]
+            current_macd = macd_line.iloc[-1] if not pd.isna(macd_line.iloc[-1]) else 0.0
+            current_signal = signal_line.iloc[-1] if not pd.isna(signal_line.iloc[-1]) else 0.0
+            current_histogram = macd_histogram.iloc[-1] if not pd.isna(macd_histogram.iloc[-1]) else 0.0
             
             # Calculate Bollinger Bands
             sma20 = df['close'].rolling(window=20).mean()
@@ -169,16 +185,22 @@ class DataCollector:
             upper_band = sma20 + (std20 * 2)
             lower_band = sma20 - (std20 * 2)
             
-            current_sma20 = sma20.iloc[-1]
-            current_upper_band = upper_band.iloc[-1]
-            current_lower_band = lower_band.iloc[-1]
-            current_bollinger_width = (current_upper_band - current_lower_band) / current_sma20
+            current_sma20 = sma20.iloc[-1] if not pd.isna(sma20.iloc[-1]) else df['close'].iloc[-1]
+            current_upper_band = upper_band.iloc[-1] if not pd.isna(upper_band.iloc[-1]) else df['close'].iloc[-1] * 1.02
+            current_lower_band = lower_band.iloc[-1] if not pd.isna(lower_band.iloc[-1]) else df['close'].iloc[-1] * 0.98
+            
+            # Avoid division by zero
+            if current_sma20 > 0:
+                current_bollinger_width = (current_upper_band - current_lower_band) / current_sma20
+            else:
+                current_bollinger_width = 0.04  # Default value
             
             # Calculate market volatility
             returns = df['close'].pct_change()
-            volatility_24h = returns.tail(24).std() * 100  # Convert to percentage
+            volatility_24h = returns.tail(24).std() * 100 if len(returns) >= 24 else 0.0  # Convert to percentage
             
             # Calculate market volume trend
+            df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
             avg_volume = df['volume'].rolling(window=24).mean()
             current_volume = df['volume'].iloc[-1]
             volume_ratio = current_volume / avg_volume.iloc[-1] if not pd.isna(avg_volume.iloc[-1]) and avg_volume.iloc[-1] > 0 else 1.0
@@ -189,30 +211,34 @@ class DataCollector:
             
             current_price = df['close'].iloc[-1]
             
-            if current_price > sma50.iloc[-1] and sma50.iloc[-1] > sma200.iloc[-1]:
+            # Handle NaN values in moving averages
+            sma50_value = sma50.iloc[-1] if not pd.isna(sma50.iloc[-1]) and len(sma50) > 0 else current_price
+            sma200_value = sma200.iloc[-1] if not pd.isna(sma200.iloc[-1]) and len(sma200) > 0 else current_price
+            
+            if current_price > sma50_value and sma50_value > sma200_value:
                 market_trend = "bullish"
-            elif current_price < sma50.iloc[-1] and sma50.iloc[-1] < sma200.iloc[-1]:
+            elif current_price < sma50_value and sma50_value < sma200_value:
                 market_trend = "bearish"
             else:
                 market_trend = "neutral"
             
-            # Return all indicators
+            # Return all indicators - ensure all values are numeric
             return {
-                "rsi": current_rsi,
-                "macd_line": current_macd,
-                "macd_signal": current_signal,
-                "macd_histogram": current_histogram,
-                "bollinger_middle": current_sma20,
-                "bollinger_upper": current_upper_band,
-                "bollinger_lower": current_lower_band,
-                "bollinger_width": current_bollinger_width,
-                "volatility_24h": volatility_24h,
-                "volume_ratio": volume_ratio,
+                "rsi": float(current_rsi),
+                "macd_line": float(current_macd),
+                "macd_signal": float(current_signal),
+                "macd_histogram": float(current_histogram),
+                "bollinger_middle": float(current_sma20),
+                "bollinger_upper": float(current_upper_band),
+                "bollinger_lower": float(current_lower_band),
+                "bollinger_width": float(current_bollinger_width),
+                "volatility_24h": float(volatility_24h),
+                "volume_ratio": float(volume_ratio),
                 "market_trend": market_trend,
-                "sma50": sma50.iloc[-1] if not pd.isna(sma50.iloc[-1]) else None,
-                "sma200": sma200.iloc[-1] if not pd.isna(sma200.iloc[-1]) else None,
-                "price": current_price,
-                "volume_24h": df['volume'].tail(24).sum()
+                "sma50": float(sma50_value),
+                "sma200": float(sma200_value),
+                "price": float(current_price),
+                "volume_24h": float(df['volume'].tail(24).sum() if len(df) >= 24 else 0.0)
             }
         except Exception as e:
             logger.error(f"Error calculating technical indicators: {e}")
