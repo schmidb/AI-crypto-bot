@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="60">
     <title>AI Crypto Trading Bot Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,6 +18,11 @@
         }
         .stats-box h6 { margin: 0; color: #666; }
         .stats-box p { margin: 5px 0 0; font-size: 1.2rem; font-weight: bold; }
+        img.chart-img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -29,13 +35,63 @@
         <div class="row">
             <div class="col-lg-12">
                 <!-- Portfolio Overview Section -->
-                {% include 'portfolio_overview.html' %}
+                <div class="card">
+                  <div class="card-header">
+                    <h5>Portfolio Overview</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-6">
+                        <img src="images/portfolio_allocation.png" class="chart-img" alt="Portfolio Allocation">
+                      </div>
+                      <div class="col-md-6">
+                        <div id="portfolioTable">
+                          <!-- Will be populated by JavaScript -->
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <!-- Portfolio Performance Section -->
-                {% include 'portfolio_performance.html' %}
+                <div class="card mt-4">
+                  <div class="card-header">
+                    <h5>Portfolio Performance</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-8">
+                        <img src="images/portfolio_value.png" class="chart-img" alt="Portfolio Value">
+                      </div>
+                      <div class="col-md-4">
+                        <div id="performanceStats">
+                          <!-- Will be populated by JavaScript -->
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <!-- Rebalancing Status Section -->
-                {% include 'rebalancing_status.html' %}
+                <div class="card mt-4">
+                  <div class="card-header">
+                    <h5>Rebalancing Status</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-12">
+                        <img src="images/allocation_comparison.png" class="chart-img" alt="Allocation Comparison">
+                      </div>
+                    </div>
+                    <div class="row mt-3">
+                      <div class="col-12">
+                        <div id="rebalanceTable">
+                          <!-- Will be populated by JavaScript -->
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <!-- Trading Activity Section -->
                 <div class="card mt-4">
@@ -83,9 +139,6 @@
                 const tradingData = await tradingResponse.json();
                 updateTradeHistory(tradingData.recent_trades);
                 
-                // Initialize charts
-                initializeCharts();
-                
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
             }
@@ -93,8 +146,114 @@
         
         // Function to update portfolio display
         function updatePortfolioDisplay(portfolio) {
-            // Implementation details for updating portfolio elements
-            // This would populate the tables and stats boxes with portfolio data
+            // Update portfolio table
+            const portfolioTable = document.getElementById('portfolioTable');
+            let tableHtml = `
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Amount</th>
+                            <th>Value (USD)</th>
+                            <th>Allocation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            for (const asset of ['BTC', 'ETH', 'USD']) {
+                if (portfolio[asset]) {
+                    const amount = portfolio[asset].amount || 0;
+                    const valueUsd = portfolio[asset].value_usd || 0;
+                    const allocation = portfolio[asset].allocation || 0;
+                    
+                    tableHtml += `
+                        <tr>
+                            <td>${asset}</td>
+                            <td>${asset === 'BTC' ? amount.toFixed(8) : asset === 'ETH' ? amount.toFixed(6) : amount.toFixed(2)}</td>
+                            <td>$${valueUsd.toFixed(2)}</td>
+                            <td>${allocation.toFixed(2)}%</td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            tableHtml += `
+                    </tbody>
+                </table>
+            `;
+            
+            portfolioTable.innerHTML = tableHtml;
+            
+            // Update performance stats
+            const performanceStats = document.getElementById('performanceStats');
+            const initialValue = portfolio.initial_value_usd || 0;
+            const currentValue = portfolio.portfolio_value_usd || 0;
+            const totalReturn = portfolio.total_return || 0;
+            const tradesExecuted = portfolio.trades_executed || 0;
+            
+            performanceStats.innerHTML = `
+                <div class="stats-box">
+                    <h6>Initial Value</h6>
+                    <p>$${initialValue.toFixed(2)}</p>
+                </div>
+                <div class="stats-box">
+                    <h6>Current Value</h6>
+                    <p>$${currentValue.toFixed(2)}</p>
+                </div>
+                <div class="stats-box">
+                    <h6>Total Return</h6>
+                    <p>${totalReturn.toFixed(2)}%</p>
+                </div>
+                <div class="stats-box">
+                    <h6>Trades Executed</h6>
+                    <p>${tradesExecuted}</p>
+                </div>
+            `;
+            
+            // Update rebalance table
+            const rebalanceTable = document.getElementById('rebalanceTable');
+            let rebalanceHtml = `
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Target %</th>
+                            <th>Current %</th>
+                            <th>Deviation</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            const targetAllocations = { 'BTC': 40, 'ETH': 40, 'USD': 20 };
+            
+            for (const asset of ['BTC', 'ETH', 'USD']) {
+                if (portfolio[asset]) {
+                    const target = targetAllocations[asset];
+                    const current = portfolio[asset].allocation || 0;
+                    const deviation = portfolio[asset].deviation || 0;
+                    const status = portfolio[asset].rebalance_status || 'Unknown';
+                    
+                    rebalanceHtml += `
+                        <tr>
+                            <td>${asset}</td>
+                            <td>${target}%</td>
+                            <td>${current.toFixed(2)}%</td>
+                            <td>${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%</td>
+                            <td>${status}</td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            rebalanceHtml += `
+                    </tbody>
+                </table>
+            `;
+            
+            rebalanceTable.innerHTML = rebalanceHtml;
         }
         
         // Function to update trade history
@@ -105,55 +264,26 @@
             if (trades && trades.length > 0) {
                 trades.forEach(trade => {
                     const row = document.createElement('tr');
+                    const timestamp = new Date(trade.timestamp).toLocaleString();
+                    const productId = trade.product_id || '';
+                    const action = trade.action || '';
+                    const cryptoAmount = trade.crypto_amount || 0;
+                    const price = trade.price || 0;
+                    const tradeAmountUsd = trade.trade_amount_usd || 0;
+                    
                     row.innerHTML = `
-                        <td>${new Date(trade.timestamp).toLocaleString()}</td>
-                        <td>${trade.product_id}</td>
-                        <td>${trade.action}</td>
-                        <td>${trade.crypto_amount}</td>
-                        <td>$${trade.price.toFixed(2)}</td>
-                        <td>$${trade.trade_amount_usd.toFixed(2)}</td>
+                        <td>${timestamp}</td>
+                        <td>${productId}</td>
+                        <td>${action}</td>
+                        <td>${cryptoAmount.toFixed(8)}</td>
+                        <td>$${price.toFixed(2)}</td>
+                        <td>$${tradeAmountUsd.toFixed(2)}</td>
                     `;
                     tradeHistoryElement.appendChild(row);
                 });
             } else {
                 tradeHistoryElement.innerHTML = '<tr><td colspan="6" class="text-center">No trades yet</td></tr>';
             }
-        }
-        
-        // Function to initialize charts
-        function initializeCharts() {
-            // Load and display portfolio allocation chart
-            const portfolioAllocationImg = new Image();
-            portfolioAllocationImg.src = 'images/portfolio_allocation.png?' + new Date().getTime();
-            portfolioAllocationImg.onload = function() {
-                const canvas = document.getElementById('portfolioAllocationChart');
-                const ctx = canvas.getContext('2d');
-                canvas.width = this.width;
-                canvas.height = this.height;
-                ctx.drawImage(this, 0, 0);
-            };
-            
-            // Load and display portfolio value chart
-            const portfolioValueImg = new Image();
-            portfolioValueImg.src = 'images/portfolio_value.png?' + new Date().getTime();
-            portfolioValueImg.onload = function() {
-                const canvas = document.getElementById('portfolioValueChart');
-                const ctx = canvas.getContext('2d');
-                canvas.width = this.width;
-                canvas.height = this.height;
-                ctx.drawImage(this, 0, 0);
-            };
-            
-            // Load and display allocation comparison chart
-            const allocationComparisonImg = new Image();
-            allocationComparisonImg.src = 'images/allocation_comparison.png?' + new Date().getTime();
-            allocationComparisonImg.onload = function() {
-                const canvas = document.getElementById('targetAllocationChart');
-                const ctx = canvas.getContext('2d');
-                canvas.width = this.width;
-                canvas.height = this.height;
-                ctx.drawImage(this, 0, 0);
-            };
         }
         
         // Load dashboard data on page load

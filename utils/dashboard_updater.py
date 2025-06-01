@@ -2,6 +2,8 @@ import logging
 import json
 import os
 import datetime
+import shutil
+import subprocess
 from typing import Dict, List, Any, Union
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -21,10 +23,51 @@ class DashboardUpdater:
     
     def update_dashboard(self, trading_data: Dict[str, Any], portfolio: Dict[str, Any]) -> None:
         """Update the dashboard with latest trading and portfolio data"""
-        self._update_trading_data(trading_data)
-        self._update_portfolio_data(portfolio)
-        self._generate_charts(trading_data, portfolio)
-        self._update_timestamp()
+        try:
+            logger.info(f"Starting dashboard update")
+            self._update_trading_data(trading_data)
+            logger.info(f"Trading data updated to {self.dashboard_dir}/data/trading_data.json")
+            self._update_portfolio_data(portfolio)
+            logger.info(f"Portfolio data updated to {self.dashboard_dir}/data/portfolio_data.json")
+            self._generate_charts(trading_data, portfolio)
+            logger.info(f"Charts generated in {self.dashboard_dir}/images/")
+            self._update_timestamp()
+            logger.info(f"Timestamp updated to {self.dashboard_dir}/data/last_updated.txt")
+            self._sync_to_webserver()  # Sync files to web server
+        except Exception as e:
+            logger.error(f"Error updating dashboard: {e}")
+    
+    def _sync_to_webserver(self):
+        """Copy dashboard files to web server directory"""
+        try:
+            web_dashboard_dir = "/var/www/html/crypto-dashboard"
+            
+            # Create target directories if they don't exist
+            import subprocess
+            subprocess.run(["mkdir", "-p", f"{web_dashboard_dir}/data"], check=True)
+            subprocess.run(["mkdir", "-p", f"{web_dashboard_dir}/images"], check=True)
+            
+            # Copy data files
+            data_files = os.listdir(f"{self.dashboard_dir}/data")
+            for file in data_files:
+                subprocess.run(["cp", f"{self.dashboard_dir}/data/{file}", f"{web_dashboard_dir}/data/"], check=True)
+            
+            # Copy image files
+            if os.path.exists(f"{self.dashboard_dir}/images"):
+                image_files = os.listdir(f"{self.dashboard_dir}/images")
+                for file in image_files:
+                    subprocess.run(["cp", f"{self.dashboard_dir}/images/{file}", f"{web_dashboard_dir}/images/"], check=True)
+            
+            # Copy HTML files if they exist in dashboard_templates
+            templates_dir = "dashboard_templates"
+            if os.path.exists(templates_dir):
+                html_files = [f for f in os.listdir(templates_dir) if f.endswith(".html")]
+                for file in html_files:
+                    subprocess.run(["cp", f"{templates_dir}/{file}", web_dashboard_dir], check=True)
+            
+            logger.info(f"Dashboard files synced to web server directory: {web_dashboard_dir}")
+        except Exception as e:
+            logger.error(f"Error syncing dashboard files to web server: {e}")
     
     def _update_trading_data(self, trading_data: Dict[str, Any]) -> None:
         """Update trading data JSON file"""
