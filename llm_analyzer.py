@@ -678,6 +678,9 @@ Respond with ONLY a JSON object in this format:
     def _call_gemini(self, prompt: str) -> str:
         """Call Gemini API using direct REST API approach"""
         try:
+            # Log the model name being used
+            logger.info(f"Using model: {self.model}")
+            
             # Get authentication token
             import subprocess
             auth_process = subprocess.run(
@@ -688,19 +691,34 @@ Respond with ONLY a JSON object in this format:
             )
             auth_token = auth_process.stdout.strip()
             
-            # Determine model ID
-            if "1.5" in self.model:
-                if "pro" in self.model:
-                    model_id = "gemini-1.5-pro"
-                elif "flash" in self.model:
-                    model_id = "gemini-1.5-flash"
-                else:
-                    model_id = "gemini-1.5-flash"  # Default to flash
-            else:
+            # Determine model ID - ensure we're mapping to the correct API model name
+            model_id = None
+            
+            # Normalize model name for comparison
+            model_lower = self.model.lower()
+            
+            # Map to correct API model names
+            if "gemini-1.5-flash" in model_lower:
+                model_id = "gemini-1.5-flash"
+            elif "gemini-1.5-pro" in model_lower:
+                model_id = "gemini-1.5-pro"
+            elif "gemini-1.5" in model_lower:
+                model_id = "gemini-1.5-flash"  # Default 1.5 to flash
+            elif "gemini-pro" in model_lower:
+                model_id = "gemini-pro"
+            elif "gemini" in model_lower:
                 model_id = "gemini-pro"  # Default to pro
+            else:
+                # If we can't determine the model, default to gemini-pro
+                logger.warning(f"Could not determine Gemini model from '{self.model}', defaulting to gemini-pro")
+                model_id = "gemini-pro"
+            
+            logger.info(f"Mapped model name '{self.model}' to API model ID: {model_id}")
             
             # Prepare request
             url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{model_id}:generateContent"
+            
+            logger.info(f"Making API request to: {url}")
             
             headers = {
                 "Authorization": f"Bearer {auth_token}",
