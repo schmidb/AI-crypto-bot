@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Crypto Trading Bot Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { padding-top: 20px; }
+        .stats-box {
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .stats-box h6 { margin: 0; color: #666; }
+        .stats-box p { margin: 5px 0 0; font-size: 1.2rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-4">
+            <h1>AI Crypto Trading Bot Dashboard</h1>
+            <p class="text-muted">Last updated: <span id="lastUpdated">Loading...</span></p>
+        </header>
+        
+        <div class="row">
+            <div class="col-lg-12">
+                <!-- Portfolio Overview Section -->
+                {% include 'portfolio_overview.html' %}
+                
+                <!-- Portfolio Performance Section -->
+                {% include 'portfolio_performance.html' %}
+                
+                <!-- Rebalancing Status Section -->
+                {% include 'rebalancing_status.html' %}
+                
+                <!-- Trading Activity Section -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5>Recent Trading Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date/Time</th>
+                                    <th>Product</th>
+                                    <th>Action</th>
+                                    <th>Amount</th>
+                                    <th>Price</th>
+                                    <th>Value (USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tradeHistory">
+                                <!-- Trade history will be populated via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Load last updated timestamp
+                const timestampResponse = await fetch('data/last_updated.txt');
+                const timestamp = await timestampResponse.text();
+                document.getElementById('lastUpdated').textContent = timestamp;
+                
+                // Load portfolio data
+                const portfolioResponse = await fetch('data/portfolio_data.json');
+                const portfolioData = await portfolioResponse.json();
+                updatePortfolioDisplay(portfolioData);
+                
+                // Load trading data
+                const tradingResponse = await fetch('data/trading_data.json');
+                const tradingData = await tradingResponse.json();
+                updateTradeHistory(tradingData.recent_trades);
+                
+                // Initialize charts
+                initializeCharts();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        
+        // Function to update portfolio display
+        function updatePortfolioDisplay(portfolio) {
+            // Implementation details for updating portfolio elements
+            // This would populate the tables and stats boxes with portfolio data
+        }
+        
+        // Function to update trade history
+        function updateTradeHistory(trades) {
+            const tradeHistoryElement = document.getElementById('tradeHistory');
+            tradeHistoryElement.innerHTML = '';
+            
+            if (trades && trades.length > 0) {
+                trades.forEach(trade => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(trade.timestamp).toLocaleString()}</td>
+                        <td>${trade.product_id}</td>
+                        <td>${trade.action}</td>
+                        <td>${trade.crypto_amount}</td>
+                        <td>$${trade.price.toFixed(2)}</td>
+                        <td>$${trade.trade_amount_usd.toFixed(2)}</td>
+                    `;
+                    tradeHistoryElement.appendChild(row);
+                });
+            } else {
+                tradeHistoryElement.innerHTML = '<tr><td colspan="6" class="text-center">No trades yet</td></tr>';
+            }
+        }
+        
+        // Function to initialize charts
+        function initializeCharts() {
+            // Load and display portfolio allocation chart
+            const portfolioAllocationImg = new Image();
+            portfolioAllocationImg.src = 'images/portfolio_allocation.png?' + new Date().getTime();
+            portfolioAllocationImg.onload = function() {
+                const canvas = document.getElementById('portfolioAllocationChart');
+                const ctx = canvas.getContext('2d');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                ctx.drawImage(this, 0, 0);
+            };
+            
+            // Load and display portfolio value chart
+            const portfolioValueImg = new Image();
+            portfolioValueImg.src = 'images/portfolio_value.png?' + new Date().getTime();
+            portfolioValueImg.onload = function() {
+                const canvas = document.getElementById('portfolioValueChart');
+                const ctx = canvas.getContext('2d');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                ctx.drawImage(this, 0, 0);
+            };
+            
+            // Load and display allocation comparison chart
+            const allocationComparisonImg = new Image();
+            allocationComparisonImg.src = 'images/allocation_comparison.png?' + new Date().getTime();
+            allocationComparisonImg.onload = function() {
+                const canvas = document.getElementById('targetAllocationChart');
+                const ctx = canvas.getContext('2d');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                ctx.drawImage(this, 0, 0);
+            };
+        }
+        
+        // Load dashboard data on page load
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
+        
+        // Refresh dashboard every 60 seconds
+        setInterval(loadDashboardData, 60000);
+    </script>
+</body>
+</html>

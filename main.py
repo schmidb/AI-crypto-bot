@@ -49,6 +49,9 @@ class TradingBot:
             data_collector=self.data_collector
         )
         
+        # Initialize portfolio with current market values
+        self.trading_strategy.update_portfolio_values()
+        
         # Initialize dashboard updater
         self.dashboard_updater = DashboardUpdater()
         
@@ -129,10 +132,38 @@ class TradingBot:
         # Schedule weekly strategy performance report on Sunday at 1 AM
         schedule.every().sunday.at("01:00").do(self.generate_strategy_report)
         
+        # Schedule portfolio rebalancing (once per day at 2 AM)
+        schedule.every().day.at("02:00").do(self.trading_strategy.rebalance_portfolio)
+        
+        # Schedule dashboard updates every 5 minutes
+        schedule.every(5).minutes.do(self.update_dashboard)
+        
         # Keep the script running
         while True:
             schedule.run_pending()
             time.sleep(1)
+            
+    def update_dashboard(self):
+        """Update the dashboard with latest data"""
+        try:
+            # Get trading data
+            trading_data = {
+                "recent_trades": self.trading_strategy.trade_logger.get_recent_trades(10),
+                "market_data": {
+                    product_id: self.data_collector.get_market_data(product_id)
+                    for product_id in TRADING_PAIRS
+                }
+            }
+            
+            # Get portfolio data
+            portfolio = self.trading_strategy.portfolio
+            
+            # Update dashboard
+            self.dashboard_updater.update_dashboard(trading_data, portfolio)
+            logger.info("Dashboard updated")
+            
+        except Exception as e:
+            logger.error(f"Error updating dashboard: {e}")
             
     def generate_tax_report(self):
         """Generate a tax report with current year's data"""

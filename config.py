@@ -24,9 +24,14 @@ LLM_LOCATION = os.getenv("LLM_LOCATION", "us-central1")
 # Trading settings
 TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")
 DECISION_INTERVAL_MINUTES = int(os.getenv("DECISION_INTERVAL_MINUTES", "60"))
-MAX_INVESTMENT_PER_TRADE_USD = float(os.getenv("MAX_INVESTMENT_PER_TRADE_USD", "100"))
 RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")  # low, medium, high
 SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
+
+# Portfolio settings
+INITIAL_BTC_AMOUNT = float(os.getenv("INITIAL_BTC_AMOUNT", "0.01"))  # Initial BTC allocation
+INITIAL_ETH_AMOUNT = float(os.getenv("INITIAL_ETH_AMOUNT", "0.15"))  # Initial ETH allocation
+PORTFOLIO_REBALANCE = os.getenv("PORTFOLIO_REBALANCE", "true").lower() == "true"  # Whether to rebalance portfolio
+MAX_TRADE_PERCENTAGE = float(os.getenv("MAX_TRADE_PERCENTAGE", "25"))  # Max percentage of holdings to trade at once
 
 # Logging settings
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

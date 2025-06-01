@@ -1,79 +1,113 @@
+import json
 import os
-import csv
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, List, Any
 
 logger = logging.getLogger(__name__)
 
 class TradeLogger:
-    """
-    Logs trading activities to CSV files for record keeping and tax reporting.
-    """
+    """Logs and retrieves trade history"""
     
-    def __init__(self, log_dir: str = "logs"):
-        """Initialize the trade logger."""
-        self.log_dir = log_dir
-        self.trades_file = os.path.join(log_dir, "trade_history.csv")
+    def __init__(self, log_file="data/trade_history.json"):
+        """Initialize the trade logger"""
+        self.log_file = log_file
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
         
-        # Create log directory if it doesn't exist
-        os.makedirs(log_dir, exist_ok=True)
-        
-        # Initialize log file with headers if it doesn't exist
-        self._initialize_trades_file()
-        
-        logger.info(f"Trade logger initialized. Logs will be saved to {log_dir}")
+        # Create trade history file if it doesn't exist
+        if not os.path.exists(log_file):
+            with open(log_file, 'w') as f:
+                json.dump([], f)
     
-    def _initialize_trades_file(self):
-        """Initialize the trades CSV file with headers if it doesn't exist."""
-        if not os.path.exists(self.trades_file):
-            with open(self.trades_file, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow([
-                    'timestamp', 
-                    'trade_id', 
-                    'product_id', 
-                    'side', 
-                    'price', 
-                    'size', 
-                    'value_usd',
-                    'fee_usd',
-                    'cost_basis_usd',
-                    'tax_year'
-                ])
-            logger.info(f"Created new trades log file: {self.trades_file}")
-    
-    def log_trade(self, trade_data: Dict[str, Any]):
-        """Log a trade to the CSV file."""
+    def log_trade(self, product_id: str, decision: Dict[str, Any], result: Dict[str, Any]) -> None:
+        """
+        Log a trade to the trade history file
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            decision: Decision from LLM analyzer
+            result: Result of trade execution
+        """
         try:
-            timestamp = trade_data.get('timestamp', datetime.now().isoformat())
-            dt = datetime.fromisoformat(timestamp) if isinstance(timestamp, str) else timestamp
-            tax_year = dt.year
+            # Load existing trade history
+            trades = []
+            try:
+                with open(self.log_file, 'r') as f:
+                    trades = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                trades = []
             
-            # Calculate values
-            price = float(trade_data.get('price', 0.0))
-            size = float(trade_data.get('size', 0.0))
-            value_usd = float(trade_data.get('value_usd', price * size))
-            fee_usd = float(trade_data.get('fee_usd', 0.0))
-            cost_basis_usd = value_usd + fee_usd
+            # Create trade record
+            trade = {
+                "timestamp": datetime.now().isoformat(),
+                "product_id": product_id,
+                "action": result.get("action", "unknown"),
+                "price": result.get("price", 0),
+                "crypto_amount": result.get("crypto_amount", 0),
+                "trade_amount_usd": result.get("trade_amount_usd", 0),
+                "confidence": decision.get("confidence", 0),
+                "reason": decision.get("reason", "No reason provided"),
+                "status": result.get("status", "unknown")
+            }
             
-            with open(self.trades_file, 'a', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow([
-                    timestamp,
-                    trade_data.get('trade_id', ''),
-                    trade_data.get('product_id', ''),
-                    trade_data.get('side', ''),  # buy or sell
-                    price,
-                    size,
-                    value_usd,
-                    fee_usd,
-                    cost_basis_usd,
-                    tax_year
-                ])
+            # Add trade to history
+            trades.append(trade)
             
-            logger.info(f"Logged trade: {trade_data.get('side')} {size} {trade_data.get('product_id')} at ${price}")
-            return True
+            # Save updated trade history
+            with open(self.log_file, 'w') as f:
+                json.dump(trades, f, indent=2)
+                
+            logger.info(f"Trade logged: {trade['action']} {trade['crypto_amount']} {product_id.split('-')[0]} at ${trade['price']}")
+            
         except Exception as e:
             logger.error(f"Error logging trade: {e}")
-            return False
+    
+    def get_recent_trades(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        Get recent trades from the trade history
+        
+        Args:
+            limit: Maximum number of trades to return
+            
+        Returns:
+            List of recent trades
+        """
+        try:
+            with open(self.log_file, 'r') as f:
+                trades = json.load(f)
+            
+            # Sort trades by timestamp (newest first)
+            trades.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+            
+            # Return limited number of trades
+            return trades[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error getting recent trades: {e}")
+            return []
+    
+    def get_trades_by_product(self, product_id: str) -> List[Dict[str, Any]]:
+        """
+        Get trades for a specific product
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            
+        Returns:
+            List of trades for the specified product
+        """
+        try:
+            with open(self.log_file, 'r') as f:
+                trades = json.load(f)
+            
+            # Filter trades by product ID
+            filtered_trades = [trade for trade in trades if trade.get("product_id") == product_id]
+            
+            # Sort trades by timestamp (newest first)
+            filtered_trades.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+            
+            return filtered_trades
+            
+        except Exception as e:
+            logger.error(f"Error getting trades by product: {e}")
+            return []

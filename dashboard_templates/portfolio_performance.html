@@ -1,0 +1,30 @@
+<div class="card mt-4">
+  <div class="card-header">
+    <h5>Portfolio Performance</h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-8">
+        <canvas id="portfolioValueChart"></canvas>
+      </div>
+      <div class="col-md-4">
+        <div class="stats-box">
+          <h6>Initial Value</h6>
+          <p>${{ portfolio.initial_value_usd }}</p>
+        </div>
+        <div class="stats-box">
+          <h6>Current Value</h6>
+          <p>${{ portfolio.portfolio_value_usd }}</p>
+        </div>
+        <div class="stats-box">
+          <h6>Total Return</h6>
+          <p>{{ portfolio.total_return }}%</p>
+        </div>
+        <div class="stats-box">
+          <h6>Trades Executed</h6>
+          <p>{{ portfolio.trades_executed }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
