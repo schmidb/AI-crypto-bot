@@ -183,7 +183,27 @@ class TradingBot:
         # Define a function that will be accessible to the handler
         def handle_refresh_portfolio():
             try:
-                return self.trading_strategy.refresh_portfolio_from_coinbase()
+                # Refresh portfolio from Coinbase
+                result = self.trading_strategy.refresh_portfolio_from_coinbase()
+                
+                # Explicitly update the dashboard with the latest portfolio data
+                try:
+                    # Get current portfolio data
+                    portfolio = self.trading_strategy.portfolio
+                    
+                    # Create minimal dashboard data
+                    dashboard_data = {
+                        "status": "running",
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    
+                    # Update the dashboard
+                    self.dashboard_updater.update_dashboard(dashboard_data, portfolio)
+                    logger.info("Dashboard updated with refreshed portfolio data")
+                except Exception as e:
+                    logger.error(f"Error updating dashboard after portfolio refresh: {e}")
+                
+                return result
             except Exception as e:
                 logger.error(f"Error in handle_refresh_portfolio: {e}")
                 return {"status": "error", "message": str(e)}
@@ -294,6 +314,9 @@ class TradingBot:
                         portfolio[key] = {"amount": 0}
                         if key != "USD":
                             portfolio[key]["last_price_usd"] = 0
+            
+            # Log portfolio values before updating dashboard
+            logger.info(f"Updating dashboard with portfolio - BTC: {portfolio['BTC']['amount']}, ETH: {portfolio['ETH']['amount']}, USD: {portfolio['USD']['amount']}, Total: ${portfolio['portfolio_value_usd']}")
             
             # Update dashboard
             self.dashboard_updater.update_dashboard(trading_data, portfolio)

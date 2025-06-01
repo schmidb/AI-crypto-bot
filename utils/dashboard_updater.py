@@ -123,30 +123,40 @@ class DashboardUpdater:
         try:
             web_dashboard_dir = "/var/www/html/crypto-bot"
             
+            # Check if web directory exists
+            if not os.path.exists(web_dashboard_dir):
+                logger.info(f"Web dashboard directory {web_dashboard_dir} not found, skipping sync")
+                return
+                
             # Create target directories if they don't exist
-            import subprocess
-            subprocess.run(["sudo", "mkdir", "-p", f"{web_dashboard_dir}/data"], check=True)
-            subprocess.run(["sudo", "mkdir", "-p", f"{web_dashboard_dir}/images"], check=True)
-            
-            # Copy data files
-            data_files = os.listdir(f"{self.dashboard_dir}/data")
-            for file in data_files:
-                subprocess.run(["sudo", "cp", f"{self.dashboard_dir}/data/{file}", f"{web_dashboard_dir}/data/"], check=True)
-            
-            # Copy image files
-            if os.path.exists(f"{self.dashboard_dir}/images"):
-                image_files = os.listdir(f"{self.dashboard_dir}/images")
-                for file in image_files:
-                    subprocess.run(["sudo", "cp", f"{self.dashboard_dir}/images/{file}", f"{web_dashboard_dir}/images/"], check=True)
-            
-            # Copy HTML files if they exist in dashboard_templates
-            templates_dir = "dashboard_templates"
-            if os.path.exists(templates_dir):
-                html_files = [f for f in os.listdir(templates_dir) if f.endswith(".html")]
-                for file in html_files:
-                    subprocess.run(["sudo", "cp", f"{templates_dir}/{file}", web_dashboard_dir], check=True)
-            
-            logger.info(f"Dashboard files synced to web server directory: {web_dashboard_dir}")
+            try:
+                import subprocess
+                subprocess.run(["sudo", "mkdir", "-p", f"{web_dashboard_dir}/data"], check=True)
+                subprocess.run(["sudo", "mkdir", "-p", f"{web_dashboard_dir}/images"], check=True)
+                
+                # Copy data files
+                data_files = os.listdir(f"{self.dashboard_dir}/data")
+                for file in data_files:
+                    subprocess.run(["sudo", "cp", f"{self.dashboard_dir}/data/{file}", f"{web_dashboard_dir}/data/"], check=True)
+                
+                # Copy image files
+                if os.path.exists(f"{self.dashboard_dir}/images"):
+                    image_files = os.listdir(f"{self.dashboard_dir}/images")
+                    for file in image_files:
+                        subprocess.run(["sudo", "cp", f"{self.dashboard_dir}/images/{file}", f"{web_dashboard_dir}/images/"], check=True)
+                
+                # Copy HTML files if they exist in dashboard_templates
+                templates_dir = "dashboard_templates"
+                if os.path.exists(templates_dir):
+                    html_files = [f for f in os.listdir(templates_dir) if f.endswith(".html")]
+                    for file in html_files:
+                        subprocess.run(["sudo", "cp", f"{templates_dir}/{file}", web_dashboard_dir], check=True)
+                
+                logger.info(f"Dashboard files synced to web server directory: {web_dashboard_dir}")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Error running subprocess during sync: {e}")
+            except PermissionError as e:
+                logger.error(f"Permission error during sync: {e}")
         except Exception as e:
             logger.error(f"Error syncing dashboard files to web server: {e}")
     
@@ -163,72 +173,82 @@ class DashboardUpdater:
                 logger.warning(f"Invalid portfolio data: {type(portfolio)}")
                 return
                 
+            # Make a deep copy of the portfolio to avoid modifying the original
+            import copy
+            portfolio_copy = copy.deepcopy(portfolio)
+                
             # Ensure required keys exist
             required_keys = ["portfolio_value_usd", "initial_value_usd", "BTC", "ETH", "USD"]
             for key in required_keys:
-                if key not in portfolio:
+                if key not in portfolio_copy:
                     logger.warning(f"Missing required key in portfolio data: {key}")
-                    portfolio[key] = 0 if key.endswith("_usd") else {"amount": 0, "last_price_usd": 0}
+                    portfolio_copy[key] = 0 if key.endswith("_usd") else {"amount": 0, "last_price_usd": 0}
             
             # Calculate additional portfolio metrics
             # Calculate allocation percentages
-            total_value = float(portfolio["portfolio_value_usd"])
+            total_value = float(portfolio_copy["portfolio_value_usd"])
             if total_value > 0:
                 for asset in ["BTC", "ETH", "USD"]:
-                    if asset in portfolio and isinstance(portfolio[asset], dict):
+                    if asset in portfolio_copy and isinstance(portfolio_copy[asset], dict):
                         # Ensure asset dict has required keys
-                        if "amount" not in portfolio[asset]:
-                            portfolio[asset]["amount"] = 0
-                        if asset != "USD" and "last_price_usd" not in portfolio[asset]:
-                            portfolio[asset]["last_price_usd"] = 0
+                        if "amount" not in portfolio_copy[asset]:
+                            portfolio_copy[asset]["amount"] = 0
+                        if asset != "USD" and "last_price_usd" not in portfolio_copy[asset]:
+                            portfolio_copy[asset]["last_price_usd"] = 0
                             
                         # Calculate asset value
-                        asset_amount = float(portfolio[asset]["amount"])
+                        asset_amount = float(portfolio_copy[asset]["amount"])
                         asset_value = asset_amount
                         if asset != "USD":
-                            asset_price = float(portfolio[asset]["last_price_usd"])
+                            asset_price = float(portfolio_copy[asset]["last_price_usd"])
                             asset_value = asset_amount * asset_price
                             
-                        portfolio[asset]["value_usd"] = asset_value
-                        portfolio[asset]["allocation"] = round((asset_value / total_value) * 100, 2)
+                        portfolio_copy[asset]["value_usd"] = asset_value
+                        portfolio_copy[asset]["allocation"] = round((asset_value / total_value) * 100, 2)
                 
                 # Calculate target allocations and deviations
                 target_allocations = {"BTC": 40, "ETH": 40, "USD": 20}
                 for asset in ["BTC", "ETH", "USD"]:
-                    if asset in portfolio and isinstance(portfolio[asset], dict):
-                        if "allocation" not in portfolio[asset]:
-                            portfolio[asset]["allocation"] = 0
+                    if asset in portfolio_copy and isinstance(portfolio_copy[asset], dict):
+                        if "allocation" not in portfolio_copy[asset]:
+                            portfolio_copy[asset]["allocation"] = 0
                             
-                        current_allocation = portfolio[asset]["allocation"]
+                        current_allocation = portfolio_copy[asset]["allocation"]
                         target = target_allocations[asset]
                         deviation = current_allocation - target
-                        portfolio[asset]["deviation"] = round(deviation, 2)
+                        portfolio_copy[asset]["deviation"] = round(deviation, 2)
                         
                         # Determine rebalance status
                         if abs(deviation) > 5:
                             if deviation > 0:
-                                portfolio[asset]["rebalance_status"] = "Overweight"
+                                portfolio_copy[asset]["rebalance_status"] = "Overweight"
                             else:
-                                portfolio[asset]["rebalance_status"] = "Underweight"
+                                portfolio_copy[asset]["rebalance_status"] = "Underweight"
                         else:
-                            portfolio[asset]["rebalance_status"] = "Balanced"
+                            portfolio_copy[asset]["rebalance_status"] = "Balanced"
                 
                 # Calculate total return
-                initial_value = float(portfolio["initial_value_usd"])
+                initial_value = float(portfolio_copy["initial_value_usd"])
                 if initial_value > 0:
-                    portfolio["total_return"] = round(
+                    portfolio_copy["total_return"] = round(
                         ((total_value - initial_value) / initial_value) * 100, 
                         2
                     )
                 else:
-                    portfolio["total_return"] = 0
+                    portfolio_copy["total_return"] = 0
+            
+            # Add timestamp to portfolio data
+            portfolio_copy["last_updated"] = datetime.datetime.now().isoformat()
             
             # Save updated portfolio data
             with open(f"{self.dashboard_dir}/data/portfolio_data.json", "w") as f:
-                json.dump(portfolio, f, indent=2)
+                json.dump(portfolio_copy, f, indent=2, default=str)
+            
+            # Log the updated portfolio values for debugging
+            logger.info(f"Dashboard portfolio updated - BTC: {portfolio_copy['BTC']['amount']}, ETH: {portfolio_copy['ETH']['amount']}, USD: {portfolio_copy['USD']['amount']}, Total: ${portfolio_copy['portfolio_value_usd']}")
             
             # Append to historical portfolio value for time series
-            self._append_portfolio_history(portfolio)
+            self._append_portfolio_history(portfolio_copy)
             
         except Exception as e:
             logger.error(f"Error updating portfolio data: {e}")
@@ -237,19 +257,13 @@ class DashboardUpdater:
                 "portfolio_value_usd": 0,
                 "initial_value_usd": 0,
                 "total_return": 0,
+                "last_updated": datetime.datetime.now().isoformat(),
                 "BTC": {"amount": 0, "last_price_usd": 0, "value_usd": 0, "allocation": 0},
                 "ETH": {"amount": 0, "last_price_usd": 0, "value_usd": 0, "allocation": 0},
                 "USD": {"amount": 0, "value_usd": 0, "allocation": 0}
             }
             with open(f"{self.dashboard_dir}/data/portfolio_data.json", "w") as f:
-                json.dump(minimal_portfolio, f, indent=2)
-        
-        # Save updated portfolio data
-        with open(f"{self.dashboard_dir}/data/portfolio_data.json", "w") as f:
-            json.dump(portfolio, f, indent=2)
-        
-        # Append to historical portfolio value for time series
-        self._append_portfolio_history(portfolio)
+                json.dump(minimal_portfolio, f, indent=2, default=str)
     
     def _append_portfolio_history(self, portfolio: Dict[str, Any]) -> None:
         """Append current portfolio value to historical data"""
