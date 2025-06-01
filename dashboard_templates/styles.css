@@ -46,3 +46,28 @@ footer {
     border-top: 1px solid #e9ecef;
     color: #6c757d;
 }
+
+/* LLM Analysis styles */
+.mt-3 {
+    margin-top: 1rem;
+}
+
+.mt-3 h6 {
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.mt-3 ul {
+    padding-left: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.mt-3 li {
+    margin-bottom: 0.5rem;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.35em 0.65em;
+    border-radius: 0.25rem;
+}

@@ -444,8 +444,28 @@ class DashboardUpdater:
                     elif decision == "HOLD":
                         decision_class = "decision-hold"
                     
+                    # Get LLM analysis and reasoning
+                    analysis = result.get('analysis', {})
+                    reasoning = analysis.get('reasoning', [])
+                    risk_assessment = analysis.get('risk_assessment', 'medium')
+                    
+                    # Format reasoning as list items
+                    reasoning_html = ""
+                    if isinstance(reasoning, list):
+                        for reason in reasoning:
+                            reasoning_html += f"<li>{reason}</li>"
+                    else:
+                        reasoning_html += f"<li>{reasoning}</li>"
+                    
+                    # Determine risk color
+                    risk_color = "warning"  # Default is yellow for medium
+                    if risk_assessment == "low":
+                        risk_color = "success"  # Green
+                    elif risk_assessment == "high":
+                        risk_color = "danger"  # Red
+                    
                     trading_results_html += f"""
-                    <div class="col-md-6">
+                    <div class="col-md-6 mb-4">
                         <div class="card">
                             <div class="card-header">
                                 <h5>{pair}</h5>
@@ -455,6 +475,14 @@ class DashboardUpdater:
                                 <p><strong>Confidence:</strong> {confidence}%</p>
                                 <p><strong>Price:</strong> ${price}</p>
                                 <p><strong>Timestamp:</strong> {result.get('timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}</p>
+                                
+                                <div class="mt-3">
+                                    <h6>LLM Analysis:</h6>
+                                    <ul>
+                                        {reasoning_html}
+                                    </ul>
+                                    <p><strong>Risk Assessment:</strong> <span class="badge bg-{risk_color}">{risk_assessment.upper()}</span></p>
+                                </div>
                             </div>
                         </div>
                     </div>
