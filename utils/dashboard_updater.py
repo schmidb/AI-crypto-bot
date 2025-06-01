@@ -83,10 +83,14 @@ class DashboardUpdater:
             with open(dashboard_html_path, "w") as f:
                 f.write(html_content)
             
-            # Copy CSS file
+            # Update status.json file with next decision time and configuration
+            self.update_status_file(trading_results, bot_status)
+            
+            # Copy CSS file if template exists
             css_src = os.path.join(self.template_dir, "styles.css")
-            css_dest = os.path.join(self.dashboard_dir, "styles.css")
-            shutil.copyfile(css_src, css_dest)
+            if os.path.exists(css_src):
+                css_dest = os.path.join(self.dashboard_dir, "styles.css")
+                shutil.copyfile(css_src, css_dest)
             
             # Copy report files
             self._copy_reports_to_dashboard()
@@ -295,8 +299,181 @@ class DashboardUpdater:
         try:
             # Load HTML template
             template_path = os.path.join(self.template_dir, "dashboard.html")
-            with open(template_path, "r") as f:
-                html_content = f.read()
+            
+            # If template doesn't exist, create a basic one
+            if not os.path.exists(template_path):
+                from datetime import datetime, timedelta
+                from config import DECISION_INTERVAL_MINUTES, TRADING_PAIRS, RISK_LEVEL, MAX_INVESTMENT_PER_TRADE_USD, SIMULATION_MODE
+                
+                # Calculate next decision time
+                next_decision_time = datetime.now() + timedelta(minutes=DECISION_INTERVAL_MINUTES)
+                
+                # Create basic HTML content
+                html_content = f"""
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>AI Crypto Trading Bot Dashboard</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                    <meta http-equiv="refresh" content="60">
+                    <style>
+                        body {{ padding: 20px; }}
+                        .card {{ margin-bottom: 20px; }}
+                        .decision-buy {{ color: green; font-weight: bold; }}
+                        .decision-sell {{ color: red; font-weight: bold; }}
+                        .decision-hold {{ color: orange; font-weight: bold; }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1 class="mb-4">AI Crypto Trading Bot Dashboard</h1>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Status</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Status:</strong> {bot_status.upper()}</p>
+                                        <p><strong>Last Update:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                                        <p><strong>Next Decision:</strong> {next_decision_time.strftime('%Y-%m-%d %H:%M:%S')}</p>
+                                        <p><strong>Simulation Mode:</strong> {'Yes' if SIMULATION_MODE else 'No'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5>Configuration</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Trading Pairs:</strong> {', '.join(TRADING_PAIRS)}</p>
+                                        <p><strong>Decision Interval:</strong> {DECISION_INTERVAL_MINUTES} minutes</p>
+                                        <p><strong>Risk Level:</strong> {RISK_LEVEL.upper()}</p>
+                                        <p><strong>Max Investment Per Trade:</strong> ${MAX_INVESTMENT_PER_TRADE_USD}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h2 class="mt-4 mb-3">Latest Trading Decisions</h2>
+                        <div class="row">
+                """
+                
+                # Add trading decisions
+                for pair, result in trading_results.items():
+                    decision = result.get('decision', 'UNKNOWN')
+                    confidence = result.get('confidence', 0)
+                    price = result.get('price', 0)
+                    
+                    decision_class = ""
+                    if decision == "BUY":
+                        decision_class = "decision-buy"
+                    elif decision == "SELL":
+                        decision_class = "decision-sell"
+                    elif decision == "HOLD":
+                        decision_class = "decision-hold"
+                    
+                    html_content += f"""
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>{pair}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Decision:</strong> <span class="{decision_class}">{decision}</span></p>
+                                <p><strong>Confidence:</strong> {confidence}%</p>
+                                <p><strong>Price:</strong> ${price}</p>
+                                <p><strong>Timestamp:</strong> {result.get('timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}</p>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                
+                # Close HTML
+                html_content += """
+                        </div>
+                        
+                        <footer class="mt-5 text-center text-muted">
+                            <p>Last updated: """ + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</p>
+                        </footer>
+                    </div>
+                    
+                    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                </body>
+                </html>
+                """
+            else:
+                # Load the template
+                with open(template_path, "r") as f:
+                    html_content = f.read()
+                
+                # Replace placeholders with actual data
+                from datetime import datetime, timedelta
+                from config import DECISION_INTERVAL_MINUTES, TRADING_PAIRS, RISK_LEVEL, MAX_INVESTMENT_PER_TRADE_USD, SIMULATION_MODE
+                
+                # Calculate next decision time
+                next_decision_time = datetime.now() + timedelta(minutes=DECISION_INTERVAL_MINUTES)
+                
+                # Replace placeholders
+                html_content = html_content.replace("{{BOT_STATUS}}", bot_status.upper())
+                html_content = html_content.replace("{{LAST_UPDATE}}", datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                html_content = html_content.replace("{{NEXT_DECISION}}", next_decision_time.strftime('%Y-%m-%d %H:%M:%S'))
+                html_content = html_content.replace("{{SIMULATION_MODE}}", 'Yes' if SIMULATION_MODE else 'No')
+                html_content = html_content.replace("{{TRADING_PAIRS}}", ', '.join(TRADING_PAIRS))
+                html_content = html_content.replace("{{DECISION_INTERVAL}}", str(DECISION_INTERVAL_MINUTES))
+                html_content = html_content.replace("{{RISK_LEVEL}}", RISK_LEVEL.upper())
+                html_content = html_content.replace("{{MAX_INVESTMENT}}", f"${MAX_INVESTMENT_PER_TRADE_USD}")
+                
+                # Add trading results
+                trading_results_html = ""
+                for pair, result in trading_results.items():
+                    decision = result.get('decision', 'UNKNOWN')
+                    confidence = result.get('confidence', 0)
+                    price = result.get('price', 0)
+                    
+                    decision_class = ""
+                    if decision == "BUY":
+                        decision_class = "decision-buy"
+                    elif decision == "SELL":
+                        decision_class = "decision-sell"
+                    elif decision == "HOLD":
+                        decision_class = "decision-hold"
+                    
+                    trading_results_html += f"""
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>{pair}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Decision:</strong> <span class="{decision_class}">{decision}</span></p>
+                                <p><strong>Confidence:</strong> {confidence}%</p>
+                                <p><strong>Price:</strong> ${price}</p>
+                                <p><strong>Timestamp:</strong> {result.get('timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}</p>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                
+                html_content = html_content.replace("{{TRADING_RESULTS}}", trading_results_html)
+            
+            return html_content
+            
+        except Exception as e:
+            logger.error(f"Error generating HTML content: {e}")
+            return f"""
+            <html>
+            <body>
+                <h1>Error Generating Dashboard</h1>
+                <p>An error occurred while generating the dashboard: {str(e)}</p>
+            </body>
+            </html>
+            """
             
             # Replace placeholders with actual data
             update_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -494,3 +671,67 @@ class DashboardUpdater:
             logger.info(f"Copied {len(report_files)} report files to dashboard")
         except Exception as e:
             logger.error(f"Error copying reports to dashboard: {e}")
+    def _copy_reports_to_dashboard(self):
+        """Copy report files to the dashboard"""
+        try:
+            # Create reports directory in dashboard if it doesn't exist
+            dashboard_reports_dir = os.path.join(self.dashboard_dir, "reports")
+            os.makedirs(dashboard_reports_dir, exist_ok=True)
+            
+            # Copy report files
+            report_files = glob.glob(os.path.join(self.reports_dir, "*.xlsx"))
+            report_files.extend(glob.glob(os.path.join(self.reports_dir, "*.csv")))
+            report_files.extend(glob.glob(os.path.join(self.reports_dir, "*.pdf")))
+            
+            copied_files = 0
+            for file in report_files:
+                dest_file = os.path.join(dashboard_reports_dir, os.path.basename(file))
+                shutil.copy2(file, dest_file)
+                copied_files += 1
+            
+            logger.info(f"Copied {copied_files} report files to dashboard")
+            
+        except Exception as e:
+            logger.error(f"Error copying report files: {e}")
+            
+    def update_status_file(self, trading_results: Dict[str, Dict], bot_status: str = "running"):
+        """
+        Update the status.json file with the latest information
+        
+        Args:
+            trading_results: Dictionary mapping trading pairs to their results
+            bot_status: Current status of the bot (running, stopped, error)
+        """
+        try:
+            from datetime import datetime, timedelta
+            from config import DECISION_INTERVAL_MINUTES, TRADING_PAIRS, RISK_LEVEL, MAX_INVESTMENT_PER_TRADE_USD, SIMULATION_MODE
+            
+            # Calculate next decision time
+            next_decision_time = datetime.now() + timedelta(minutes=DECISION_INTERVAL_MINUTES)
+            
+            # Create status data
+            status_data = {
+                "status": bot_status,
+                "last_update": datetime.now().isoformat(),
+                "next_decision": next_decision_time.isoformat(),
+                "simulation_mode": SIMULATION_MODE,
+                "config": {
+                    "trading_pairs": TRADING_PAIRS,
+                    "decision_interval_minutes": DECISION_INTERVAL_MINUTES,
+                    "risk_level": RISK_LEVEL,
+                    "max_investment_per_trade": MAX_INVESTMENT_PER_TRADE_USD
+                },
+                "results": trading_results
+            }
+            
+            # Write status file
+            status_file = os.path.join(self.dashboard_dir, "status.json")
+            with open(status_file, "w") as f:
+                json.dump(status_data, f, indent=2, default=str)
+                
+            logger.info("Status file updated successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error updating status file: {e}")
+            return False

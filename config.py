@@ -26,6 +26,7 @@ TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")
 DECISION_INTERVAL_MINUTES = int(os.getenv("DECISION_INTERVAL_MINUTES", "60"))
 MAX_INVESTMENT_PER_TRADE_USD = float(os.getenv("MAX_INVESTMENT_PER_TRADE_USD", "100"))
 RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")  # low, medium, high
+SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
 
 # Logging settings
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
