@@ -120,45 +120,8 @@ class DashboardUpdater:
     
     def _sync_to_webserver(self):
         """Copy dashboard files to web server directory"""
-        try:
-            web_dashboard_dir = "/var/www/html/crypto-bot"
-            
-            # Check if web directory exists
-            if not os.path.exists(web_dashboard_dir):
-                logger.info(f"Web dashboard directory {web_dashboard_dir} not found, skipping sync")
-                return
-                
-            # Create target directories if they don't exist
-            try:
-                import subprocess
-                subprocess.run(["sudo", "mkdir", "-p", f"{web_dashboard_dir}/data"], check=True)
-                subprocess.run(["sudo", "mkdir", "-p", f"{web_dashboard_dir}/images"], check=True)
-                
-                # Copy data files
-                data_files = os.listdir(f"{self.dashboard_dir}/data")
-                for file in data_files:
-                    subprocess.run(["sudo", "cp", f"{self.dashboard_dir}/data/{file}", f"{web_dashboard_dir}/data/"], check=True)
-                
-                # Copy image files
-                if os.path.exists(f"{self.dashboard_dir}/images"):
-                    image_files = os.listdir(f"{self.dashboard_dir}/images")
-                    for file in image_files:
-                        subprocess.run(["sudo", "cp", f"{self.dashboard_dir}/images/{file}", f"{web_dashboard_dir}/images/"], check=True)
-                
-                # Copy HTML files if they exist in dashboard_templates
-                templates_dir = "dashboard_templates"
-                if os.path.exists(templates_dir):
-                    html_files = [f for f in os.listdir(templates_dir) if f.endswith(".html")]
-                    for file in html_files:
-                        subprocess.run(["sudo", "cp", f"{templates_dir}/{file}", web_dashboard_dir], check=True)
-                
-                logger.info(f"Dashboard files synced to web server directory: {web_dashboard_dir}")
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Error running subprocess during sync: {e}")
-            except PermissionError as e:
-                logger.error(f"Permission error during sync: {e}")
-        except Exception as e:
-            logger.error(f"Error syncing dashboard files to web server: {e}")
+        logger.info("Web server sync is disabled to avoid sudo password prompts")
+        return  # Skip the entire function
     
     def _update_trading_data(self, trading_data: Dict[str, Any]) -> None:
         """Update trading data JSON file"""
