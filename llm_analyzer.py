@@ -162,7 +162,7 @@ class LLMAnalyzer:
                     }],
                     "generationConfig": {
                         "temperature": 0.2,
-                        "maxOutputTokens": 1024,
+                        "maxOutputTokens": 4096,  # Increased from 1024 to 4096
                         "topP": 0.8,
                         "topK": 40
                     }
@@ -173,7 +173,7 @@ class LLMAnalyzer:
                     "instances": [{"prompt": enhanced_prompt}],
                     "parameters": {
                         "temperature": 0.2,
-                        "maxOutputTokens": 1024,
+                        "maxOutputTokens": 4096,  # Increased from 1024 to 4096
                         "topP": 0.8,
                         "topK": 40
                     }
@@ -306,7 +306,7 @@ class LLMAnalyzer:
             response = generation_model.predict(
                 prompt=prompt,
                 temperature=0.2,
-                max_output_tokens=1024,
+                max_output_tokens=4096,  # Increased from 1024 to 4096
                 top_k=40,
                 top_p=0.8,
             )
@@ -365,7 +365,7 @@ class LLMAnalyzer:
                     "temperature": 0.2,
                     "top_p": 0.8,
                     "top_k": 40,
-                    "max_output_tokens": 1024,
+                    "max_output_tokens": 4096,  # Increased from 1024 to 4096
                 }
             )
             
@@ -443,42 +443,36 @@ class LLMAnalyzer:
     
     def _create_analysis_prompt(self, market_summary: Dict, trading_pair: str, additional_context: Dict = None) -> str:
         """Create a prompt for the LLM to analyze market data"""
-        base_prompt = f"""
-Please analyze the following market data for {trading_pair} and provide a trading recommendation:
+        # Create a more concise prompt to reduce token usage
+        base_prompt = f"""Analyze {trading_pair} market data and provide a trading recommendation.
 
-Market Summary:
-- Current Price: ${market_summary['current_price']}
-- 24h Price Change: {market_summary['price_change_24h']:.2f}%
-- 7d Price Change: {market_summary['price_change_7d']:.2f}%
-- 50-period Moving Average: ${market_summary['moving_average_50'] if market_summary['moving_average_50'] else 'N/A'}
-- 200-period Moving Average: ${market_summary['moving_average_200'] if market_summary['moving_average_200'] else 'N/A'}
-- Volatility: {market_summary['volatility']:.2f}%
-- Recent High: ${market_summary['recent_high'] if market_summary['recent_high'] else 'N/A'}
-- Recent Low: ${market_summary['recent_low'] if market_summary['recent_low'] else 'N/A'}
-- Latest Volume: {market_summary['latest_volume']}
-- Average 7d Volume: {market_summary['average_volume_7d'] if market_summary['average_volume_7d'] else 'N/A'}
-"""
+Price: ${market_summary['current_price']}
+24h Change: {market_summary['price_change_24h']:.2f}%
+7d Change: {market_summary['price_change_7d']:.2f}%
+MA50: ${market_summary['moving_average_50']:.2f if market_summary['moving_average_50'] else 'N/A'}
+MA200: ${market_summary['moving_average_200']:.2f if market_summary['moving_average_200'] else 'N/A'}
+Volatility: {market_summary['volatility']:.2f}%"""
 
-        if additional_context:
-            base_prompt += "\nAdditional Context:\n"
-            for key, value in additional_context.items():
-                base_prompt += f"- {key}: {value}\n"
+        # Add technical indicators if available
+        if additional_context and "indicators" in additional_context:
+            indicators = additional_context["indicators"]
+            if indicators:
+                base_prompt += f"""
+RSI: {indicators.get('rsi', 'N/A'):.1f}
+MACD: {indicators.get('macd_line', 'N/A'):.2f}
+Signal: {indicators.get('macd_signal', 'N/A'):.2f}
+BB Width: {indicators.get('bollinger_width', 'N/A'):.2f}"""
         
+        # Add request for JSON response
         base_prompt += """
-Based on this information, provide a trading recommendation in the following JSON format:
-{
-  "decision": "BUY", "SELL", or "HOLD",
-  "confidence": [value between 0-100],
-  "reasoning": "detailed explanation of your analysis and recommendation",
-  "risk_assessment": "low", "medium", or "high",
-  "suggested_entry_price": [if BUY decision],
-  "suggested_exit_price": [if SELL decision],
-  "stop_loss": [suggested stop loss price],
-  "take_profit": [suggested take profit price]
-}
 
-Respond with ONLY the JSON object and no other text.
-"""
+Respond with ONLY a JSON object in this format:
+{
+  "decision": "BUY|SELL|HOLD",
+  "confidence": <0-100>,
+  "reasoning": ["reason1", "reason2"],
+  "risk_assessment": "low|medium|high"
+}"""
         return base_prompt
     def analyze_market(self, data: Dict) -> Dict:
         """
