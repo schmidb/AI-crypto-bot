@@ -494,8 +494,16 @@
                 refreshBtn.disabled = true;
                 refreshBtn.textContent = 'Refreshing...';
                 
-                const response = await fetch('api/refresh_portfolio', {
-                    method: 'POST'
+                // Get the current hostname and use it to construct the API URL
+                const hostname = window.location.hostname;
+                const apiUrl = `http://${hostname}:5000/api/refresh_portfolio`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
                 });
                 
                 const result = await response.json();

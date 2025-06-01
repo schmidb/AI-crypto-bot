@@ -175,17 +175,64 @@ class TradingBot:
             
     def _start_api_server(self):
         """Start a simple API server for dashboard interactions"""
-        from flask import Flask, jsonify, request
+        import http.server
+        import socketserver
+        import json
+        import urllib.parse
+
+        class APIHandler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                try:
+                    # Get the path
+                    parsed_path = urllib.parse.urlparse(self.path)
+                    
+                    # Handle refresh portfolio endpoint
+                    if parsed_path.path == '/api/refresh_portfolio':
+                        # Get request body length
+                        content_length = int(self.headers['Content-Length']) if 'Content-Length' in self.headers else 0
+                        
+                        # Call the refresh portfolio method
+                        result = self.server.trading_bot.refresh_portfolio()
+                        
+                        # Send response
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/json')
+                        self.send_header('Access-Control-Allow-Origin', '*')  # Allow CORS
+                        self.end_headers()
+                        self.wfile.write(json.dumps(result).encode())
+                    else:
+                        self.send_response(404)
+                        self.send_header('Content-Type', 'application/json')
+                        self.send_header('Access-Control-Allow-Origin', '*')  # Allow CORS
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"status": "error", "message": "Endpoint not found"}).encode())
+                except Exception as e:
+                    self.send_response(500)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Access-Control-Allow-Origin', '*')  # Allow CORS
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
+            
+            def do_OPTIONS(self):
+                # Handle CORS preflight requests
+                self.send_response(200)
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+                self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+                self.end_headers()
+            
+            def log_message(self, format, *args):
+                # Use our logger instead of printing to stderr
+                logger.info(f"API: {format % args}")
+
+        # Create server
+        port = 5000
+        handler = APIHandler
+        httpd = socketserver.TCPServer(("", port), handler)
+        httpd.trading_bot = self  # Pass reference to trading bot
         
-        app = Flask(__name__)
-        
-        @app.route('/api/refresh_portfolio', methods=['POST'])
-        def api_refresh_portfolio():
-            result = self.refresh_portfolio()
-            return jsonify(result)
-        
-        # Run the Flask app on port 5000
-        app.run(host='0.0.0.0', port=5000)
+        logger.info(f"API server started on port {port}")
+        httpd.serve_forever()
             
     def update_dashboard(self):
         """Update the dashboard with latest data"""
