@@ -21,6 +21,12 @@ from config import (
     LLM_LOCATION
 )
 
+# Define OAuth scopes needed for Vertex AI
+SCOPES = [
+    'https://www.googleapis.com/auth/cloud-platform',
+    'https://www.googleapis.com/auth/cloud-language'
+]
+
 logger = logging.getLogger(__name__)
 
 class LLMAnalyzer:
@@ -39,7 +45,8 @@ class LLMAnalyzer:
         if GOOGLE_APPLICATION_CREDENTIALS:
             try:
                 self.credentials = service_account.Credentials.from_service_account_file(
-                    GOOGLE_APPLICATION_CREDENTIALS
+                    GOOGLE_APPLICATION_CREDENTIALS,
+                    scopes=SCOPES  # Add the scopes here
                 )
                 aiplatform.init(
                     project=GOOGLE_CLOUD_PROJECT,
@@ -51,9 +58,14 @@ class LLMAnalyzer:
                 logger.error(f"Error initializing Google Cloud credentials: {e}")
                 raise
         else:
-            # Use default credentials
+            # Use default credentials with scopes
             try:
-                aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=self.location)
+                credentials, _ = google.auth.default(scopes=SCOPES)  # Add scopes here too
+                aiplatform.init(
+                    project=GOOGLE_CLOUD_PROJECT, 
+                    location=self.location,
+                    credentials=credentials
+                )
                 logger.info(f"Initialized Google Cloud with default credentials")
             except Exception as e:
                 logger.error(f"Error initializing Google Cloud with default credentials: {e}")
@@ -125,8 +137,12 @@ class LLMAnalyzer:
                 }
             }
             
-            # Get the access token
-            credentials, project = google.auth.default()
+            # Get the access token with the proper scopes
+            if hasattr(self, 'credentials'):
+                credentials = self.credentials
+            else:
+                credentials, _ = google.auth.default(scopes=SCOPES)
+                
             auth_req = google.auth.transport.requests.Request()
             credentials.refresh(auth_req)
             
