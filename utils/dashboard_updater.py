@@ -120,8 +120,45 @@ class DashboardUpdater:
     
     def _sync_to_webserver(self):
         """Copy dashboard files to web server directory"""
-        logger.info("Web server sync is disabled to avoid sudo password prompts")
-        return  # Skip the entire function
+        try:
+            web_dashboard_dir = "/var/www/html/crypto-bot"
+            
+            # Check if web directory exists
+            if not os.path.exists(web_dashboard_dir):
+                logger.info(f"Web dashboard directory {web_dashboard_dir} not found, skipping sync")
+                return
+                
+            # Create target directories if they don't exist
+            try:
+                import shutil
+                os.makedirs(f"{web_dashboard_dir}/data", exist_ok=True)
+                os.makedirs(f"{web_dashboard_dir}/images", exist_ok=True)
+                
+                # Copy data files
+                data_files = os.listdir(f"{self.dashboard_dir}/data")
+                for file in data_files:
+                    shutil.copy2(f"{self.dashboard_dir}/data/{file}", f"{web_dashboard_dir}/data/")
+                
+                # Copy image files
+                if os.path.exists(f"{self.dashboard_dir}/images"):
+                    image_files = os.listdir(f"{self.dashboard_dir}/images")
+                    for file in image_files:
+                        shutil.copy2(f"{self.dashboard_dir}/images/{file}", f"{web_dashboard_dir}/images/")
+                
+                # Copy HTML files if they exist in dashboard_templates
+                templates_dir = "dashboard_templates"
+                if os.path.exists(templates_dir):
+                    html_files = [f for f in os.listdir(templates_dir) if f.endswith(".html")]
+                    for file in html_files:
+                        shutil.copy2(f"{templates_dir}/{file}", web_dashboard_dir)
+                
+                logger.info(f"Dashboard files synced to web server directory: {web_dashboard_dir}")
+            except PermissionError as e:
+                logger.error(f"Permission error during sync: {e}. Make sure your user has write permissions to {web_dashboard_dir}")
+            except Exception as e:
+                logger.error(f"Error during sync: {e}")
+        except Exception as e:
+            logger.error(f"Error syncing dashboard files to web server: {e}")
     
     def _update_trading_data(self, trading_data: Dict[str, Any]) -> None:
         """Update trading data JSON file"""
