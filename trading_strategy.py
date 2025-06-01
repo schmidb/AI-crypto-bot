@@ -94,8 +94,12 @@ class TradingStrategy:
         """Update portfolio with current market prices"""
         try:
             # Get current prices
-            btc_price = self.client.get_product_price("BTC-USD")
-            eth_price = self.client.get_product_price("ETH-USD")
+            btc_price_data = self.client.get_product_price("BTC-USD")
+            eth_price_data = self.client.get_product_price("ETH-USD")
+            
+            # Extract price values as floats
+            btc_price = float(btc_price_data.get("price", 0))
+            eth_price = float(eth_price_data.get("price", 0))
             
             # Update portfolio
             self.portfolio["BTC"]["last_price_usd"] = btc_price
