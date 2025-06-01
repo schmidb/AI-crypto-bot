@@ -131,7 +131,7 @@ class LLMAnalyzer:
             url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{self.model}:{endpoint_suffix}"
             
             # Log the URL being called
-            logger.info(f"Calling Vertex AI endpoint: {url}")
+            logger.debug(f"Calling Vertex AI endpoint: {url}")
             
             # Enhance prompt to explicitly request JSON
             enhanced_prompt = f"""
@@ -195,17 +195,17 @@ class LLMAnalyzer:
             }
             
             # Log the payload (excluding sensitive data)
-            logger.info(f"Sending request to Vertex AI with payload structure: {list(payload.keys())}")
+            logger.debug(f"Sending request to Vertex AI with payload structure: {list(payload.keys())}")
             
             response = requests.post(url, headers=headers, json=payload)
             response.raise_for_status()
             
             # Log the raw response for debugging
-            logger.info(f"Raw response from Vertex AI: {response.text}")
+            logger.debug(f"Raw response from Vertex AI: {response.text}")
             
             # Extract the prediction text based on model type
             response_json = response.json()
-            logger.info(f"Response JSON structure: {list(response_json.keys()) if isinstance(response_json, dict) else 'Not a dictionary'}")
+            logger.debug(f"Response JSON structure: {list(response_json.keys()) if isinstance(response_json, dict) else 'Not a dictionary'}")
             
             if use_streaming:
                 # Handle Gemini response
@@ -250,7 +250,7 @@ class LLMAnalyzer:
                     prediction_text = str(response_json)
             
             # Log the extracted prediction text
-            logger.info(f"Extracted prediction text: {prediction_text[:100]}...")
+            logger.debug(f"Extracted prediction text: {prediction_text[:100]}...")
             
             # Parse the response to extract trading decision
             return self._parse_llm_response(prediction_text)
