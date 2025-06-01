@@ -36,12 +36,7 @@ class TradingStrategy:
         self.strategy_evaluator = StrategyEvaluator()
         
         # Initialize portfolio
-        self.portfolio_manager = Portfolio(
-            portfolio_file="data/portfolio.json",
-            initial_btc=INITIAL_BTC_AMOUNT,
-            initial_eth=INITIAL_ETH_AMOUNT,
-            initial_usd=0.0
-        )
+        self.portfolio_manager = Portfolio(portfolio_file="data/portfolio.json")
         
         # For backward compatibility, expose portfolio data as property
         self._portfolio = self.portfolio_manager.to_dict()

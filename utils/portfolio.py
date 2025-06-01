@@ -4,6 +4,7 @@ import logging
 import datetime
 import copy
 from typing import Dict, Any, Optional, List, Union
+from coinbase_client import CoinbaseClient
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,9 @@ class Portfolio:
         
         Args:
             portfolio_file: Path to the portfolio JSON file
-            initial_btc: Initial BTC amount if no portfolio exists
-            initial_eth: Initial ETH amount if no portfolio exists
-            initial_usd: Initial USD amount if no portfolio exists
+            initial_btc: Initial BTC amount if no portfolio exists and API fetch fails
+            initial_eth: Initial ETH amount if no portfolio exists and API fetch fails
+            initial_usd: Initial USD amount if no portfolio exists and API fetch fails
         """
         self.portfolio_file = portfolio_file
         self.initial_btc = initial_btc
@@ -32,11 +33,13 @@ class Portfolio:
         
     def _load_portfolio(self) -> Dict[str, Any]:
         """
-        Load portfolio from file or initialize with default values.
+        Load portfolio from file or initialize with data from Coinbase.
+        If Coinbase data fetch fails, use default values.
         
         Returns:
             Dictionary containing portfolio data
         """
+        # First try to load from file
         if os.path.exists(self.portfolio_file):
             try:
                 with open(self.portfolio_file, 'r') as f:
@@ -49,7 +52,23 @@ class Portfolio:
             except Exception as e:
                 logger.error(f"Error loading portfolio from {self.portfolio_file}: {e}")
         
-        # Create a new portfolio with default values
+        # If file doesn't exist or loading failed, try to fetch from Coinbase
+        try:
+            logger.info("Attempting to fetch portfolio data from Coinbase")
+            client = CoinbaseClient()
+            coinbase_portfolio = client.get_portfolio()
+            
+            if coinbase_portfolio and isinstance(coinbase_portfolio, dict):
+                # Validate and enhance the portfolio data
+                portfolio_data = self._validate_portfolio_structure(coinbase_portfolio)
+                logger.info("Portfolio initialized with data from Coinbase")
+                self.data = portfolio_data
+                self.save()
+                return portfolio_data
+        except Exception as e:
+            logger.error(f"Error fetching portfolio from Coinbase: {e}")
+        
+        # If both file loading and Coinbase fetch failed, create a new portfolio
         logger.info("Creating new portfolio with default values")
         return self._create_default_portfolio()
     

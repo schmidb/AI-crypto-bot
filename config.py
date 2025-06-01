@@ -28,8 +28,6 @@ RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")  # low, medium, high
 SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
 
 # Portfolio settings
-INITIAL_BTC_AMOUNT = float(os.getenv("INITIAL_BTC_AMOUNT", "0.01"))  # Initial BTC allocation
-INITIAL_ETH_AMOUNT = float(os.getenv("INITIAL_ETH_AMOUNT", "0.15"))  # Initial ETH allocation
 PORTFOLIO_REBALANCE = os.getenv("PORTFOLIO_REBALANCE", "true").lower() == "true"  # Whether to rebalance portfolio
 MAX_TRADE_PERCENTAGE = float(os.getenv("MAX_TRADE_PERCENTAGE", "25"))  # Max percentage of holdings to trade at once
 
