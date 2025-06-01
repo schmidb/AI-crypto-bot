@@ -98,7 +98,31 @@ class TradingBot:
         
         # Update the dashboard with the results
         try:
-            self.dashboard_updater.update_dashboard(results, "running")
+            # Convert results to a proper format for the dashboard
+            dashboard_data = {
+                "trading_results": results,
+                "status": "running",
+                "timestamp": datetime.now().isoformat()
+            }
+            
+            # Get current portfolio data
+            portfolio = self.trading_strategy.portfolio
+            
+            # Ensure portfolio is a dictionary
+            if isinstance(portfolio, str):
+                try:
+                    portfolio = json.loads(portfolio)
+                except json.JSONDecodeError:
+                    portfolio = {
+                        "portfolio_value_usd": 0,
+                        "initial_value_usd": 0,
+                        "BTC": {"amount": 0, "last_price_usd": 0},
+                        "ETH": {"amount": 0, "last_price_usd": 0},
+                        "USD": {"amount": 0},
+                        "trades_executed": 0
+                    }
+            
+            self.dashboard_updater.update_dashboard(dashboard_data, portfolio)
             logger.info("Dashboard updated successfully")
         except Exception as e:
             logger.error(f"Error updating dashboard: {e}")
@@ -155,8 +179,50 @@ class TradingBot:
                 }
             }
             
-            # Get portfolio data
+            # Get portfolio data - ensure it's a dictionary
             portfolio = self.trading_strategy.portfolio
+            
+            # Check if portfolio is a string and try to convert it to a dictionary
+            if isinstance(portfolio, str):
+                logger.warning(f"Portfolio is a string, attempting to convert to dictionary: {portfolio[:50]}...")
+                try:
+                    # Try to parse as JSON
+                    portfolio = json.loads(portfolio)
+                except json.JSONDecodeError:
+                    logger.error("Failed to convert portfolio string to dictionary")
+                    # Create a minimal valid portfolio
+                    portfolio = {
+                        "portfolio_value_usd": 0,
+                        "initial_value_usd": 0,
+                        "BTC": {"amount": 0, "last_price_usd": 0},
+                        "ETH": {"amount": 0, "last_price_usd": 0},
+                        "USD": {"amount": 0},
+                        "trades_executed": 0
+                    }
+            
+            # Validate portfolio is a dictionary
+            if not isinstance(portfolio, dict):
+                logger.error(f"Portfolio is not a dictionary: {type(portfolio)}")
+                # Create a minimal valid portfolio
+                portfolio = {
+                    "portfolio_value_usd": 0,
+                    "initial_value_usd": 0,
+                    "BTC": {"amount": 0, "last_price_usd": 0},
+                    "ETH": {"amount": 0, "last_price_usd": 0},
+                    "USD": {"amount": 0},
+                    "trades_executed": 0
+                }
+            
+            # Ensure required keys exist
+            required_keys = ["portfolio_value_usd", "initial_value_usd", "BTC", "ETH", "USD"]
+            for key in required_keys:
+                if key not in portfolio:
+                    if key.endswith("_usd"):
+                        portfolio[key] = 0
+                    else:
+                        portfolio[key] = {"amount": 0}
+                        if key != "USD":
+                            portfolio[key]["last_price_usd"] = 0
             
             # Update dashboard
             self.dashboard_updater.update_dashboard(trading_data, portfolio)
