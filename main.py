@@ -81,7 +81,7 @@ class TradingBot:
                 self._save_result(product_id, result)
                 
                 # Log decision
-                decision = result.get('decision', 'UNKNOWN')
+                decision = result.get('action', result.get('decision', 'UNKNOWN'))
                 confidence = result.get('confidence', 0)
                 logger.info(f"Decision for {product_id}: {decision} (confidence: {confidence}%)")
                 
