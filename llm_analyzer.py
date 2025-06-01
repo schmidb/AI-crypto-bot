@@ -695,25 +695,7 @@ Respond with ONLY a JSON object in this format:
             model_id = None
 
             # Normalize model name for comparison
-            model_lower = self.model.lower()
-
-            model_id = model_lower
-
-            # Map to correct API model names
-        #    if "gemini-1.5-flash" in model_lower:
-        #        model_id = "gemini-1.5-flash"
-        #    elif "gemini-1.5-pro" in model_lower:
-    #            model_id = "gemini-1.5-pro"
-    #        elif "gemini-1.5" in model_lower:
-    #            model_id = "gemini-1.5-flash"  # Default 1.5 to flash
-    #        elif "gemini-pro" in model_lower:
-    #            model_id = "gemini-pro"
-    #        elif "gemini" in model_lower:
-    #            model_id = "gemini-pro"  # Default to pro
-    #        else:
-                # If we can't determine the model, default to gemini-pro
-            #    logger.warning(f"Could not determine Gemini model from '{self.model}', defaulting to gemini-pro")
-        #        model_id = "gemini-pro"
+            model_id = self.model.lower()
 
             logger.info(f"Mapped model name '{self.model}' to API model ID: {model_id}")
 
