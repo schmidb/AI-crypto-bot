@@ -12,8 +12,6 @@ from utils.strategy_evaluator import StrategyEvaluator
 from utils.portfolio import Portfolio
 from config import (
     RISK_LEVEL, 
-    INITIAL_BTC_AMOUNT, 
-    INITIAL_ETH_AMOUNT, 
     PORTFOLIO_REBALANCE,
     MAX_TRADE_PERCENTAGE
 )
