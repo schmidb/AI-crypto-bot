@@ -675,3 +675,53 @@ Respond with ONLY a JSON object in this format:
         except Exception as e:
             logger.error(f"Error getting LLM response: {e}")
             return f"ERROR: {str(e)}"
+    def _call_gemini(self, prompt: str) -> str:
+        """Call Gemini API for text generation using standard Vertex AI API"""
+        try:
+            # Use the standard Vertex AI API approach instead of vertexai.generative_models
+            aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=self.location)
+            
+            # Set up the parameters for the API call
+            parameters = {
+                "temperature": 0.2,
+                "max_output_tokens": 1024,
+                "top_p": 0.8,
+                "top_k": 40
+            }
+            
+            # Create the instance
+            instance = {
+                "prompt": prompt
+            }
+            
+            # Get the endpoint ID based on the model name
+            if "1.5" in self.model:
+                # For Gemini 1.5 models
+                if "pro" in self.model:
+                    endpoint_id = "gemini-1.5-pro"
+                elif "flash" in self.model:
+                    endpoint_id = "gemini-1.5-flash"
+                else:
+                    endpoint_id = "gemini-1.5-flash"  # Default to flash
+            else:
+                # For Gemini 1.0 models
+                if "pro" in self.model:
+                    endpoint_id = "gemini-pro"
+                else:
+                    endpoint_id = "gemini-pro"  # Default to pro
+            
+            # Make the prediction
+            endpoint = aiplatform.Endpoint(f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{endpoint_id}")
+            response = endpoint.predict(instances=[instance], parameters=parameters)
+            
+            # Extract the prediction text
+            prediction_text = response.predictions[0]
+            if isinstance(prediction_text, dict) and "content" in prediction_text:
+                prediction_text = prediction_text["content"]
+            
+            return str(prediction_text)
+            
+        except Exception as e:
+            logger.error(f"Error calling Gemini API: {e}")
+            # Fallback to a simpler approach or return an error message
+            return f"ERROR: Could not generate response from Gemini: {str(e)}"
