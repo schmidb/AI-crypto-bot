@@ -109,6 +109,18 @@ class DashboardUpdater:
                         }
                         latest_decisions.append(decision)
             
+            # Add market data to decisions if available
+            if "market_data" in trading_data:
+                for decision in latest_decisions:
+                    product_id = decision.get("product_id")
+                    if product_id in trading_data["market_data"]:
+                        market_data = trading_data["market_data"][product_id]
+                        decision["current_price"] = market_data.get("price")
+                        
+                        # Add price changes if available
+                        if "price_changes" in market_data:
+                            decision["price_changes"] = market_data["price_changes"]
+            
             # Save to file
             with open(f"{self.dashboard_dir}/data/latest_decisions.json", "w") as f:
                 json.dump(latest_decisions, f, indent=2, default=str)

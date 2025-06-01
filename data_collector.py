@@ -232,6 +232,37 @@ class DataCollector:
             except (ValueError, TypeError):
                 price = 0.0
             
+            # Get historical data for price changes
+            historical_data = self.get_historical_data(
+                product_id=product_id,
+                granularity="ONE_HOUR",
+                days_back=7
+            )
+            
+            # Calculate price changes for different time periods
+            price_changes = {}
+            
+            if not historical_data.empty:
+                # 1 hour change
+                if len(historical_data) >= 1:
+                    price_1h_ago = historical_data['close'].iloc[-1]
+                    price_changes["1h"] = ((price - price_1h_ago) / price_1h_ago) * 100
+                
+                # 4 hour change
+                if len(historical_data) >= 4:
+                    price_4h_ago = historical_data['close'].iloc[-4]
+                    price_changes["4h"] = ((price - price_4h_ago) / price_4h_ago) * 100
+                
+                # 1 day change (24 hours)
+                if len(historical_data) >= 24:
+                    price_1d_ago = historical_data['close'].iloc[-24]
+                    price_changes["1d"] = ((price - price_1d_ago) / price_1d_ago) * 100
+                
+                # 5 day change (120 hours)
+                if len(historical_data) >= 120:
+                    price_5d_ago = historical_data['close'].iloc[-120]
+                    price_changes["5d"] = ((price - price_5d_ago) / price_5d_ago) * 100
+            
             # Create market data with available information - ensure all values are float
             market_data = {
                 "product_id": product_id,
@@ -242,6 +273,7 @@ class DataCollector:
                 "volume_30d": 0.0,  # We don't have this data
                 "high_24h": 0.0,  # We don't have this data
                 "low_24h": 0.0,  # We don't have this data
+                "price_changes": price_changes,  # Add price changes
                 "timestamp": datetime.now().isoformat()
             }
             

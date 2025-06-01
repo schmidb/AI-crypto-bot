@@ -68,6 +68,10 @@
             color: #fff;
             background-color: #6c757d;
         }
+        .price-change-badge {
+            font-size: 85%;
+            padding: 0.3em 0.6em;
+        }
     </style>
 </head>
 <body>
@@ -127,14 +131,6 @@
                                         <tr>
                                             <th>Max Trade Percentage</th>
                                             <td id="configMaxTrade">Loading...</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Initial BTC</th>
-                                            <td id="configInitialBTC">Loading...</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Initial ETH</th>
-                                            <td id="configInitialETH">Loading...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -290,8 +286,6 @@
             document.getElementById('configLLMModel').textContent = config.llm_model || 'N/A';
             document.getElementById('configRebalance').textContent = config.portfolio_rebalance ? 'Enabled' : 'Disabled';
             document.getElementById('configMaxTrade').textContent = `${config.max_trade_percentage || 'N/A'}%`;
-            document.getElementById('configInitialBTC').textContent = config.initial_btc_amount || 'N/A';
-            document.getElementById('configInitialETH').textContent = config.initial_eth_amount || 'N/A';
             
             // Update next decision time
             const nextDecisionElement = document.getElementById('nextDecision');
@@ -332,12 +326,31 @@
                 const confidence = decision.confidence || 0;
                 const reason = decision.reason || 'No reason provided';
                 
+                // Price and price change information
+                const currentPrice = decision.current_price ? parseFloat(decision.current_price).toFixed(2) : 'N/A';
+                
+                // Create price changes HTML if available
+                let priceChangesHtml = '';
+                if (decision.price_changes) {
+                    const changes = decision.price_changes;
+                    priceChangesHtml = `
+                        <div class="mt-2 mb-2">
+                            <span class="badge ${changes['1h'] >= 0 ? 'bg-success' : 'bg-danger'} me-2">1h: ${changes['1h']?.toFixed(2) || 'N/A'}%</span>
+                            <span class="badge ${changes['4h'] >= 0 ? 'bg-success' : 'bg-danger'} me-2">4h: ${changes['4h']?.toFixed(2) || 'N/A'}%</span>
+                            <span class="badge ${changes['1d'] >= 0 ? 'bg-success' : 'bg-danger'} me-2">1d: ${changes['1d']?.toFixed(2) || 'N/A'}%</span>
+                            <span class="badge ${changes['5d'] >= 0 ? 'bg-success' : 'bg-danger'}">5d: ${changes['5d']?.toFixed(2) || 'N/A'}%</span>
+                        </div>
+                    `;
+                }
+                
                 decisionBox.innerHTML = `
                     <h5>
                         ${product}: ${action} (${confidence}% confidence)
                         <a href="https://www.coinbase.com/advanced-trade/spot/${product}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">View on Coinbase</a>
                     </h5>
                     <p class="text-muted mb-1">${timestamp}</p>
+                    <p class="mb-1"><strong>Current Price:</strong> $${currentPrice}</p>
+                    ${priceChangesHtml}
                     <p class="mb-0"><strong>Reason:</strong> ${reason}</p>
                 `;
                 
