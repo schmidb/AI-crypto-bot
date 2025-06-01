@@ -183,20 +183,30 @@ class LLMAnalyzer:
             if use_streaming:
                 # Handle streaming response
                 response_json = response.json()
-                # Extract text from streaming response
-                candidates = response_json.get("candidates", [])
-                if candidates:
-                    content = candidates[0].get("content", {})
-                    parts = content.get("parts", [])
-                    if parts:
-                        prediction_text = parts[0].get("text", "")
+                # Extract text from streaming response - handle both list and dict formats
+                candidates = response_json.get("candidates", []) if isinstance(response_json, dict) else response_json
+                
+                prediction_text = ""
+                if candidates and isinstance(candidates, list) and len(candidates) > 0:
+                    content = candidates[0].get("content", {}) if isinstance(candidates[0], dict) else candidates[0]
+                    if isinstance(content, dict):
+                        parts = content.get("parts", [])
+                        if parts and isinstance(parts, list) and len(parts) > 0:
+                            if isinstance(parts[0], dict):
+                                prediction_text = parts[0].get("text", "")
+                            else:
+                                prediction_text = str(parts[0])
                     else:
-                        prediction_text = ""
+                        prediction_text = str(content)
                 else:
-                    prediction_text = ""
+                    prediction_text = str(response_json)
             else:
                 # Handle standard response
-                prediction_text = response.json().get("predictions", [""])[0]
+                response_json = response.json()
+                if isinstance(response_json, dict):
+                    prediction_text = response_json.get("predictions", [""])[0]
+                else:
+                    prediction_text = str(response_json)
             
             # Parse the response to extract trading decision
             return self._parse_llm_response(prediction_text)
