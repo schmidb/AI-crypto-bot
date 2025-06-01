@@ -15,6 +15,8 @@ This guide provides step-by-step instructions for deploying the AI Crypto Tradin
    - Choose machine type (e2-medium recommended)
    - Select Debian or Ubuntu as the boot disk
    - Allow HTTP/HTTPS traffic if you plan to use the dashboard
+   - Add a firewall rule to allow TCP port 5000 for API access
+   - This is required for the "Refresh Portfolio from Coinbase" functionality
    - Click "Create"
 
 ### 2. Connect to Your VM Instance
@@ -98,3 +100,24 @@ Make sure your firewall rules allow HTTP traffic (port 80).
    - Adjust the trading interval in the .env file
 
 For additional help, please open an issue on the GitHub repository.
+
+### 5. Configure Firewall Rules for API Access
+
+To enable the "Refresh Portfolio from Coinbase" functionality, you need to open port 5000 in the Google Cloud firewall:
+
+1. **Navigate to VPC Network > Firewall in Google Cloud Console**
+2. **Click "Create Firewall Rule"**
+3. **Configure the rule:**
+   - Name: allow-api-port-5000
+   - Description: Allow access to API server on port 5000
+   - Network: (select your VPC network)
+   - Priority: 1000
+   - Direction of traffic: Ingress
+   - Action on match: Allow
+   - Targets: All instances in the network (or specify your instance)
+   - Source filter: IP ranges
+   - Source IP ranges: 0.0.0.0/0 (to allow from anywhere, or restrict as needed)
+   - Protocols and ports: Specified protocols and ports > tcp:5000
+4. **Click "Create"**
+
+This allows the dashboard to communicate with the API server running on port 5000, enabling portfolio refresh functionality.

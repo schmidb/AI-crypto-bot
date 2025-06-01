@@ -11,7 +11,9 @@ This guide provides step-by-step instructions for deploying the AI Crypto Tradin
 3. **Configure your instance:**
    - Choose Amazon Linux 2023 AMI
    - Select an instance type (t2.medium or better recommended for production)
-   - Configure security groups to allow SSH access (port 22)
+   - Configure security groups to allow SSH access (port 22) and API access (port 5000)
+   - Add an inbound rule for TCP port 5000 to allow dashboard-to-API communication
+   - This is required for the "Refresh Portfolio from Coinbase" functionality
    - Launch the instance and download your key pair (.pem file)
 
 ### 2. Connect to Your EC2 Instance
@@ -90,3 +92,18 @@ sudo systemctl stop crypto-bot
    - Verify that your instance has internet access
 
 For additional help, please open an issue on the GitHub repository.
+### 5. Configure Security Group for API Access
+
+To ensure the "Refresh Portfolio from Coinbase" functionality works correctly, you need to configure your EC2 security group to allow traffic on port 5000:
+
+1. **Navigate to EC2 > Security Groups in AWS Console**
+2. **Select the security group associated with your instance**
+3. **Click "Edit inbound rules"**
+4. **Add a new rule:**
+   - Type: Custom TCP
+   - Port range: 5000
+   - Source: 0.0.0.0/0 (to allow from anywhere, or restrict as needed)
+   - Description: API server for dashboard
+5. **Click "Save rules"**
+
+This allows the dashboard to communicate with the API server running on port 5000, enabling portfolio refresh functionality.

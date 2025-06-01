@@ -180,6 +180,9 @@ class TradingBot:
         import json
         import urllib.parse
 
+        # Store a reference to the trading bot instance for the handler to use
+        trading_bot_instance = self
+
         class APIHandler(http.server.BaseHTTPRequestHandler):
             def do_POST(self):
                 try:
@@ -191,8 +194,8 @@ class TradingBot:
                         # Get request body length
                         content_length = int(self.headers['Content-Length']) if 'Content-Length' in self.headers else 0
                         
-                        # Call the refresh portfolio method
-                        result = self.server.trading_bot.refresh_portfolio()
+                        # Call the refresh portfolio method on the trading bot instance
+                        result = trading_bot_instance.refresh_portfolio()
                         
                         # Send response
                         self.send_response(200)
@@ -229,7 +232,7 @@ class TradingBot:
         port = 5000
         handler = APIHandler
         httpd = socketserver.TCPServer(("", port), handler)
-        httpd.trading_bot = self  # Pass reference to trading bot
+        # No need to set trading_bot attribute on server since we're using closure
         
         logger.info(f"API server started on port {port}")
         httpd.serve_forever()
