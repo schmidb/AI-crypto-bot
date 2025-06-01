@@ -443,30 +443,37 @@ class LLMAnalyzer:
     
     def _create_analysis_prompt(self, market_summary: Dict, trading_pair: str, additional_context: Dict = None) -> str:
         """Create a prompt for the LLM to analyze market data"""
+        # Format values safely
+        price_24h = f"{market_summary['price_change_24h']:.2f}%" if market_summary['price_change_24h'] is not None else "N/A"
+        price_7d = f"{market_summary['price_change_7d']:.2f}%" if market_summary['price_change_7d'] is not None else "N/A"
+        ma50 = f"${market_summary['moving_average_50']:.2f}" if market_summary['moving_average_50'] is not None else "N/A"
+        ma200 = f"${market_summary['moving_average_200']:.2f}" if market_summary['moving_average_200'] is not None else "N/A"
+        volatility = f"{market_summary['volatility']:.2f}%" if market_summary['volatility'] is not None else "N/A"
+        
         # Create a more concise prompt to reduce token usage
         base_prompt = f"""Analyze {trading_pair} market data and provide a trading recommendation.
 
 Price: ${market_summary['current_price']}
-24h Change: {market_summary['price_change_24h']:.2f if market_summary['price_change_24h'] is not None else 'N/A'}%
-7d Change: {market_summary['price_change_7d']:.2f if market_summary['price_change_7d'] is not None else 'N/A'}%
-MA50: {f"${market_summary['moving_average_50']:.2f}" if market_summary['moving_average_50'] is not None else 'N/A'}
-MA200: {f"${market_summary['moving_average_200']:.2f}" if market_summary['moving_average_200'] is not None else 'N/A'}
-Volatility: {market_summary['volatility']:.2f if market_summary['volatility'] is not None else 'N/A'}%"""
+24h Change: {price_24h}
+7d Change: {price_7d}
+MA50: {ma50}
+MA200: {ma200}
+Volatility: {volatility}"""
 
         # Add technical indicators if available
         if additional_context and "indicators" in additional_context:
             indicators = additional_context["indicators"]
             if indicators:
-                rsi = indicators.get('rsi')
-                macd = indicators.get('macd_line')
-                signal = indicators.get('macd_signal')
-                bb_width = indicators.get('bollinger_width')
+                rsi = f"{indicators.get('rsi'):.1f}" if indicators.get('rsi') is not None else "N/A"
+                macd = f"{indicators.get('macd_line'):.2f}" if indicators.get('macd_line') is not None else "N/A"
+                signal = f"{indicators.get('macd_signal'):.2f}" if indicators.get('macd_signal') is not None else "N/A"
+                bb_width = f"{indicators.get('bollinger_width'):.2f}" if indicators.get('bollinger_width') is not None else "N/A"
                 
                 base_prompt += f"""
-RSI: {f"{rsi:.1f}" if rsi is not None else 'N/A'}
-MACD: {f"{macd:.2f}" if macd is not None else 'N/A'}
-Signal: {f"{signal:.2f}" if signal is not None else 'N/A'}
-BB Width: {f"{bb_width:.2f}" if bb_width is not None else 'N/A'}"""
+RSI: {rsi}
+MACD: {macd}
+Signal: {signal}
+BB Width: {bb_width}"""
         
         # Add request for JSON response
         base_prompt += """
