@@ -163,7 +163,7 @@ class LLMAnalyzer:
                     }],
                     "generationConfig": {
                         "temperature": 0.2,
-                        "maxOutputTokens": 4096,  # Increased from 1024 to 4096
+                        "maxOutputTokens": 10000,  # Increased from 1024 to 4096
                         "topP": 0.8,
                         "topK": 40
                     }
@@ -174,7 +174,7 @@ class LLMAnalyzer:
                     "instances": [{"prompt": enhanced_prompt}],
                     "parameters": {
                         "temperature": 0.2,
-                        "maxOutputTokens": 4096,  # Increased from 1024 to 4096
+                        "maxOutputTokens": 10000,  # Increased from 1024 to 4096
                         "topP": 0.8,
                         "topK": 40
                     }
@@ -307,7 +307,7 @@ class LLMAnalyzer:
             response = generation_model.predict(
                 prompt=prompt,
                 temperature=0.2,
-                max_output_tokens=4096,  # Increased from 1024 to 4096
+                max_output_tokens=10000,  # Increased from 1024 to 4096
                 top_k=40,
                 top_p=0.8,
             )
@@ -366,7 +366,7 @@ class LLMAnalyzer:
                     "temperature": 0.2,
                     "top_p": 0.8,
                     "top_k": 40,
-                    "max_output_tokens": 4096,  # Increased from 1024 to 4096
+                    "max_output_tokens": 10000,  # Increased from 1024 to 4096
                 }
             )
 
@@ -722,7 +722,7 @@ Respond with ONLY a JSON object in this format:
                 ],
                 "generationConfig": {
                     "temperature": 0.2,
-                    "maxOutputTokens": 1024,
+                    "maxOutputTokens": 10000,
                     "topP": 0.8,
                     "topK": 40
                 }
