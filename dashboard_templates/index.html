@@ -41,13 +41,48 @@
         .config-table th {
             width: 40%;
         }
+        .next-decision {
+            background-color: #e9ecef;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .simulation-badge {
+            display: inline-block;
+            padding: 0.25em 0.6em;
+            font-size: 75%;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+            margin-left: 10px;
+        }
+        .simulation-badge.enabled {
+            color: #fff;
+            background-color: #17a2b8;
+        }
+        .simulation-badge.disabled {
+            color: #fff;
+            background-color: #6c757d;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header class="mb-4">
             <h1>AI Crypto Trading Bot Dashboard</h1>
-            <p class="text-muted">Last updated: <span id="lastUpdated">Loading...</span></p>
+            <div class="d-flex justify-content-between align-items-center">
+                <p class="text-muted mb-0">Last updated: <span id="lastUpdated">Loading...</span></p>
+                <div>
+                    <span id="simulationBadge" class="simulation-badge">Simulation: Loading...</span>
+                </div>
+            </div>
+            <div class="next-decision mt-2" id="nextDecision">
+                Next decision: Loading...
+            </div>
         </header>
         
         <div class="row">
@@ -256,6 +291,24 @@
             document.getElementById('configMaxTrade').textContent = `${config.max_trade_percentage || 'N/A'}%`;
             document.getElementById('configInitialBTC').textContent = config.initial_btc_amount || 'N/A';
             document.getElementById('configInitialETH').textContent = config.initial_eth_amount || 'N/A';
+            
+            // Update next decision time
+            const nextDecisionElement = document.getElementById('nextDecision');
+            if (config.next_decision_time) {
+                nextDecisionElement.textContent = `Next decision: ${config.next_decision_time}`;
+            } else {
+                nextDecisionElement.textContent = 'Next decision: Unknown';
+            }
+            
+            // Update simulation mode badge
+            const simulationBadge = document.getElementById('simulationBadge');
+            if (config.simulation_mode) {
+                simulationBadge.textContent = 'Simulation: Enabled';
+                simulationBadge.className = 'simulation-badge enabled';
+            } else {
+                simulationBadge.textContent = 'Simulation: Disabled';
+                simulationBadge.className = 'simulation-badge disabled';
+            }
         }
         
         // Function to update decisions display

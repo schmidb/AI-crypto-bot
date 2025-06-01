@@ -47,8 +47,13 @@ class DashboardUpdater:
             from config import (
                 TRADING_PAIRS, DECISION_INTERVAL_MINUTES, RISK_LEVEL,
                 LLM_MODEL, PORTFOLIO_REBALANCE, MAX_TRADE_PERCENTAGE,
-                INITIAL_BTC_AMOUNT, INITIAL_ETH_AMOUNT
+                INITIAL_BTC_AMOUNT, INITIAL_ETH_AMOUNT, SIMULATION_MODE
             )
+            
+            # Calculate next decision time
+            import schedule
+            next_run = schedule.next_run()
+            next_decision_time = next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "Unknown"
             
             config_data = {
                 "trading_pairs": ",".join(TRADING_PAIRS),
@@ -58,7 +63,9 @@ class DashboardUpdater:
                 "portfolio_rebalance": PORTFOLIO_REBALANCE,
                 "max_trade_percentage": MAX_TRADE_PERCENTAGE,
                 "initial_btc_amount": INITIAL_BTC_AMOUNT,
-                "initial_eth_amount": INITIAL_ETH_AMOUNT
+                "initial_eth_amount": INITIAL_ETH_AMOUNT,
+                "simulation_mode": SIMULATION_MODE,
+                "next_decision_time": next_decision_time
             }
             
             with open(f"{self.dashboard_dir}/data/config.json", "w") as f:
