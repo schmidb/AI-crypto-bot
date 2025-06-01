@@ -127,21 +127,39 @@ class LLMAnalyzer:
             use_streaming = "gemini" in self.model.lower()
             
             # Create the endpoint URL
-            endpoint_suffix = "streamGenerateContent" if use_streaming else "predict"
+            endpoint_suffix = "generateContent" if use_streaming else "predict"  # Changed from streamGenerateContent to generateContent
             url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{self.model}:{endpoint_suffix}"
+            
+            # Log the URL being called
+            logger.info(f"Calling Vertex AI endpoint: {url}")
+            
+            # Enhance prompt to explicitly request JSON
+            enhanced_prompt = f"""
+            {prompt}
+            
+            IMPORTANT: Your response MUST be in valid JSON format with the following structure:
+            {{
+              "decision": "BUY|SELL|HOLD",
+              "confidence": <number between 0-100>,
+              "reasoning": ["reason1", "reason2", "reason3"],
+              "risk_assessment": "low|medium|high"
+            }}
+            
+            Do not include any text outside of the JSON structure.
+            """
             
             # Create the request payload based on model type
             if use_streaming:
                 # Gemini model format
                 payload = {
-                    "contents": {
+                    "contents": [{
                         "role": "user",
                         "parts": [
                             {
-                                "text": prompt
+                                "text": enhanced_prompt
                             }
                         ]
-                    },
+                    }],
                     "generationConfig": {
                         "temperature": 0.2,
                         "maxOutputTokens": 1024,
@@ -152,7 +170,7 @@ class LLMAnalyzer:
             else:
                 # Standard text model format (text-bison, etc.)
                 payload = {
-                    "instances": [{"prompt": prompt}],
+                    "instances": [{"prompt": enhanced_prompt}],
                     "parameters": {
                         "temperature": 0.2,
                         "maxOutputTokens": 1024,
@@ -176,37 +194,63 @@ class LLMAnalyzer:
                 "Content-Type": "application/json"
             }
             
+            # Log the payload (excluding sensitive data)
+            logger.info(f"Sending request to Vertex AI with payload structure: {list(payload.keys())}")
+            
             response = requests.post(url, headers=headers, json=payload)
             response.raise_for_status()
             
+            # Log the raw response for debugging
+            logger.info(f"Raw response from Vertex AI: {response.text}")
+            
             # Extract the prediction text based on model type
+            response_json = response.json()
+            logger.info(f"Response JSON structure: {list(response_json.keys()) if isinstance(response_json, dict) else 'Not a dictionary'}")
+            
             if use_streaming:
-                # Handle streaming response
-                response_json = response.json()
-                # Extract text from streaming response - handle both list and dict formats
-                candidates = response_json.get("candidates", []) if isinstance(response_json, dict) else response_json
-                
+                # Handle Gemini response
                 prediction_text = ""
-                if candidates and isinstance(candidates, list) and len(candidates) > 0:
-                    content = candidates[0].get("content", {}) if isinstance(candidates[0], dict) else candidates[0]
-                    if isinstance(content, dict):
-                        parts = content.get("parts", [])
-                        if parts and isinstance(parts, list) and len(parts) > 0:
-                            if isinstance(parts[0], dict):
-                                prediction_text = parts[0].get("text", "")
-                            else:
-                                prediction_text = str(parts[0])
-                    else:
-                        prediction_text = str(content)
-                else:
+                
+                # Try different response structures
+                if isinstance(response_json, dict):
+                    # Try candidates path
+                    candidates = response_json.get("candidates", [])
+                    if candidates and isinstance(candidates, list) and len(candidates) > 0:
+                        content = candidates[0].get("content", {})
+                        if content:
+                            parts = content.get("parts", [])
+                            if parts and len(parts) > 0:
+                                part = parts[0]
+                                if isinstance(part, dict):
+                                    prediction_text = part.get("text", "")
+                                else:
+                                    prediction_text = str(part)
+                    
+                    # Try text path
+                    if not prediction_text and "text" in response_json:
+                        prediction_text = response_json["text"]
+                    
+                    # Try content path
+                    if not prediction_text and "content" in response_json:
+                        content = response_json["content"]
+                        if isinstance(content, dict) and "text" in content:
+                            prediction_text = content["text"]
+                        else:
+                            prediction_text = str(content)
+                
+                # If still no text, use the whole response
+                if not prediction_text:
                     prediction_text = str(response_json)
             else:
                 # Handle standard response
-                response_json = response.json()
                 if isinstance(response_json, dict):
-                    prediction_text = response_json.get("predictions", [""])[0]
+                    predictions = response_json.get("predictions", [])
+                    prediction_text = predictions[0] if predictions else ""
                 else:
                     prediction_text = str(response_json)
+            
+            # Log the extracted prediction text
+            logger.info(f"Extracted prediction text: {prediction_text[:100]}...")
             
             # Parse the response to extract trading decision
             return self._parse_llm_response(prediction_text)

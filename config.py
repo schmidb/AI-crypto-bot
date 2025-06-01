@@ -18,7 +18,7 @@ GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 # LLM settings
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "vertex")
-LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-pro")  # Updated to use Gemini model
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash")  # Updated to use Gemini Flash
 LLM_LOCATION = os.getenv("LLM_LOCATION", "us-central1")
 
 # Trading settings
