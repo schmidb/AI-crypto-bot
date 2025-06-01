@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import logging
 import time
 from datetime import datetime, timedelta
@@ -47,6 +48,145 @@ class DataCollector:
             if not candles:
                 logger.warning(f"No historical data available for {product_id}")
                 return pd.DataFrame()
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(candles, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+            
+            # Convert timestamp to datetime
+            df['time'] = pd.to_datetime(df['time'], unit='s')
+            
+            # Sort by time
+            df = df.sort_values('time')
+            
+            # Set time as index
+            df.set_index('time', inplace=True)
+            
+            return df
+            
+        except Exception as e:
+            logger.error(f"Error getting historical data for {product_id}: {e}")
+            return pd.DataFrame()
+    
+    def get_market_data(self, product_id: str) -> Dict[str, Any]:
+        """
+        Get current market data for a trading pair
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            
+        Returns:
+            Dictionary with current market data
+        """
+        try:
+            # Get current price
+            price_data = self.client.get_product_price(product_id)
+            price = float(price_data.get("price", 0))
+            
+            # Get 24h stats
+            # Note: In a real implementation, you would get 24h stats from the API
+            # For now, we'll just return the price
+            
+            return {
+                "product_id": product_id,
+                "price": price,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting market data for {product_id}: {e}")
+            return {"product_id": product_id, "price": 0}
+    
+    def calculate_indicators(self, historical_data: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Calculate technical indicators from historical data
+        
+        Args:
+            historical_data: DataFrame with OHLCV data
+            
+        Returns:
+            Dictionary with calculated indicators
+        """
+        try:
+            df = historical_data.copy()
+            
+            # Ensure we have the required columns
+            if 'close' not in df.columns:
+                logger.error("Historical data missing 'close' column")
+                return {}
+                
+            # Calculate RSI (Relative Strength Index)
+            delta = df['close'].diff()
+            gain = delta.where(delta > 0, 0)
+            loss = -delta.where(delta < 0, 0)
+            
+            avg_gain = gain.rolling(window=14).mean()
+            avg_loss = loss.rolling(window=14).mean()
+            
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+            
+            # Calculate MACD (Moving Average Convergence Divergence)
+            ema12 = df['close'].ewm(span=12, adjust=False).mean()
+            ema26 = df['close'].ewm(span=26, adjust=False).mean()
+            macd_line = ema12 - ema26
+            signal_line = macd_line.ewm(span=9, adjust=False).mean()
+            macd_histogram = macd_line - signal_line
+            
+            # Calculate Bollinger Bands
+            sma20 = df['close'].rolling(window=20).mean()
+            std20 = df['close'].rolling(window=20).std()
+            upper_band = sma20 + (std20 * 2)
+            lower_band = sma20 - (std20 * 2)
+            
+            # Get the latest values
+            latest_close = df['close'].iloc[-1]
+            latest_rsi = rsi.iloc[-1]
+            latest_macd = macd_line.iloc[-1]
+            latest_signal = signal_line.iloc[-1]
+            latest_histogram = macd_histogram.iloc[-1]
+            latest_upper_band = upper_band.iloc[-1]
+            latest_lower_band = lower_band.iloc[-1]
+            latest_sma20 = sma20.iloc[-1]
+            
+            # Determine if price is overbought/oversold based on RSI
+            rsi_signal = "oversold" if latest_rsi < 30 else "overbought" if latest_rsi > 70 else "neutral"
+            
+            # Determine MACD signal
+            macd_signal = "bullish" if latest_macd > latest_signal else "bearish"
+            
+            # Determine Bollinger Band signal
+            if latest_close > latest_upper_band:
+                bb_signal = "overbought"
+            elif latest_close < latest_lower_band:
+                bb_signal = "oversold"
+            else:
+                bb_signal = "neutral"
+            
+            # Compile indicators
+            indicators = {
+                "rsi": {
+                    "value": round(latest_rsi, 2),
+                    "signal": rsi_signal
+                },
+                "macd": {
+                    "value": round(latest_macd, 6),
+                    "signal": round(latest_signal, 6),
+                    "histogram": round(latest_histogram, 6),
+                    "trend": macd_signal
+                },
+                "bollinger_bands": {
+                    "upper": round(latest_upper_band, 2),
+                    "middle": round(latest_sma20, 2),
+                    "lower": round(latest_lower_band, 2),
+                    "signal": bb_signal
+                }
+            }
+            
+            return indicators
+            
+        except Exception as e:
+            logger.error(f"Error calculating indicators: {e}")
+            return {}
             
             # Convert to DataFrame
             df = pd.DataFrame(candles)
