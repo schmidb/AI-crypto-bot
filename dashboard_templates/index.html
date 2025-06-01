@@ -23,6 +23,24 @@
             height: auto;
             margin-bottom: 20px;
         }
+        .decision-box {
+            border-left: 4px solid #007bff;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+        }
+        .decision-box.buy {
+            border-left-color: #28a745;
+        }
+        .decision-box.sell {
+            border-left-color: #dc3545;
+        }
+        .decision-box.hold {
+            border-left-color: #ffc107;
+        }
+        .config-table th {
+            width: 40%;
+        }
     </style>
 </head>
 <body>
@@ -34,6 +52,73 @@
         
         <div class="row">
             <div class="col-lg-12">
+                <!-- Configuration Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Bot Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-sm config-table">
+                                    <tbody>
+                                        <tr>
+                                            <th>Trading Pairs</th>
+                                            <td id="configTradingPairs">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Decision Interval</th>
+                                            <td id="configInterval">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Risk Level</th>
+                                            <td id="configRiskLevel">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <th>LLM Model</th>
+                                            <td id="configLLMModel">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm config-table">
+                                    <tbody>
+                                        <tr>
+                                            <th>Portfolio Rebalance</th>
+                                            <td id="configRebalance">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Max Trade Percentage</th>
+                                            <td id="configMaxTrade">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Initial BTC</th>
+                                            <td id="configInitialBTC">Loading...</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Initial ETH</th>
+                                            <td id="configInitialETH">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Latest Decisions Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Latest Trading Decisions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="latestDecisions">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Portfolio Overview Section -->
                 <div class="card">
                   <div class="card-header">
@@ -139,9 +224,68 @@
                 const tradingData = await tradingResponse.json();
                 updateTradeHistory(tradingData.recent_trades);
                 
+                // Load configuration and decisions
+                const configResponse = await fetch('data/config.json');
+                if (configResponse.ok) {
+                    const configData = await configResponse.json();
+                    updateConfigDisplay(configData);
+                }
+                
+                // Load latest decisions
+                const decisionsResponse = await fetch('data/latest_decisions.json');
+                if (decisionsResponse.ok) {
+                    const decisionsData = await decisionsResponse.json();
+                    updateDecisionsDisplay(decisionsData);
+                }
+                
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
             }
+        }
+        
+        // Function to update configuration display
+        function updateConfigDisplay(config) {
+            if (!config) return;
+            
+            // Update configuration values
+            document.getElementById('configTradingPairs').textContent = config.trading_pairs || 'N/A';
+            document.getElementById('configInterval').textContent = `${config.decision_interval_minutes || 'N/A'} minutes`;
+            document.getElementById('configRiskLevel').textContent = config.risk_level || 'N/A';
+            document.getElementById('configLLMModel').textContent = config.llm_model || 'N/A';
+            document.getElementById('configRebalance').textContent = config.portfolio_rebalance ? 'Enabled' : 'Disabled';
+            document.getElementById('configMaxTrade').textContent = `${config.max_trade_percentage || 'N/A'}%`;
+            document.getElementById('configInitialBTC').textContent = config.initial_btc_amount || 'N/A';
+            document.getElementById('configInitialETH').textContent = config.initial_eth_amount || 'N/A';
+        }
+        
+        // Function to update decisions display
+        function updateDecisionsDisplay(decisions) {
+            const decisionsElement = document.getElementById('latestDecisions');
+            decisionsElement.innerHTML = '';
+            
+            if (!decisions || !decisions.length) {
+                decisionsElement.innerHTML = '<p class="text-muted">No decisions available</p>';
+                return;
+            }
+            
+            decisions.forEach(decision => {
+                const decisionBox = document.createElement('div');
+                decisionBox.className = `decision-box ${decision.action?.toLowerCase() || 'hold'}`;
+                
+                const timestamp = new Date(decision.timestamp).toLocaleString();
+                const product = decision.product_id || 'Unknown';
+                const action = decision.action?.toUpperCase() || 'HOLD';
+                const confidence = decision.confidence || 0;
+                const reason = decision.reason || 'No reason provided';
+                
+                decisionBox.innerHTML = `
+                    <h5>${product}: ${action} (${confidence}% confidence)</h5>
+                    <p class="text-muted mb-1">${timestamp}</p>
+                    <p class="mb-0"><strong>Reason:</strong> ${reason}</p>
+                `;
+                
+                decisionsElement.appendChild(decisionBox);
+            });
         }
         
         // Function to update portfolio display

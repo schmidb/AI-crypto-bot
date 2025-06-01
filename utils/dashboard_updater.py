@@ -29,6 +29,10 @@ class DashboardUpdater:
             logger.info(f"Trading data updated to {self.dashboard_dir}/data/trading_data.json")
             self._update_portfolio_data(portfolio)
             logger.info(f"Portfolio data updated to {self.dashboard_dir}/data/portfolio_data.json")
+            self._update_config_data()
+            logger.info(f"Config data updated to {self.dashboard_dir}/data/config.json")
+            self._update_latest_decisions(trading_data)
+            logger.info(f"Latest decisions updated to {self.dashboard_dir}/data/latest_decisions.json")
             self._generate_charts(trading_data, portfolio)
             logger.info(f"Charts generated in {self.dashboard_dir}/images/")
             self._update_timestamp()
@@ -36,6 +40,71 @@ class DashboardUpdater:
             self._sync_to_webserver()  # Sync files to web server
         except Exception as e:
             logger.error(f"Error updating dashboard: {e}")
+            
+    def _update_config_data(self) -> None:
+        """Update configuration data for the dashboard"""
+        try:
+            from config import (
+                TRADING_PAIRS, DECISION_INTERVAL_MINUTES, RISK_LEVEL,
+                LLM_MODEL, PORTFOLIO_REBALANCE, MAX_TRADE_PERCENTAGE,
+                INITIAL_BTC_AMOUNT, INITIAL_ETH_AMOUNT
+            )
+            
+            config_data = {
+                "trading_pairs": ",".join(TRADING_PAIRS),
+                "decision_interval_minutes": DECISION_INTERVAL_MINUTES,
+                "risk_level": RISK_LEVEL,
+                "llm_model": LLM_MODEL,
+                "portfolio_rebalance": PORTFOLIO_REBALANCE,
+                "max_trade_percentage": MAX_TRADE_PERCENTAGE,
+                "initial_btc_amount": INITIAL_BTC_AMOUNT,
+                "initial_eth_amount": INITIAL_ETH_AMOUNT
+            }
+            
+            with open(f"{self.dashboard_dir}/data/config.json", "w") as f:
+                json.dump(config_data, f, indent=2)
+                
+        except Exception as e:
+            logger.error(f"Error updating config data: {e}")
+            
+    def _update_latest_decisions(self, trading_data: Dict[str, Any]) -> None:
+        """Update latest trading decisions for the dashboard"""
+        try:
+            # Extract recent decisions from trading data
+            latest_decisions = []
+            
+            # Check if trading_data has recent_trades
+            if "recent_trades" in trading_data and trading_data["recent_trades"]:
+                # Get the most recent trade for each product
+                product_decisions = {}
+                for trade in trading_data["recent_trades"]:
+                    product_id = trade.get("product_id")
+                    if product_id and (product_id not in product_decisions or 
+                                      trade.get("timestamp", "") > product_decisions[product_id].get("timestamp", "")):
+                        product_decisions[product_id] = trade
+                
+                # Convert to list
+                latest_decisions = list(product_decisions.values())
+            
+            # If we have trading results directly
+            elif "trading_results" in trading_data:
+                for product_id, result in trading_data["trading_results"].items():
+                    if isinstance(result, dict):
+                        decision = {
+                            "product_id": product_id,
+                            "action": result.get("action", "hold"),
+                            "confidence": result.get("confidence", 0),
+                            "reason": result.get("reason", "No reason provided"),
+                            "timestamp": result.get("timestamp", datetime.datetime.now().isoformat())
+                        }
+                        latest_decisions.append(decision)
+            
+            # Save to file
+            with open(f"{self.dashboard_dir}/data/latest_decisions.json", "w") as f:
+                json.dump(latest_decisions, f, indent=2, default=str)
+                
+        except Exception as e:
+            logger.error(f"Error updating latest decisions: {e}")
     
     def _sync_to_webserver(self):
         """Copy dashboard files to web server directory"""
