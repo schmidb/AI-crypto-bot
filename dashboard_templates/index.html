@@ -332,7 +332,10 @@
                 const reason = decision.reason || 'No reason provided';
                 
                 decisionBox.innerHTML = `
-                    <h5>${product}: ${action} (${confidence}% confidence)</h5>
+                    <h5>
+                        ${product}: ${action} (${confidence}% confidence)
+                        <a href="https://www.coinbase.com/advanced-trade/spot/${product}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">View on Coinbase</a>
+                    </h5>
                     <p class="text-muted mb-1">${timestamp}</p>
                     <p class="mb-0"><strong>Reason:</strong> ${reason}</p>
                 `;
