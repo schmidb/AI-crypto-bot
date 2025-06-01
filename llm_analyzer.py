@@ -678,7 +678,7 @@ Respond with ONLY a JSON object in this format:
     def _call_gemini(self, prompt: str) -> str:
         """Call Gemini API for text generation using standard Vertex AI API"""
         try:
-            # Use the standard Vertex AI API approach instead of vertexai.generative_models
+            # Use the standard Vertex AI API approach
             aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=self.location)
             
             # Set up the parameters for the API call
@@ -689,39 +689,48 @@ Respond with ONLY a JSON object in this format:
                 "top_k": 40
             }
             
-            # Create the instance
+            # For Gemini models, we need to format the prompt differently
             instance = {
-                "prompt": prompt
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": prompt}]
+                    }
+                ]
             }
             
             # Get the endpoint ID based on the model name
             if "1.5" in self.model:
                 # For Gemini 1.5 models
                 if "pro" in self.model:
-                    endpoint_id = "gemini-1.5-pro"
+                    model_id = "gemini-1.5-pro"
                 elif "flash" in self.model:
-                    endpoint_id = "gemini-1.5-flash"
+                    model_id = "gemini-1.5-flash"
                 else:
-                    endpoint_id = "gemini-1.5-flash"  # Default to flash
+                    model_id = "gemini-1.5-flash"  # Default to flash
             else:
                 # For Gemini 1.0 models
                 if "pro" in self.model:
-                    endpoint_id = "gemini-pro"
+                    model_id = "gemini-pro"
                 else:
-                    endpoint_id = "gemini-pro"  # Default to pro
+                    model_id = "gemini-pro"  # Default to pro
             
-            # Make the prediction
-            endpoint = aiplatform.Endpoint(f"projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{endpoint_id}")
-            response = endpoint.predict(instances=[instance], parameters=parameters)
+            # Use the publisher model approach
+            response = aiplatform.PublisherModel.from_pretrained(model_id).predict(
+                **instance,
+                **parameters
+            )
             
             # Extract the prediction text
-            prediction_text = response.predictions[0]
-            if isinstance(prediction_text, dict) and "content" in prediction_text:
-                prediction_text = prediction_text["content"]
+            prediction_text = response.text if hasattr(response, "text") else str(response)
             
-            return str(prediction_text)
+            return prediction_text
             
         except Exception as e:
             logger.error(f"Error calling Gemini API: {e}")
-            # Fallback to a simpler approach or return an error message
-            return f"ERROR: Could not generate response from Gemini: {str(e)}"
+            # Fallback to a simpler approach - return a default trading decision
+            return """
+            ACTION: hold
+            CONFIDENCE: 50
+            REASON: Unable to connect to Gemini API for analysis. Defaulting to hold position as a precaution.
+            """
