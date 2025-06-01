@@ -697,6 +697,8 @@ Respond with ONLY a JSON object in this format:
             # Normalize model name for comparison
             model_lower = self.model.lower()
 
+            model_lower = model_id
+
             # Map to correct API model names
         #    if "gemini-1.5-flash" in model_lower:
         #        model_id = "gemini-1.5-flash"
