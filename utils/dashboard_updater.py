@@ -50,10 +50,15 @@ class DashboardUpdater:
                 INITIAL_BTC_AMOUNT, INITIAL_ETH_AMOUNT, SIMULATION_MODE
             )
             
-            # Calculate next decision time
-            import schedule
-            next_run = schedule.next_run()
-            next_decision_time = next_run.strftime("%Y-%m-%d %H:%M:%S") if next_run else "Unknown"
+            # Calculate next decision time based on current time and interval
+            import datetime
+            now = datetime.datetime.now()
+            minutes_to_add = DECISION_INTERVAL_MINUTES - (now.minute % DECISION_INTERVAL_MINUTES)
+            if minutes_to_add == DECISION_INTERVAL_MINUTES:
+                minutes_to_add = 0
+            next_decision = now + datetime.timedelta(minutes=minutes_to_add)
+            next_decision = next_decision.replace(second=0, microsecond=0)
+            next_decision_time = next_decision.strftime("%Y-%m-%d %H:%M:%S")
             
             config_data = {
                 "trading_pairs": ",".join(TRADING_PAIRS),
