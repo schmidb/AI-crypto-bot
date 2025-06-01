@@ -42,7 +42,7 @@ class TradingStrategy:
         logger.info(f"Initial portfolio: {self.portfolio}")
     
     def _load_portfolio(self) -> Dict:
-        """Load portfolio from file or initialize with default values"""
+        """Load portfolio from file or initialize with data from Coinbase"""
         if os.path.exists(self.portfolio_file):
             try:
                 with open(self.portfolio_file, 'r') as f:
@@ -50,27 +50,33 @@ class TradingStrategy:
             except Exception as e:
                 logger.error(f"Error loading portfolio: {e}")
         
-        # Initialize with default values from config
-        portfolio = {
-            "BTC": {
-                "amount": INITIAL_BTC_AMOUNT,
-                "initial_amount": INITIAL_BTC_AMOUNT,
-                "last_price_usd": 0.0
-            },
-            "ETH": {
-                "amount": INITIAL_ETH_AMOUNT,
-                "initial_amount": INITIAL_ETH_AMOUNT,
-                "last_price_usd": 0.0
-            },
-            "USD": {
-                "amount": 0.0,
-                "initial_amount": 0.0
-            },
-            "trades_executed": 0,
-            "portfolio_value_usd": 0.0,
-            "initial_value_usd": 0.0,
-            "last_updated": datetime.now().isoformat()
-        }
+        # Initialize with actual data from Coinbase instead of default values
+        logger.info("Fetching portfolio data from Coinbase")
+        portfolio = self.client.get_portfolio()
+        
+        # If getting data from Coinbase failed, fall back to config values
+        if not portfolio:
+            logger.info("Using default portfolio values from config")
+            portfolio = {
+                "BTC": {
+                    "amount": INITIAL_BTC_AMOUNT,
+                    "initial_amount": INITIAL_BTC_AMOUNT,
+                    "last_price_usd": 0.0
+                },
+                "ETH": {
+                    "amount": INITIAL_ETH_AMOUNT,
+                    "initial_amount": INITIAL_ETH_AMOUNT,
+                    "last_price_usd": 0.0
+                },
+                "USD": {
+                    "amount": 0.0,
+                    "initial_amount": 0.0
+                },
+                "trades_executed": 0,
+                "portfolio_value_usd": 0.0,
+                "initial_value_usd": 0.0,
+                "last_updated": datetime.now().isoformat()
+            }
         
         self._save_portfolio(portfolio)
         return portfolio
@@ -377,3 +383,28 @@ class TradingStrategy:
         except Exception as e:
             logger.error(f"Error rebalancing portfolio: {e}")
             return {"status": "error", "message": str(e)}
+    def refresh_portfolio_from_coinbase(self) -> Dict[str, Any]:
+        """Refresh portfolio data from Coinbase"""
+        try:
+            # Get fresh portfolio data from Coinbase
+            coinbase_portfolio = self.client.get_portfolio()
+            
+            if coinbase_portfolio:
+                # Preserve trade history and other metadata
+                coinbase_portfolio["trades_executed"] = self.portfolio.get("trades_executed", 0)
+                
+                # Update the portfolio
+                self.portfolio = coinbase_portfolio
+                self._save_portfolio()
+                
+                # Update portfolio values with current market prices
+                self.update_portfolio_values()
+                
+                logger.info("Portfolio refreshed from Coinbase")
+                return {"status": "success", "message": "Portfolio refreshed from Coinbase"}
+            else:
+                logger.error("Failed to refresh portfolio from Coinbase")
+                return {"status": "error", "message": "Failed to refresh portfolio from Coinbase"}
+        except Exception as e:
+            logger.error(f"Error refreshing portfolio from Coinbase: {e}")
+            return {"status": "error", "message": f"Error refreshing portfolio: {str(e)}"}

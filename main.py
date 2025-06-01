@@ -162,10 +162,30 @@ class TradingBot:
         # Schedule dashboard updates every 5 minutes
         schedule.every(5).minutes.do(self.update_dashboard)
         
+        # Start a simple API server for dashboard interactions
+        import threading
+        api_thread = threading.Thread(target=self._start_api_server)
+        api_thread.daemon = True
+        api_thread.start()
+        
         # Keep the script running
         while True:
             schedule.run_pending()
             time.sleep(1)
+            
+    def _start_api_server(self):
+        """Start a simple API server for dashboard interactions"""
+        from flask import Flask, jsonify, request
+        
+        app = Flask(__name__)
+        
+        @app.route('/api/refresh_portfolio', methods=['POST'])
+        def api_refresh_portfolio():
+            result = self.refresh_portfolio()
+            return jsonify(result)
+        
+        # Run the Flask app on port 5000
+        app.run(host='0.0.0.0', port=5000)
             
     def update_dashboard(self):
         """Update the dashboard with latest data"""
@@ -277,3 +297,12 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise
+    def refresh_portfolio(self):
+        """Refresh portfolio data from Coinbase"""
+        try:
+            result = self.trading_strategy.refresh_portfolio_from_coinbase()
+            logger.info(f"Portfolio refresh result: {result['status']}")
+            return result
+        except Exception as e:
+            logger.error(f"Error refreshing portfolio: {e}")
+            return {"status": "error", "message": str(e)}

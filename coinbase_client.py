@@ -191,3 +191,50 @@ class CoinbaseClient:
                 "bids": [[str(price * 0.999), "1.0"]],
                 "asks": [[str(price * 1.001), "1.0"]]
             }
+    def get_portfolio(self) -> Dict[str, Any]:
+        """Get complete portfolio data from Coinbase"""
+        try:
+            # Get all accounts/wallets
+            accounts = self.get_accounts()
+            
+            # Initialize portfolio structure
+            portfolio = {
+                "BTC": {"amount": 0, "initial_amount": 0, "last_price_usd": 0},
+                "ETH": {"amount": 0, "initial_amount": 0, "last_price_usd": 0},
+                "USD": {"amount": 0, "initial_amount": 0},
+                "trades_executed": 0,
+                "portfolio_value_usd": 0,
+                "initial_value_usd": 0,
+                "last_updated": datetime.now().isoformat()
+            }
+            
+            # Fill in actual balances from Coinbase
+            for account in accounts:
+                currency = account.get("currency")
+                if currency in ["BTC", "ETH", "USD"]:
+                    balance = float(account.get("available_balance", {}).get("value", 0))
+                    portfolio[currency]["amount"] = balance
+                    portfolio[currency]["initial_amount"] = balance  # Set initial amount to current balance
+            
+            # Get current prices for BTC and ETH
+            btc_price = float(self.get_product_price("BTC-USD").get("price", 0))
+            eth_price = float(self.get_product_price("ETH-USD").get("price", 0))
+            
+            # Update prices in portfolio
+            portfolio["BTC"]["last_price_usd"] = btc_price
+            portfolio["ETH"]["last_price_usd"] = eth_price
+            
+            # Calculate total portfolio value
+            btc_value = portfolio["BTC"]["amount"] * btc_price
+            eth_value = portfolio["ETH"]["amount"] * eth_price
+            usd_value = portfolio["USD"]["amount"]
+            
+            portfolio["portfolio_value_usd"] = btc_value + eth_value + usd_value
+            portfolio["initial_value_usd"] = portfolio["portfolio_value_usd"]  # Set initial value to current value
+            
+            logger.info(f"Retrieved portfolio from Coinbase: BTC={portfolio['BTC']['amount']}, ETH={portfolio['ETH']['amount']}, USD={portfolio['USD']['amount']}")
+            return portfolio
+            
+        except Exception as e:
+            logger.error(f"Error getting portfolio from Coinbase: {e}")
+            return {}
