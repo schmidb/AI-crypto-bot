@@ -9,6 +9,7 @@ from llm_analyzer import LLMAnalyzer
 from data_collector import DataCollector
 from utils.trade_logger import TradeLogger
 from utils.strategy_evaluator import StrategyEvaluator
+from utils.portfolio import Portfolio
 from config import (
     RISK_LEVEL, 
     INITIAL_BTC_AMOUNT, 
@@ -34,67 +35,25 @@ class TradingStrategy:
         self.trade_logger = TradeLogger()
         self.strategy_evaluator = StrategyEvaluator()
         
-        # Portfolio tracking
-        self.portfolio_file = "data/portfolio.json"
-        self.portfolio = self._load_portfolio()
+        # Initialize portfolio
+        self.portfolio_manager = Portfolio(
+            portfolio_file="data/portfolio.json",
+            initial_btc=INITIAL_BTC_AMOUNT,
+            initial_eth=INITIAL_ETH_AMOUNT,
+            initial_usd=0.0
+        )
+        
+        # For backward compatibility, expose portfolio data as property
+        self._portfolio = self.portfolio_manager.to_dict()
         
         logger.info(f"Trading strategy initialized with risk level: {self.risk_level}")
-        logger.info(f"Initial portfolio: {self.portfolio}")
+        logger.info(f"Initial portfolio: {self._portfolio}")
     
-    def _load_portfolio(self) -> Dict:
-        """Load portfolio from file or initialize with data from Coinbase"""
-        if os.path.exists(self.portfolio_file):
-            try:
-                with open(self.portfolio_file, 'r') as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.error(f"Error loading portfolio: {e}")
-        
-        # Initialize with actual data from Coinbase instead of default values
-        logger.info("Fetching portfolio data from Coinbase")
-        portfolio = self.client.get_portfolio()
-        
-        # If getting data from Coinbase failed, fall back to config values
-        if not portfolio:
-            logger.info("Using default portfolio values from config")
-            portfolio = {
-                "BTC": {
-                    "amount": INITIAL_BTC_AMOUNT,
-                    "initial_amount": INITIAL_BTC_AMOUNT,
-                    "last_price_usd": 0.0
-                },
-                "ETH": {
-                    "amount": INITIAL_ETH_AMOUNT,
-                    "initial_amount": INITIAL_ETH_AMOUNT,
-                    "last_price_usd": 0.0
-                },
-                "USD": {
-                    "amount": 0.0,
-                    "initial_amount": 0.0
-                },
-                "trades_executed": 0,
-                "portfolio_value_usd": 0.0,
-                "initial_value_usd": 0.0,
-                "last_updated": datetime.now().isoformat()
-            }
-        
-        self._save_portfolio(portfolio)
-        return portfolio
-    
-    def _save_portfolio(self, portfolio: Dict = None) -> None:
-        """Save portfolio to file"""
-        if portfolio is None:
-            portfolio = self.portfolio
-        
-        # Update last updated timestamp
-        portfolio["last_updated"] = datetime.now().isoformat()
-        
-        try:
-            os.makedirs(os.path.dirname(self.portfolio_file), exist_ok=True)
-            with open(self.portfolio_file, 'w') as f:
-                json.dump(portfolio, f, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving portfolio: {e}")
+    @property
+    def portfolio(self):
+        """Get current portfolio data"""
+        self._portfolio = self.portfolio_manager.to_dict()
+        return self._portfolio
     
     def update_portfolio_values(self) -> None:
         """Update portfolio with current market prices"""
@@ -107,27 +66,13 @@ class TradingStrategy:
             btc_price = float(btc_price_data.get("price", 0))
             eth_price = float(eth_price_data.get("price", 0))
             
-            # Update portfolio
-            self.portfolio["BTC"]["last_price_usd"] = btc_price
-            self.portfolio["ETH"]["last_price_usd"] = eth_price
+            # Update portfolio with current prices
+            self.portfolio_manager.update_prices(btc_price, eth_price)
             
-            # Calculate total portfolio value
-            btc_value = self.portfolio["BTC"]["amount"] * btc_price
-            eth_value = self.portfolio["ETH"]["amount"] * eth_price
-            usd_value = self.portfolio["USD"]["amount"]
+            # Update local portfolio copy
+            self._portfolio = self.portfolio_manager.to_dict()
             
-            total_value = btc_value + eth_value + usd_value
-            self.portfolio["portfolio_value_usd"] = total_value
-            
-            # Calculate initial value if not set
-            if self.portfolio["initial_value_usd"] == 0.0:
-                initial_btc_value = self.portfolio["BTC"]["initial_amount"] * btc_price
-                initial_eth_value = self.portfolio["ETH"]["initial_amount"] * eth_price
-                initial_value = initial_btc_value + initial_eth_value
-                self.portfolio["initial_value_usd"] = initial_value
-            
-            self._save_portfolio()
-            logger.info(f"Portfolio updated: Total value ${total_value:.2f}")
+            logger.info(f"Portfolio updated: Total value ${self._portfolio['portfolio_value_usd']:.2f}")
             
         except Exception as e:
             logger.error(f"Error updating portfolio values: {e}")
@@ -172,7 +117,7 @@ class TradingStrategy:
                 "historical_data": historical_data.tail(24).to_dict(orient="records"),
                 "indicators": indicators,
                 "risk_level": self.risk_level,
-                "portfolio": self.portfolio
+                "portfolio": self._portfolio
             }
             
             # Get trading decision from LLM
@@ -185,7 +130,7 @@ class TradingStrategy:
             self.trade_logger.log_trade(product_id, decision, result)
             
             # Evaluate strategy performance
-            self.strategy_evaluator.evaluate(self.portfolio)
+            self.strategy_evaluator.evaluate(self._portfolio)
             
             return result
             
@@ -225,7 +170,7 @@ class TradingStrategy:
         
         if action == "buy":
             # Calculate how much USD to use for buying
-            available_usd = self.portfolio["USD"]["amount"]
+            available_usd = self.portfolio_manager.get_asset_amount("USD")
             
             if available_usd <= 0:
                 logger.info(f"No USD available for buying {base_currency}")
@@ -250,17 +195,27 @@ class TradingStrategy:
             
             # Execute buy order
             try:
-                current_price = self.client.get_product_price(product_id)
+                current_price = float(self.client.get_product_price(product_id).get("price", 0))
                 crypto_amount = trade_amount_usd / current_price
                 
                 # In a real implementation, this would call the actual order placement
                 # order = self.client.place_market_order(product_id, "buy", trade_amount_usd)
                 
-                # Update portfolio
-                self.portfolio["USD"]["amount"] -= trade_amount_usd
-                self.portfolio[base_currency]["amount"] += crypto_amount
-                self.portfolio["trades_executed"] += 1
-                self._save_portfolio()
+                # Execute trade through portfolio manager
+                trade_result = self.portfolio_manager.execute_trade(
+                    asset=base_currency,
+                    action="buy",
+                    amount=crypto_amount,
+                    price=current_price
+                )
+                
+                if not trade_result.get("success", False):
+                    result["status"] = "error"
+                    result["message"] = trade_result.get("message", "Trade execution failed")
+                    return result
+                
+                # Update local portfolio copy
+                self._portfolio = self.portfolio_manager.to_dict()
                 
                 result["trade_amount_usd"] = trade_amount_usd
                 result["crypto_amount"] = crypto_amount
@@ -275,7 +230,7 @@ class TradingStrategy:
         
         elif action == "sell":
             # Calculate how much crypto to sell
-            available_crypto = self.portfolio[base_currency]["amount"]
+            available_crypto = self.portfolio_manager.get_asset_amount(base_currency)
             
             if available_crypto <= 0:
                 logger.info(f"No {base_currency} available for selling")
@@ -292,7 +247,8 @@ class TradingStrategy:
             if crypto_amount < min_trade and available_crypto >= min_trade:
                 crypto_amount = min_trade
             
-            if crypto_amount * self.portfolio[base_currency]["last_price_usd"] < 5.0:  # Too small to trade
+            current_price = float(self.client.get_product_price(product_id).get("price", 0))
+            if crypto_amount * current_price < 5.0:  # Too small to trade
                 logger.info(f"Trade amount too small: {crypto_amount:.8f} {base_currency}")
                 result["status"] = "skipped"
                 result["message"] = f"Trade amount too small: {crypto_amount:.8f} {base_currency}"
@@ -300,18 +256,26 @@ class TradingStrategy:
             
             # Execute sell order
             try:
-                current_price = self.client.get_product_price(product_id)
-                trade_amount_usd = crypto_amount * current_price
-                
                 # In a real implementation, this would call the actual order placement
                 # order = self.client.place_market_order(product_id, "sell", crypto_amount)
                 
-                # Update portfolio
-                self.portfolio[base_currency]["amount"] -= crypto_amount
-                self.portfolio["USD"]["amount"] += trade_amount_usd
-                self.portfolio["trades_executed"] += 1
-                self._save_portfolio()
+                # Execute trade through portfolio manager
+                trade_result = self.portfolio_manager.execute_trade(
+                    asset=base_currency,
+                    action="sell",
+                    amount=crypto_amount,
+                    price=current_price
+                )
                 
+                if not trade_result.get("success", False):
+                    result["status"] = "error"
+                    result["message"] = trade_result.get("message", "Trade execution failed")
+                    return result
+                
+                # Update local portfolio copy
+                self._portfolio = self.portfolio_manager.to_dict()
+                
+                trade_amount_usd = crypto_amount * current_price
                 result["trade_amount_usd"] = trade_amount_usd
                 result["crypto_amount"] = crypto_amount
                 result["price"] = current_price
@@ -345,44 +309,59 @@ class TradingStrategy:
             # Update portfolio with current market values
             self.update_portfolio_values()
             
-            # Calculate current allocation
-            btc_value = self.portfolio["BTC"]["amount"] * self.portfolio["BTC"]["last_price_usd"]
-            eth_value = self.portfolio["ETH"]["amount"] * self.portfolio["ETH"]["last_price_usd"]
-            usd_value = self.portfolio["USD"]["amount"]
-            total_value = self.portfolio["portfolio_value_usd"]
+            # Define target allocation
+            target_allocation = {"BTC": 40, "ETH": 40, "USD": 20}
             
-            # Target allocation (example: 40% BTC, 40% ETH, 20% USD)
-            target_btc = 0.40
-            target_eth = 0.40
-            target_usd = 0.20
+            # Calculate rebalance actions
+            actions = self.portfolio_manager.calculate_rebalance_actions(target_allocation)
             
-            # Calculate current allocation percentages
-            current_btc = btc_value / total_value if total_value > 0 else 0
-            current_eth = eth_value / total_value if total_value > 0 else 0
-            current_usd = usd_value / total_value if total_value > 0 else 0
-            
-            # Threshold for rebalancing (5% deviation)
-            threshold = 0.05
-            
-            rebalance_needed = (
-                abs(current_btc - target_btc) > threshold or
-                abs(current_eth - target_eth) > threshold or
-                abs(current_usd - target_usd) > threshold
-            )
-            
-            if not rebalance_needed:
+            if not actions:
                 logger.info("Portfolio is balanced, no rebalancing needed")
                 return {"status": "skipped", "message": "Portfolio is balanced"}
             
-            # Rebalance logic would go here
-            # This would involve selling overweight assets and buying underweight assets
+            # Execute rebalance actions
+            executed_actions = []
+            for action in actions:
+                asset = action["asset"]
+                trade_action = action["action"]
+                amount = action["amount"]
+                
+                # Get current price
+                price = float(self.client.get_product_price(f"{asset}-USD").get("price", 0))
+                
+                # Execute trade
+                trade_result = self.portfolio_manager.execute_trade(
+                    asset=asset,
+                    action=trade_action,
+                    amount=amount,
+                    price=price
+                )
+                
+                if trade_result.get("success", False):
+                    executed_actions.append({
+                        "asset": asset,
+                        "action": trade_action,
+                        "amount": amount,
+                        "price": price,
+                        "usd_value": amount * price
+                    })
+                else:
+                    logger.warning(f"Failed to execute rebalance action: {trade_result.get('message')}")
+            
+            # Update local portfolio copy
+            self._portfolio = self.portfolio_manager.to_dict()
             
             logger.info("Portfolio rebalanced")
-            return {"status": "success", "message": "Portfolio rebalanced"}
+            return {
+                "status": "success", 
+                "message": "Portfolio rebalanced",
+                "actions": executed_actions
+            }
             
         except Exception as e:
             logger.error(f"Error rebalancing portfolio: {e}")
             return {"status": "error", "message": str(e)}
+            
     def refresh_portfolio_from_coinbase(self) -> Dict[str, Any]:
         """Refresh portfolio data from Coinbase"""
         try:
@@ -390,18 +369,21 @@ class TradingStrategy:
             coinbase_portfolio = self.client.get_portfolio()
             
             if coinbase_portfolio:
-                # Preserve trade history and other metadata
-                coinbase_portfolio["trades_executed"] = self.portfolio.get("trades_executed", 0)
+                # Update portfolio with data from Coinbase
+                update_result = self.portfolio_manager.update_from_exchange(coinbase_portfolio)
                 
-                # Update the portfolio
-                self.portfolio = coinbase_portfolio
-                self._save_portfolio()
-                
-                # Update portfolio values with current market prices
-                self.update_portfolio_values()
-                
-                logger.info("Portfolio refreshed from Coinbase")
-                return {"status": "success", "message": "Portfolio refreshed from Coinbase"}
+                if update_result.get("success", False):
+                    # Update local portfolio copy
+                    self._portfolio = self.portfolio_manager.to_dict()
+                    
+                    # Update portfolio values with current market prices
+                    self.update_portfolio_values()
+                    
+                    logger.info("Portfolio refreshed from Coinbase")
+                    return {"status": "success", "message": "Portfolio refreshed from Coinbase"}
+                else:
+                    logger.error(f"Failed to update portfolio: {update_result.get('message')}")
+                    return {"status": "error", "message": update_result.get('message')}
             else:
                 logger.error("Failed to refresh portfolio from Coinbase")
                 return {"status": "error", "message": "Failed to refresh portfolio from Coinbase"}
