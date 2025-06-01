@@ -659,7 +659,10 @@ Respond with ONLY a JSON object in this format:
     def _get_llm_response(self, prompt: str) -> str:
         """Get response from LLM"""
         try:
-            if self.provider == "vertex":
+            # Normalize provider name to handle different variations
+            provider_normalized = self.provider.lower().replace('_', '')
+            
+            if provider_normalized == "vertex" or provider_normalized == "vertexai":
                 if "gemini" in self.model.lower():
                     return self._call_gemini(prompt)
                 elif "palm" in self.model.lower() or "text-bison" in self.model.lower():
