@@ -123,19 +123,43 @@ class LLMAnalyzer:
     def _call_vertex_ai(self, prompt: str) -> Dict:
         """Call Vertex AI for text generation using REST API"""
         try:
-            # Create the endpoint URL
-            url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{self.model}:predict"
+            # Determine if we should use streaming endpoint
+            use_streaming = "gemini" in self.model.lower()
             
-            # Create the request payload
-            payload = {
-                "instances": [{"prompt": prompt}],
-                "parameters": {
-                    "temperature": 0.2,
-                    "maxOutputTokens": 1024,
-                    "topP": 0.8,
-                    "topK": 40
+            # Create the endpoint URL
+            endpoint_suffix = "streamGenerateContent" if use_streaming else "predict"
+            url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{self.model}:{endpoint_suffix}"
+            
+            # Create the request payload based on model type
+            if use_streaming:
+                # Gemini model format
+                payload = {
+                    "contents": {
+                        "role": "user",
+                        "parts": [
+                            {
+                                "text": prompt
+                            }
+                        ]
+                    },
+                    "generationConfig": {
+                        "temperature": 0.2,
+                        "maxOutputTokens": 1024,
+                        "topP": 0.8,
+                        "topK": 40
+                    }
                 }
-            }
+            else:
+                # Standard text model format (text-bison, etc.)
+                payload = {
+                    "instances": [{"prompt": prompt}],
+                    "parameters": {
+                        "temperature": 0.2,
+                        "maxOutputTokens": 1024,
+                        "topP": 0.8,
+                        "topK": 40
+                    }
+                }
             
             # Get the access token with the proper scopes
             if hasattr(self, 'credentials'):
@@ -155,43 +179,62 @@ class LLMAnalyzer:
             response = requests.post(url, headers=headers, json=payload)
             response.raise_for_status()
             
-            # Extract the prediction text
-            prediction_text = response.json()["predictions"][0]
-            
-            # Parse the response
-            try:
-                # Try to parse as JSON
-                result_text = prediction_text
-                # Find JSON content between curly braces
-                start_idx = result_text.find('{')
-                end_idx = result_text.rfind('}') + 1
-                
-                if start_idx >= 0 and end_idx > start_idx:
-                    json_str = result_text[start_idx:end_idx]
-                    analysis_result = json.loads(json_str)
+            # Extract the prediction text based on model type
+            if use_streaming:
+                # Handle streaming response
+                response_json = response.json()
+                # Extract text from streaming response
+                candidates = response_json.get("candidates", [])
+                if candidates:
+                    content = candidates[0].get("content", {})
+                    parts = content.get("parts", [])
+                    if parts:
+                        prediction_text = parts[0].get("text", "")
+                    else:
+                        prediction_text = ""
                 else:
-                    # Fallback to default response
-                    logger.warning(f"Could not find JSON in response: {result_text}")
-                    analysis_result = {
-                        "decision": "HOLD",
-                        "confidence": 50,
-                        "reasoning": "Could not parse LLM response as JSON",
-                        "risk_assessment": "medium"
-                    }
-            except json.JSONDecodeError:
-                logger.warning(f"Failed to parse JSON from response: {str(prediction_text)}")
+                    prediction_text = ""
+            else:
+                # Handle standard response
+                prediction_text = response.json().get("predictions", [""])[0]
+            
+            # Parse the response to extract trading decision
+            return self._parse_llm_response(prediction_text)
+            
+        except Exception as e:
+            logger.error(f"Error calling Vertex AI: {e}")
+            raise
+    
+    def _parse_llm_response(self, response_text: str) -> Dict:
+        """Parse the LLM response to extract trading decision"""
+        try:
+            # Try to parse as JSON
+            # Find JSON content between curly braces
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}') + 1
+            
+            if start_idx >= 0 and end_idx > start_idx:
+                json_str = response_text[start_idx:end_idx]
+                analysis_result = json.loads(json_str)
+            else:
+                # Fallback to default response
+                logger.warning(f"Could not find JSON in response: {response_text}")
                 analysis_result = {
                     "decision": "HOLD",
                     "confidence": 50,
                     "reasoning": "Could not parse LLM response as JSON",
                     "risk_assessment": "medium"
                 }
-                
-            return analysis_result
+        except json.JSONDecodeError:
+            logger.warning(f"Failed to parse JSON from response: {str(response_text)}")
+            analysis_result = {
+                "decision": "HOLD",
+                "confidence": 50,
+                "reasoning": "Could not parse LLM response as JSON",
+                "risk_assessment": "medium"
+            }
             
-        except Exception as e:
-            logger.error(f"Error calling Vertex AI: {e}")
-            raise
+        return analysis_result
     
     def _call_palm(self, prompt: str) -> Dict:
         """Call PaLM API for text generation"""
