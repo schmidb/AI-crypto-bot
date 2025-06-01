@@ -447,21 +447,26 @@ class LLMAnalyzer:
         base_prompt = f"""Analyze {trading_pair} market data and provide a trading recommendation.
 
 Price: ${market_summary['current_price']}
-24h Change: {market_summary['price_change_24h']:.2f}%
-7d Change: {market_summary['price_change_7d']:.2f}%
-MA50: ${market_summary['moving_average_50']:.2f if market_summary['moving_average_50'] else 'N/A'}
-MA200: ${market_summary['moving_average_200']:.2f if market_summary['moving_average_200'] else 'N/A'}
-Volatility: {market_summary['volatility']:.2f}%"""
+24h Change: {market_summary['price_change_24h']:.2f if market_summary['price_change_24h'] is not None else 'N/A'}%
+7d Change: {market_summary['price_change_7d']:.2f if market_summary['price_change_7d'] is not None else 'N/A'}%
+MA50: {f"${market_summary['moving_average_50']:.2f}" if market_summary['moving_average_50'] is not None else 'N/A'}
+MA200: {f"${market_summary['moving_average_200']:.2f}" if market_summary['moving_average_200'] is not None else 'N/A'}
+Volatility: {market_summary['volatility']:.2f if market_summary['volatility'] is not None else 'N/A'}%"""
 
         # Add technical indicators if available
         if additional_context and "indicators" in additional_context:
             indicators = additional_context["indicators"]
             if indicators:
+                rsi = indicators.get('rsi')
+                macd = indicators.get('macd_line')
+                signal = indicators.get('macd_signal')
+                bb_width = indicators.get('bollinger_width')
+                
                 base_prompt += f"""
-RSI: {indicators.get('rsi', 'N/A'):.1f}
-MACD: {indicators.get('macd_line', 'N/A'):.2f}
-Signal: {indicators.get('macd_signal', 'N/A'):.2f}
-BB Width: {indicators.get('bollinger_width', 'N/A'):.2f}"""
+RSI: {f"{rsi:.1f}" if rsi is not None else 'N/A'}
+MACD: {f"{macd:.2f}" if macd is not None else 'N/A'}
+Signal: {f"{signal:.2f}" if signal is not None else 'N/A'}
+BB Width: {f"{bb_width:.2f}" if bb_width is not None else 'N/A'}"""
         
         # Add request for JSON response
         base_prompt += """
