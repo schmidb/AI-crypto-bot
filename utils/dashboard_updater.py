@@ -420,13 +420,39 @@ class DashboardUpdater:
             current = {}
             for asset in ["BTC", "ETH", "USD"]:
                 if asset in portfolio and isinstance(portfolio[asset], dict):
-                    current[asset] = portfolio[asset].get("allocation", 0)
+                    # Calculate allocation if not already present
+                    if "allocation" not in portfolio[asset]:
+                        # Calculate asset value
+                        if asset == "USD":
+                            asset_value = portfolio[asset].get("amount", 0)
+                        else:
+                            asset_amount = portfolio[asset].get("amount", 0)
+                            asset_price = portfolio[asset].get("last_price_usd", 0)
+                            asset_value = asset_amount * asset_price
+                            
+                        # Calculate allocation percentage
+                        total_value = portfolio.get("portfolio_value_usd", 0)
+                        if total_value > 0:
+                            allocation = (asset_value / total_value) * 100
+                        else:
+                            allocation = 0
+                            
+                        current[asset] = allocation
+                    else:
+                        current[asset] = portfolio[asset].get("allocation", 0)
+                        
                     # Ensure it's a number
                     if not isinstance(current[asset], (int, float)):
                         try:
                             current[asset] = float(current[asset])
                         except (ValueError, TypeError):
                             current[asset] = 0
+                else:
+                    current[asset] = 0
+            
+            # Log the values for debugging
+            logger.info(f"Target allocation: {target}")
+            logger.info(f"Current allocation: {current}")
             
             # Create bar chart
             assets = list(target.keys())
@@ -437,14 +463,24 @@ class DashboardUpdater:
             width = 0.35
             
             plt.figure(figsize=(10, 6))
-            plt.bar(x, target_values, width, label='Target')
-            plt.bar([i + width for i in x], current_values, width, label='Current')
+            plt.bar(x, target_values, width, label='Target', color='blue')
+            plt.bar([i + width for i in x], current_values, width, label='Current', color='orange')
             
             plt.xlabel('Assets')
             plt.ylabel('Allocation (%)')
             plt.title('Target vs Current Asset Allocation')
             plt.xticks([i + width/2 for i in x], assets)
             plt.legend()
+            
+            # Add value labels on top of bars
+            for i, v in enumerate(target_values):
+                plt.text(i, v + 1, f"{v}%", ha='center')
+                
+            for i, v in enumerate(current_values):
+                plt.text(i + width, v + 1, f"{v:.1f}%", ha='center')
+            
+            # Set y-axis to start at 0 and have some headroom
+            plt.ylim(0, max(max(target_values), max(current_values) if current_values else 0) * 1.2)
             
             # Ensure directory exists
             os.makedirs(f"{self.dashboard_dir}/images", exist_ok=True)
