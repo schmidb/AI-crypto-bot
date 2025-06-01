@@ -1,5 +1,6 @@
 import logging
 import json
+import re
 from typing import Dict, List, Any
 import pandas as pd
 import os
@@ -549,3 +550,125 @@ Respond with ONLY a JSON object in this format:
                 "confidence": 0,
                 "reasoning": [f"Error during analysis: {str(e)}"]
             }
+    def get_trading_decision(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Get trading decision from LLM based on market analysis
+        
+        Args:
+            analysis_data: Dictionary with market data and indicators
+            
+        Returns:
+            Dictionary with trading decision
+        """
+        try:
+            # Extract key data for the prompt
+            product_id = analysis_data.get("product_id", "")
+            current_price = analysis_data.get("current_price", 0)
+            indicators = analysis_data.get("indicators", {})
+            risk_level = analysis_data.get("risk_level", "medium")
+            
+            # Create prompt for LLM
+            prompt = self._create_trading_prompt(
+                product_id=product_id,
+                current_price=current_price,
+                indicators=indicators,
+                risk_level=risk_level
+            )
+            
+            # Get response from LLM
+            response = self._get_llm_response(prompt)
+            
+            # Parse response to extract decision
+            decision = self._parse_trading_decision(response)
+            
+            return decision
+            
+        except Exception as e:
+            logger.error(f"Error getting trading decision: {e}")
+            return {"action": "hold", "confidence": 0, "reason": f"Error: {str(e)}"}
+
+    def _create_trading_prompt(self, product_id: str, current_price: float, 
+                              indicators: Dict[str, Any], risk_level: str) -> str:
+        """Create prompt for LLM to analyze market data and make trading decision"""
+        
+        # Extract indicator values for cleaner prompt
+        rsi_value = indicators.get("rsi", {}).get("value", "N/A")
+        rsi_signal = indicators.get("rsi", {}).get("signal", "N/A")
+        
+        macd_value = indicators.get("macd", {}).get("value", "N/A")
+        macd_signal = indicators.get("macd", {}).get("signal", "N/A")
+        macd_trend = indicators.get("macd", {}).get("trend", "N/A")
+        
+        bb_upper = indicators.get("bollinger_bands", {}).get("upper", "N/A")
+        bb_middle = indicators.get("bollinger_bands", {}).get("middle", "N/A")
+        bb_lower = indicators.get("bollinger_bands", {}).get("lower", "N/A")
+        bb_signal = indicators.get("bollinger_bands", {}).get("signal", "N/A")
+        
+        prompt = f"""
+        You are an expert cryptocurrency trading advisor. Analyze the following market data for {product_id} and provide a trading decision.
+        
+        Current price: ${current_price}
+        Risk level: {risk_level}
+        
+        Technical Indicators:
+        - RSI: {rsi_value} ({rsi_signal})
+        - MACD: {macd_value} (Trend: {macd_trend})
+        - Bollinger Bands: Price is {bb_signal} (Upper: ${bb_upper}, Middle: ${bb_middle}, Lower: ${bb_lower})
+        
+        Based on this data, provide a trading decision in the following format:
+        ACTION: [buy/sell/hold]
+        CONFIDENCE: [0-100]
+        REASON: [brief explanation of your decision]
+        """
+        
+        return prompt
+
+    def _parse_trading_decision(self, response: str) -> Dict[str, Any]:
+        """Parse LLM response to extract trading decision"""
+        
+        # Default decision (hold with 0 confidence)
+        decision = {
+            "action": "hold",
+            "confidence": 0,
+            "reason": "No clear signal"
+        }
+        
+        try:
+            # Extract action
+            if "ACTION: buy" in response.lower():
+                decision["action"] = "buy"
+            elif "ACTION: sell" in response.lower():
+                decision["action"] = "sell"
+            
+            # Extract confidence
+            confidence_match = re.search(r"CONFIDENCE: (\d+)", response)
+            if confidence_match:
+                confidence = int(confidence_match.group(1))
+                decision["confidence"] = min(max(confidence, 0), 100)  # Ensure between 0-100
+            
+            # Extract reason
+            reason_match = re.search(r"REASON: (.*?)($|\n)", response, re.DOTALL)
+            if reason_match:
+                decision["reason"] = reason_match.group(1).strip()
+            
+            return decision
+            
+        except Exception as e:
+            logger.error(f"Error parsing trading decision: {e}")
+            return decision
+    def _get_llm_response(self, prompt: str) -> str:
+        """Get response from LLM"""
+        try:
+            if self.provider == "vertex":
+                if "gemini" in self.model.lower():
+                    return self._call_gemini(prompt)
+                elif "palm" in self.model.lower() or "text-bison" in self.model.lower():
+                    return self._call_palm(prompt)
+                else:
+                    return self._call_vertex_ai(prompt)
+            else:
+                logger.error(f"Unsupported LLM provider: {self.provider}")
+                return "ERROR: Unsupported LLM provider"
+        except Exception as e:
+            logger.error(f"Error getting LLM response: {e}")
+            return f"ERROR: {str(e)}"

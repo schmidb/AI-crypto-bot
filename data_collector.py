@@ -113,6 +113,11 @@ class DataCollector:
             if 'close' not in df.columns:
                 logger.error("Historical data missing 'close' column")
                 return {}
+            
+            # Convert price columns to float if they're strings
+            for col in ['open', 'high', 'low', 'close', 'volume']:
+                if col in df.columns:
+                    df[col] = df[col].astype(float)
                 
             # Calculate RSI (Relative Strength Index)
             delta = df['close'].diff()
