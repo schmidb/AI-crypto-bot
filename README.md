@@ -1,3 +1,123 @@
+# AI-Powered Crypto Trading Bot
+
+A Python-based cryptocurrency trading bot that uses Google Cloud Vertex AI LLMs to make trading decisions for Bitcoin and Ethereum on Coinbase. This bot leverages the power of AI to analyze market trends, technical indicators, and historical data to make informed trading decisions.
+
+## Features
+
+- Connects to Coinbase Advanced Trade API for real-time data and trading
+- Uses Google Cloud Vertex AI for sophisticated market analysis and trading decisions
+- Supports multiple LLM models (Text-Bison, Gemini, PaLM)
+- Supports Bitcoin (BTC) and Ethereum (ETH) trading with USD pairs
+- Collects and analyzes historical market data with customizable timeframes
+- Calculates technical indicators (RSI, MACD, Bollinger Bands, etc.)
+- Implements risk management strategies based on configurable risk levels
+- Provides detailed logging and trade history for performance tracking
+- Scheduled trading at configurable intervals
+- Includes automated setup scripts for AWS EC2 and Google Cloud deployment
+
+## Project Structure
+
+```
+AI-crypto-bot/
+├── .env                    # Environment variables (API keys, secrets)
+├── requirements.txt        # Python dependencies
+├── config.py               # Configuration settings
+├── main.py                 # Entry point for the bot
+├── coinbase_client.py      # Coinbase API integration
+├── llm_analyzer.py         # LLM-based analysis and decision making
+├── trading_strategy.py     # Trading strategy implementation
+├── data_collector.py       # Market data collection
+├── backtesting.py          # Backtesting module for strategy evaluation
+├── backtest_cli.py         # Command-line interface for backtesting
+├── aws_setup/              # AWS deployment scripts
+│   ├── README.md           # AWS deployment guide
+│   └── setup_ec2.sh        # Automated setup script for EC2
+├── gcp_setup/              # Google Cloud deployment scripts
+│   ├── README.md           # Google Cloud deployment guide
+│   └── setup_gce.sh        # Automated setup script for GCE
+├── utils/                  # Utility functions
+│   ├── __init__.py
+│   ├── logger.py           # Logging functionality
+│   └── helpers.py          # Helper functions
+└── tests/                  # Unit tests
+    ├── __init__.py
+    ├── test_coinbase.py
+    └── test_strategy.py
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.8 or higher
+- Coinbase account with API access
+- Google Cloud account with Vertex AI API enabled
+- Google Cloud service account with Vertex AI permissions
+- Basic understanding of cryptocurrency trading
+- (Optional) Server in Google Cloud or AWS for 24/7 operation
+
+### Installation
+
+#### Local Development Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/AI-crypto-bot.git
+   cd AI-crypto-bot
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\\Scripts\\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys and configuration
+   ```
+
+5. **Run the bot**:
+   ```bash
+   python main.py
+   ```
+
+## Cloud Deployment Options
+
+For production deployment, use the automated setup scripts in the dedicated directories:
+
+- **AWS EC2 Deployment**: [AWS Deployment Guide](aws_setup/README.md)
+- **Google Cloud Deployment**: [Google Cloud Deployment Guide](gcp_setup/README.md)
+
+These guides provide detailed instructions for setting up the bot on cloud platforms for 24/7 operation.
+
+## API Key Setup
+
+The bot uses the Coinbase Advanced Trade API, which requires specific API credentials:
+
+1. **Generate API Keys**:
+   - Log in to your Coinbase account
+   - Go to Settings > API > Advanced Trade API
+   - Create a new API key with appropriate permissions (View and Trade)
+
+2. **API Key Format**:
+   The Coinbase Advanced Trade API uses a specific format for credentials:
+   ```
+   # API Key format: organizations/{org_id}/apiKeys/{key_id}
+   COINBASE_API_KEY=organizations/your-org-id/apiKeys/your-key-id
+   
+   # API Secret format: EC private key in PEM format
+   COINBASE_API_SECRET=-----BEGIN EC PRIVATE KEY-----\nYOUR PRIVATE KEY\n-----END EC PRIVATE KEY-----\n
+   ```
+
+3. **Update your .env file** with these credentials
+
 ## Portfolio-Based Trading Strategy
 
 The bot implements a sophisticated portfolio-based trading strategy that allows you to start with existing cryptocurrency holdings rather than USD.

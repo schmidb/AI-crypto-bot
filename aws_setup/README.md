@@ -1,186 +1,92 @@
 # AWS EC2 Deployment Guide
 
-This guide provides detailed instructions for deploying the AI Crypto Trading Bot on an AWS EC2 instance running Amazon Linux.
+This guide provides step-by-step instructions for deploying the AI Crypto Trading Bot on an AWS EC2 instance.
 
-## Prerequisites
+## Deployment Steps
 
-- AWS account with permissions to create EC2 instances
-- Basic knowledge of AWS services and SSH
-- SSH key pair for connecting to EC2 instances
+### 1. Launch an EC2 Instance
 
-## Step 1: Launch an EC2 Instance
+1. **Log in to your AWS Management Console**
+2. **Navigate to EC2 and click "Launch Instance"**
+3. **Configure your instance:**
+   - Choose Amazon Linux 2023 AMI
+   - Select an instance type (t2.medium or better recommended for production)
+   - Configure security groups to allow SSH access (port 22)
+   - Launch the instance and download your key pair (.pem file)
 
-1. Log in to the AWS Management Console
-2. Navigate to EC2 and click "Launch Instance"
-3. Choose Amazon Linux 2023 AMI
-4. Select an instance type:
-   - t2.micro for testing (free tier eligible)
-   - t2.medium or better for production
-5. Configure instance details:
-   - Default VPC is fine for most cases
-   - Enable auto-assign public IP
-6. Add storage:
-   - 8GB is sufficient for basic operation
-   - Consider 16GB+ for longer-term operation with extensive logging
-7. Configure security group:
-   - Allow SSH (port 22) from your IP address
-   - Allow HTTP (port 80) for web dashboard access
-8. Review and launch the instance
-9. Select your SSH key pair or create a new one
-10. Launch the instance
-
-## Step 2: Connect to Your Instance
+### 2. Connect to Your EC2 Instance
 
 ```bash
-ssh -i /path/to/your-key.pem ec2-user@your-instance-public-ip
+# Make sure your key file has the right permissions
+chmod 400 your-key.pem
+
+# Connect to your EC2 instance
+ssh -i your-key.pem ec2-user@your-instance-ip
 ```
 
-## Step 3: Install and Configure the Bot
+### 3. Clone the Repository and Run Setup Script
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/AI-crypto-bot.git
-   cd AI-crypto-bot
-   ```
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/AI-crypto-bot.git
+cd AI-crypto-bot
 
-2. Make the setup script executable and run it:
-   ```bash
-   chmod +x setup_ec2.sh
-   ./setup_ec2.sh
-   ```
+# Run the AWS setup script
+bash aws_setup/setup_ec2.sh
+```
 
-3. Configure your environment variables:
-   ```bash
-   nano .env
-   ```
-   
-   Add your API keys and configuration:
-   ```
-   # Coinbase API credentials
-   COINBASE_API_KEY=your_api_key_here
-   COINBASE_API_SECRET=your_api_secret_here
-   
-   # Google Cloud configuration
-   GOOGLE_CLOUD_PROJECT=your_project_id_here
-   GOOGLE_APPLICATION_CREDENTIALS=/home/ec2-user/AI-crypto-bot/google-credentials.json
-   
-   # LLM configuration
-   LLM_PROVIDER=vertex_ai
-   LLM_MODEL=text-bison@002
-   LLM_LOCATION=us-central1
-   
-   # Trading parameters
-   TRADING_PAIRS=BTC-USD,ETH-USD
-   MAX_INVESTMENT_PER_TRADE_USD=100
-   RISK_LEVEL=medium
-   SIMULATION_MODE=True
-   ```
+The setup script will:
+- Install required dependencies
+- Set up a Python virtual environment
+- Create a systemd service for the bot
+- Create a template .env file
 
-4. Upload your Google Cloud service account key:
-   - On your local machine:
-     ```bash
-     scp -i /path/to/your-key.pem /path/to/your-google-credentials.json ec2-user@your-instance-public-ip:/home/ec2-user/AI-crypto-bot/google-credentials.json
-     ```
+### 4. Configure Your API Keys
 
-5. Install and configure Apache web server:
-   ```bash
-   chmod +x aws_setup/install_apache.sh
-   ./aws_setup/install_apache.sh
-   ```
+```bash
+# Edit your .env file with your API keys
+nano .env
+```
 
-6. Start the service:
-   ```bash
-   sudo systemctl start crypto-bot
-   ```
+Add your Coinbase API credentials and Google Cloud credentials to the .env file.
 
-7. Enable the service to start on boot:
-   ```bash
-   sudo systemctl enable crypto-bot
-   ```
+### 5. Start and Manage the Service
 
-## Step 4: Monitor the Bot
+```bash
+# Start the service
+sudo systemctl start crypto-bot
 
-1. Check service status:
-   ```bash
-   sudo systemctl status crypto-bot
-   ```
+# Check the status
+sudo systemctl status crypto-bot
 
-2. View logs:
-   ```bash
-   sudo journalctl -u crypto-bot -f
-   ```
+# View logs
+sudo journalctl -u crypto-bot -f
 
-3. Check application logs:
-   ```bash
-   tail -f /home/ec2-user/AI-crypto-bot/logs/trading_bot.log
-   ```
+# Enable auto-start on boot
+sudo systemctl enable crypto-bot
 
-4. Access the web dashboard:
-   - Open your browser and navigate to: `http://your-instance-public-ip/crypto-bot/`
-   - Enter the username and password you set during Apache configuration
+# Restart the service
+sudo systemctl restart crypto-bot
 
-## Step 5: Set Up CloudWatch Monitoring (Optional)
-
-1. Install and configure CloudWatch agent:
-   ```bash
-   chmod +x aws_setup/cloudwatch_setup.sh
-   ./aws_setup/cloudwatch_setup.sh
-   ```
-
-2. Create a CloudWatch dashboard:
-   ```bash
-   aws cloudwatch put-dashboard --dashboard-name CryptoBotDashboard --dashboard-body file://aws_setup/cloudwatch_dashboard.json
-   ```
+# Stop the service
+sudo systemctl stop crypto-bot
+```
 
 ## Troubleshooting
 
-### Service Won't Start
+### Common Issues
 
-1. Check for errors in the systemd journal:
-   ```bash
-   sudo journalctl -u crypto-bot -e
-   ```
+1. **Service fails to start:**
+   - Check logs with `sudo journalctl -u crypto-bot -f`
+   - Verify your API keys are correctly formatted in the .env file
+   - Ensure your Google Cloud service account has the necessary permissions
 
-2. Verify your .env file has the correct permissions:
-   ```bash
-   chmod 600 .env
-   ```
+2. **High CPU or memory usage:**
+   - Consider upgrading your instance type
+   - Adjust the trading interval in the .env file
 
-3. Check that your Google Cloud credentials file exists and has correct permissions:
-   ```bash
-   ls -la google-credentials.json
-   chmod 600 google-credentials.json
-   ```
+3. **Network connectivity issues:**
+   - Check that your security groups allow outbound connections
+   - Verify that your instance has internet access
 
-### Web Dashboard Issues
-
-1. Check Apache error logs:
-   ```bash
-   sudo tail -f /var/log/httpd/error_log
-   ```
-
-2. Verify Apache is running:
-   ```bash
-   sudo systemctl status httpd
-   ```
-
-3. Check file permissions:
-   ```bash
-   sudo ls -la /var/www/html/crypto-bot/
-   ```
-
-4. Restart Apache:
-   ```bash
-   sudo systemctl restart httpd
-   ```
-
-## Security Best Practices
-
-1. **Use IAM roles**: Create an IAM role with the necessary permissions and attach it to your EC2 instance
-2. **Regular updates**: Schedule regular updates with:
-   ```bash
-   sudo yum update -y
-   ```
-3. **Restrict access**: Update your security group to only allow HTTP access from your IP address
-4. **Use AWS Secrets Manager**: Store API keys in AWS Secrets Manager and retrieve them programmatically
-5. **Enable CloudWatch monitoring**: Set up CloudWatch alarms for instance metrics
+For additional help, please open an issue on the GitHub repository.

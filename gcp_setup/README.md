@@ -1,62 +1,100 @@
-# Google Compute Engine Deployment
+# Google Cloud Deployment Guide
 
-This directory contains scripts and instructions for deploying the AI Crypto Trading Bot on Google Compute Engine.
+This guide provides step-by-step instructions for deploying the AI Crypto Trading Bot on a Google Compute Engine (GCE) instance.
 
-## Quick Start
+## Deployment Steps
 
-1. Create a Google Compute Engine VM instance with Debian or Ubuntu
-2. Connect to your VM via SSH
-3. Clone this repository
-4. Run the setup script: `./gcp_setup/setup_gce.sh`
-5. Configure your `.env` file with your API keys and settings
-6. Start the bot: `sudo supervisorctl start crypto-bot`
+### 1. Create a VM Instance
 
-## Detailed Instructions
+1. **Log in to Google Cloud Console**
+2. **Navigate to Compute Engine > VM instances**
+3. **Click "Create Instance"**
+4. **Configure your instance:**
+   - Choose a name for your instance
+   - Select a region and zone (e.g., us-central1-a)
+   - Choose machine type (e2-medium recommended)
+   - Select Debian or Ubuntu as the boot disk
+   - Allow HTTP/HTTPS traffic if you plan to use the dashboard
+   - Click "Create"
 
-For detailed instructions, refer to the Google Compute Engine deployment section in the main README.md file.
+### 2. Connect to Your VM Instance
 
-## Files
+You can connect to your VM instance directly from the Google Cloud Console by clicking the "SSH" button, or use the gcloud command:
 
-- `setup_gce.sh`: Setup script for deploying the bot on Google Compute Engine
-- `gcp_secrets.py`: Helper module for accessing secrets from Google Cloud Secret Manager (optional)
+```bash
+# Connect via SSH using gcloud
+gcloud compute ssh your-instance-name --zone=your-zone
+```
 
-## Using Google Cloud Secret Manager (Optional)
+### 3. Clone the Repository and Run Setup Script
 
-If you prefer to store your API keys and other sensitive information in Google Cloud Secret Manager instead of a local `.env` file:
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/AI-crypto-bot.git
+cd AI-crypto-bot
 
-1. Create secrets in Secret Manager:
-   ```bash
-   echo -n "your_api_key" | gcloud secrets create coinbase-api-key --data-file=-
-   echo -n "your_api_secret" | gcloud secrets create coinbase-api-secret --data-file=-
-   ```
+# Run the Google Cloud setup script
+bash gcp_setup/setup_gce.sh
+```
 
-2. Grant your VM's service account access to these secrets:
-   ```bash
-   gcloud secrets add-iam-policy-binding coinbase-api-key \
-     --member="serviceAccount:YOUR_VM_SERVICE_ACCOUNT" \
-     --role="roles/secretmanager.secretAccessor"
-   
-   gcloud secrets add-iam-policy-binding coinbase-api-secret \
-     --member="serviceAccount:YOUR_VM_SERVICE_ACCOUNT" \
-     --role="roles/secretmanager.secretAccessor"
-   ```
+The setup script will:
+- Install required dependencies
+- Set up a Python virtual environment
+- Configure a supervisor service for the bot
+- Install Apache for the web dashboard
+- Create a template .env file
 
-3. Modify your `main.py` to load secrets at startup:
-   ```python
-   # Add at the top of main.py
-   import os
-   try:
-       from gcp_setup.gcp_secrets import load_secrets
-       load_secrets()
-   except Exception as e:
-       print(f"Could not load secrets from Secret Manager: {e}")
-       # Continue with .env file
-   ```
+### 4. Configure Your API Keys
 
-## Monitoring
+```bash
+# Edit your .env file with your API keys
+nano .env
+```
 
-To monitor your bot on Google Compute Engine:
+Add your Coinbase API credentials and Google Cloud credentials to the .env file.
 
-1. View logs: `tail -f ~/AI-crypto-bot/logs/supervisor.log`
-2. Check status: `sudo supervisorctl status crypto-bot`
-3. Set up Google Cloud Monitoring for more advanced monitoring
+### 5. Manage the Bot Service
+
+```bash
+# Check the status
+sudo supervisorctl status crypto-bot
+
+# View logs
+tail -f /var/log/crypto-bot/crypto-bot.log
+
+# Restart the service
+sudo supervisorctl restart crypto-bot
+
+# Stop the service
+sudo supervisorctl stop crypto-bot
+```
+
+### 6. Access the Dashboard
+
+The setup script installs Apache and configures a web dashboard that you can access at:
+
+```
+http://YOUR_VM_IP/crypto-bot/
+```
+
+Make sure your firewall rules allow HTTP traffic (port 80).
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Service fails to start:**
+   - Check logs with `tail -f /var/log/crypto-bot/crypto-bot.log`
+   - Verify your API keys are correctly formatted in the .env file
+   - Ensure your Google Cloud service account has the necessary permissions
+
+2. **Dashboard not accessible:**
+   - Check that Apache is running: `sudo systemctl status apache2`
+   - Verify firewall rules allow HTTP traffic
+   - Check Apache error logs: `sudo tail -f /var/log/apache2/error.log`
+
+3. **High CPU or memory usage:**
+   - Consider upgrading your instance type
+   - Adjust the trading interval in the .env file
+
+For additional help, please open an issue on the GitHub repository.
