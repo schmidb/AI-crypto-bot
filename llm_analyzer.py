@@ -145,41 +145,29 @@ Provide your decision in the following JSON format:
             aiplatform.init(project=self.project_id, location=self.location)
             
             # Create endpoint URL for logging
-            endpoint = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_id}:generateContent"
-            logger.info(f"Making API request to: {endpoint}")
+            endpoint_url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_id}:generateContent"
+            logger.info(f"Making API request to: {endpoint_url}")
             
-            # Use the appropriate method based on what's available in the environment
-            try:
-                # Try using the newer Vertex AI Gemini API
-                import vertexai
-                from vertexai.generative_models import GenerativeModel
-                
-                vertexai.init(project=self.project_id, location=self.location)
-                model = GenerativeModel(model_id)
-                response = model.generate_content(prompt)
-                response_text = response.text
-                
-            except (ImportError, AttributeError):
-                # Fall back to the older aiplatform API
-                from google.cloud import aiplatform
-                
-                # Create the endpoint
-                endpoint = aiplatform.Endpoint(
-                    endpoint_name=f"projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_id}"
-                )
-                
-                # Create the request
-                instances = [{"prompt": prompt}]
-                parameters = {
-                    "temperature": 0.2,
-                    "maxOutputTokens": 1024,
-                    "topK": 40,
-                    "topP": 0.95
-                }
-                
-                # Make the prediction
-                response = endpoint.predict(instances=instances, parameters=parameters)
-                response_text = response.predictions[0]
+            # Get credentials
+            credentials, _ = google.auth.default()
+            
+            # Create the model
+            endpoint = aiplatform.Endpoint(
+                endpoint_name=f"projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_id}"
+            )
+            
+            # Create the request
+            instances = [{"prompt": prompt}]
+            parameters = {
+                "temperature": 0.2,
+                "maxOutputTokens": 1024,
+                "topK": 40,
+                "topP": 0.95
+            }
+            
+            # Make the prediction
+            response = endpoint.predict(instances=instances, parameters=parameters)
+            response_text = response.predictions[0]
             
             return response_text
             
