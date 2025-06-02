@@ -37,12 +37,25 @@ class TradeLogger:
             except (json.JSONDecodeError, FileNotFoundError):
                 trades = []
             
+            # Ensure we have a valid price - fetch it if missing or zero
+            price = result.get("price", 0)
+            if price == 0:
+                logger.warning(f"Missing price for {product_id}, attempting to fetch current price")
+                try:
+                    from coinbase_client import CoinbaseClient
+                    client = CoinbaseClient()
+                    price_data = client.get_product_price(product_id)
+                    price = float(price_data.get("price", 0))
+                    logger.info(f"Successfully fetched current price for {product_id}: ${price}")
+                except Exception as e:
+                    logger.error(f"Failed to fetch current price for {product_id}: {e}")
+            
             # Create trade record
             trade = {
                 "timestamp": datetime.now().isoformat(),
                 "product_id": product_id,
                 "action": result.get("action", "unknown"),
-                "price": result.get("price", 0),
+                "price": price,
                 "crypto_amount": result.get("crypto_amount", 0),
                 "trade_amount_usd": result.get("trade_amount_usd", 0),
                 "confidence": decision.get("confidence", 0),

@@ -71,16 +71,57 @@ class TradingBot:
         try:
             logger.info("Initializing dashboard with existing data")
             
-            # Load existing trade history
-            trades = self.trading_strategy.trade_logger.get_recent_trades(10)
-            
-            # Get current market data
+            # First, ensure we have current market prices for all trading pairs
             market_data = {}
             for product_id in TRADING_PAIRS:
                 try:
-                    market_data[product_id] = self.data_collector.get_market_data(product_id)
+                    # Fetch current market data with retry logic
+                    for attempt in range(3):  # Try up to 3 times
+                        try:
+                            market_data[product_id] = self.data_collector.get_market_data(product_id)
+                            logger.info(f"Successfully fetched market data for {product_id} during initialization")
+                            break
+                        except Exception as e:
+                            if attempt < 2:  # Don't log on final attempt as we'll log below
+                                logger.warning(f"Attempt {attempt+1} failed to get market data for {product_id}: {e}")
+                                time.sleep(1)  # Wait before retry
                 except Exception as e:
                     logger.error(f"Error getting market data for {product_id} during initialization: {e}")
+            
+            # Update portfolio with current market values
+            self.trading_strategy.update_portfolio_values()
+            
+            # Load existing trade history
+            trades = self.trading_strategy.trade_logger.get_recent_trades(10)
+            
+            # If we have market data but no trades or trades with missing prices, create placeholder trades
+            if market_data and (not trades or any(trade.get('price', 0) == 0 for trade in trades)):
+                logger.info("Creating placeholder trades with current market data")
+                for product_id, data in market_data.items():
+                    # Check if we already have a recent trade for this product
+                    existing_trade = next((t for t in trades if t.get('product_id') == product_id), None)
+                    
+                    if not existing_trade or existing_trade.get('price', 0) == 0:
+                        # Create a placeholder "hold" trade with current price
+                        placeholder_trade = {
+                            "timestamp": datetime.now().isoformat(),
+                            "product_id": product_id,
+                            "action": "hold",
+                            "price": data.get("price", 0),
+                            "crypto_amount": 0,
+                            "trade_amount_usd": 0,
+                            "confidence": 0,
+                            "reason": "Initial state after restart",
+                            "status": "success"
+                        }
+                        
+                        # Add to trades list
+                        if existing_trade:
+                            # Replace existing trade with zero price
+                            trades = [placeholder_trade if t.get('product_id') == product_id else t for t in trades]
+                        else:
+                            # Add new trade
+                            trades.append(placeholder_trade)
             
             # Create trading data structure
             trading_data = {

@@ -223,14 +223,50 @@ class DataCollector:
             Dictionary with current market data
         """
         try:
-            # Get product ticker (price)
-            ticker = self.client.get_product_price(product_id)
+            # Get product ticker (price) with retry logic
+            max_retries = 3
+            retry_delay = 1  # seconds
             
-            # Ensure price is converted to float
-            try:
-                price = float(ticker.get("price", "0"))
-            except (ValueError, TypeError):
-                price = 0.0
+            for attempt in range(max_retries):
+                try:
+                    # Get product ticker (price)
+                    ticker = self.client.get_product_price(product_id)
+                    
+                    # Ensure price is converted to float
+                    try:
+                        price = float(ticker.get("price", "0"))
+                        if price <= 0:
+                            raise ValueError(f"Invalid price received: {price}")
+                    except (ValueError, TypeError) as e:
+                        if attempt < max_retries - 1:
+                            logger.warning(f"Invalid price for {product_id}, retrying ({attempt+1}/{max_retries}): {e}")
+                            time.sleep(retry_delay)
+                            continue
+                        else:
+                            # On last attempt, try to get price from historical data
+                            logger.warning(f"Using fallback method to get price for {product_id}")
+                            historical_data = self.get_historical_data(
+                                product_id=product_id,
+                                granularity="ONE_HOUR",
+                                days_back=1
+                            )
+                            if not historical_data.empty:
+                                price = float(historical_data['close'].iloc[-1])
+                                logger.info(f"Using historical price for {product_id}: {price}")
+                            else:
+                                price = 0.0
+                                logger.error(f"Failed to get valid price for {product_id}")
+                    
+                    # If we got here, we have a valid price
+                    break
+                    
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        logger.warning(f"Error getting price for {product_id}, retrying ({attempt+1}/{max_retries}): {e}")
+                        time.sleep(retry_delay)
+                    else:
+                        logger.error(f"Failed to get price after {max_retries} attempts: {e}")
+                        price = 0.0
             
             # Get historical data for price changes
             historical_data = self.get_historical_data(

@@ -131,9 +131,11 @@ class DashboardUpdater:
                     product_id = decision.get("product_id")
                     if product_id in trading_data["market_data"]:
                         market_data = trading_data["market_data"][product_id]
-                        # Only add price if not already present
-                        if "current_price" not in decision and "price" not in decision:
+                        # Only add price if not already present or if price is zero
+                        if "current_price" not in decision or decision["current_price"] == 0:
                             decision["current_price"] = market_data.get("price")
+                        elif "price" not in decision or decision["price"] == 0:
+                            decision["price"] = market_data.get("price")
                         
                         # Add price changes if available and not already present
                         if "price_changes" not in decision and "price_changes" in market_data:
