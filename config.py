@@ -24,20 +24,8 @@ LLM_LOCATION = os.getenv("LLM_LOCATION", "us-central1")
 # Trading settings
 TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")
 DECISION_INTERVAL_MINUTES = int(os.getenv("DECISION_INTERVAL_MINUTES", "60"))
-<<<<<<< HEAD
-SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
-
-# Risk settings
-RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")  # low, medium, high, hybrid
-RISK_WEIGHTS = {
-    "low": float(os.getenv("RISK_WEIGHT_LOW", "0.0")),
-    "medium": float(os.getenv("RISK_WEIGHT_MEDIUM", "0.5")),
-    "high": float(os.getenv("RISK_WEIGHT_HIGH", "0.5"))
-}
-=======
 RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")  # low, medium, high
 SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
->>>>>>> parent of ff8e0f0 (new risk level)
 
 # Portfolio settings
 PORTFOLIO_REBALANCE = os.getenv("PORTFOLIO_REBALANCE", "true").lower() == "true"  # Whether to rebalance portfolio
