@@ -331,14 +331,14 @@
                 
                 // Create price changes HTML if available
                 let priceChangesHtml = '';
-                if (decision.price_changes) {
+                if (decision.price_changes && Object.keys(decision.price_changes).length > 0) {
                     const changes = decision.price_changes;
                     priceChangesHtml = `
                         <div class="mt-2 mb-2">
-                            <span class="badge ${changes['1h'] >= 0 ? 'bg-success' : 'bg-danger'} me-2">1h: ${changes['1h']?.toFixed(2) || 'N/A'}%</span>
-                            <span class="badge ${changes['4h'] >= 0 ? 'bg-success' : 'bg-danger'} me-2">4h: ${changes['4h']?.toFixed(2) || 'N/A'}%</span>
-                            <span class="badge ${changes['1d'] >= 0 ? 'bg-success' : 'bg-danger'} me-2">1d: ${changes['1d']?.toFixed(2) || 'N/A'}%</span>
-                            <span class="badge ${changes['5d'] >= 0 ? 'bg-success' : 'bg-danger'}">5d: ${changes['5d']?.toFixed(2) || 'N/A'}%</span>
+                            <span class="badge ${parseFloat(changes['1h'] || 0) >= 0 ? 'bg-success' : 'bg-danger'} me-2">1h: ${parseFloat(changes['1h'] || 0).toFixed(2)}%</span>
+                            <span class="badge ${parseFloat(changes['4h'] || 0) >= 0 ? 'bg-success' : 'bg-danger'} me-2">4h: ${parseFloat(changes['4h'] || 0).toFixed(2)}%</span>
+                            <span class="badge ${parseFloat(changes['1d'] || 0) >= 0 ? 'bg-success' : 'bg-danger'} me-2">1d: ${parseFloat(changes['1d'] || 0).toFixed(2)}%</span>
+                            <span class="badge ${parseFloat(changes['5d'] || 0) >= 0 ? 'bg-success' : 'bg-danger'}">5d: ${parseFloat(changes['5d'] || 0).toFixed(2)}%</span>
                         </div>
                     `;
                 }

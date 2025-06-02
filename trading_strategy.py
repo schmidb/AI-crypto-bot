@@ -149,13 +149,20 @@ class TradingStrategy:
         logger.info(f"Decision for {product_id}: {action} (confidence: {confidence})")
         logger.info(f"Reason: {reason}")
         
+        # Get current market data for price information
+        market_data = self.data_collector.get_market_data(product_id)
+        current_price = market_data.get("price", 0)
+        price_changes = market_data.get("price_changes", {})
+        
         result = {
             "status": "success",
             "action": action,
             "product_id": product_id,
             "timestamp": datetime.now().isoformat(),
             "confidence": confidence,
-            "reason": reason
+            "reason": reason,
+            "current_price": current_price,
+            "price_changes": price_changes
         }
         
         # Extract the base currency (BTC or ETH) from the product ID
