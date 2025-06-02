@@ -3,134 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="60">
     <title>AI Crypto Trading Bot Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
     <style>
-        body { padding-top: 20px; }
-        .stats-box {
-            border: 1px solid #eee;
-            border-radius: 5px;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #f9f9f9;
-        }
-        .stats-box h6 { margin: 0; color: #666; }
-        .stats-box p { margin: 5px 0 0; font-size: 1.2rem; font-weight: bold; }
-        img.chart-img {
-            max-width: 100%;
-            height: auto;
-            margin-bottom: 20px;
-        }
-        .decision-box {
-            border-left: 4px solid #007bff;
-            padding: 10px 15px;
-            margin-bottom: 15px;
+        body {
             background-color: #f8f9fa;
+            padding-top: 20px;
         }
-        .decision-box.buy {
-            border-left-color: #28a745;
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .decision-box.sell {
-            border-left-color: #dc3545;
-        }
-        .decision-box.hold {
-            border-left-color: #ffc107;
-        }
-        .config-table th {
-            width: 40%;
-        }
-        .next-decision {
-            background-color: #e9ecef;
-            border-radius: 5px;
-            padding: 10px 15px;
-            margin-bottom: 15px;
+        .card-header {
             font-weight: bold;
+            background-color: #f1f8ff;
         }
-        .simulation-badge {
+        .price-up {
+            color: #28a745;
+        }
+        .price-down {
+            color: #dc3545;
+        }
+        .risk-indicator {
             display: inline-block;
-            padding: 0.25em 0.6em;
-            font-size: 75%;
-            font-weight: 700;
-            line-height: 1;
-            text-align: center;
-            white-space: nowrap;
-            vertical-align: baseline;
-            border-radius: 0.25rem;
-            margin-left: 10px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 5px;
         }
-        .simulation-badge.enabled {
-            color: #fff;
-            background-color: #17a2b8;
+        .risk-low {
+            background-color: #28a745;
         }
-        .simulation-badge.disabled {
-            color: #fff;
-            background-color: #6c757d;
+        .risk-medium {
+            background-color: #ffc107;
         }
-        .price-change-badge {
-            font-size: 85%;
-            padding: 0.3em 0.6em;
+        .risk-high {
+            background-color: #dc3545;
+        }
+        .risk-hybrid {
+            background: linear-gradient(135deg, #ffc107 0%, #ffc107 50%, #dc3545 50%, #dc3545 100%);
+        }
+        .risk-weight-bar {
+            height: 20px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+        }
+        .risk-weight-low {
+            background-color: #28a745;
+        }
+        .risk-weight-medium {
+            background-color: #ffc107;
+        }
+        .risk-weight-high {
+            background-color: #dc3545;
+        }
+        .refresh-btn {
+            cursor: pointer;
+        }
+        .last-updated {
+            font-size: 0.8rem;
+            color: #6c757d;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="mb-4">
-            <h1>AI Crypto Trading Bot Dashboard</h1>
-            <div class="d-flex justify-content-between align-items-center">
-                <p class="text-muted mb-0">Last updated: <span id="lastUpdated">Loading...</span></p>
-                <div>
-                    <button id="refreshPortfolioBtn" class="btn btn-sm btn-outline-success me-2">Refresh Portfolio from Coinbase</button>
-                    <span id="simulationBadge" class="simulation-badge">Simulation: Loading...</span>
-                </div>
-            </div>
-            <div class="next-decision mt-2" id="nextDecision">
-                Next decision: Loading...
-            </div>
-        </header>
-        
-        <div class="row">
-            <div class="col-lg-12">
-                <!-- Configuration Section -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5>Bot Configuration</h5>
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2>AI Crypto Trading Bot Dashboard</h2>
+                        <div>
+                            <span class="last-updated me-2">Last updated: <span id="lastUpdated">Loading...</span></span>
+                            <i class="bi bi-arrow-clockwise refresh-btn" onclick="refreshData()"></i>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <table class="table table-sm config-table">
-                                    <tbody>
-                                        <tr>
-                                            <th>Trading Pairs</th>
-                                            <td id="configTradingPairs">Loading...</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Decision Interval</th>
-                                            <td id="configInterval">Loading...</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Risk Level</th>
-                                            <td id="configRiskLevel">Loading...</td>
-                                        </tr>
-                                        <tr>
-                                            <th>LLM Model</th>
-                                            <td id="configLLMModel">Loading...</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <h4>Portfolio Value: <span id="portfolioValue">Loading...</span></h4>
+                                <p>Initial Value: <span id="initialValue">Loading...</span></p>
+                                <p>Total Return: <span id="totalReturn">Loading...</span></p>
                             </div>
                             <div class="col-md-6">
-                                <table class="table table-sm config-table">
-                                    <tbody>
+                                <h4>Risk Profile</h4>
+                                <p>
+                                    Current Risk Level: 
+                                    <span id="riskLevelIndicator" class="risk-indicator"></span>
+                                    <span id="riskLevel">Loading...</span>
+                                </p>
+                                <div id="riskWeightsContainer" style="display: none;">
+                                    <p>Risk Weights:</p>
+                                    <div class="risk-weight-bar">
+                                        <div id="lowRiskWeight" class="risk-weight-low" style="width: 0%"></div>
+                                        <div id="mediumRiskWeight" class="risk-weight-medium" style="width: 0%"></div>
+                                        <div id="highRiskWeight" class="risk-weight-high" style="width: 0%"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <small>Low: <span id="lowRiskPercentage">0%</span></small>
+                                        <small>Medium: <span id="mediumRiskPercentage">0%</span></small>
+                                        <small>High: <span id="highRiskPercentage">0%</span></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Latest Decisions</div>
+                    <div class="card-body">
+                        <div id="latestDecisions">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Portfolio Allocation</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <img src="images/portfolio_allocation.png" alt="Portfolio Allocation" class="img-fluid">
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm">
+                                    <thead>
                                         <tr>
-                                            <th>Portfolio Rebalance</th>
-                                            <td id="configRebalance">Loading...</td>
+                                            <th>Asset</th>
+                                            <th>Current</th>
+                                            <th>Target</th>
+                                            <th>Status</th>
                                         </tr>
+                                    </thead>
+                                    <tbody id="allocationTable">
                                         <tr>
-                                            <th>Max Trade Percentage</th>
-                                            <td id="configMaxTrade">Loading...</td>
+                                            <td colspan="4">Loading...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -138,110 +151,26 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Latest Decisions Section -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5>Latest Trading Decisions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="latestDecisions">
-                            <!-- Will be populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Portfolio Overview Section -->
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
                 <div class="card">
-                  <div class="card-header">
-                    <h5>Portfolio Overview</h5>
-                  </div>
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-md-6">
-                        <img src="images/portfolio_allocation.png" class="chart-img" alt="Portfolio Allocation">
-                      </div>
-                      <div class="col-md-6">
-                        <div id="portfolioTable">
-                          <!-- Will be populated by JavaScript -->
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Portfolio Performance Section -->
-                <div class="card mt-4">
-                  <div class="card-header">
-                    <h5>Portfolio Performance</h5>
-                  </div>
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-md-8">
-                        <img src="images/portfolio_value.png" class="chart-img" alt="Portfolio Value">
-                      </div>
-                      <div class="col-md-4">
-                        <div id="performanceStats">
-                          <!-- Will be populated by JavaScript -->
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Rebalancing Status Section -->
-                <div class="card mt-4">
-                  <div class="card-header">
-                    <h5>Rebalancing Status</h5>
-                  </div>
-                  <div class="card-body">
-                    <div class="row">
-                      <div class="col-md-12">
-                        <img src="images/allocation_comparison.png" class="chart-img" alt="Allocation Comparison">
-                      </div>
-                    </div>
-                    <div class="row mt-3">
-                      <div class="col-12">
-                        <div id="rebalanceTable">
-                          <!-- Will be populated by JavaScript -->
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Trading Activity Section -->
-                <div class="card mt-4">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5>Recent Trading Activity</h5>
-                            <div class="d-flex align-items-center">
-                                <label for="actionFilter" class="me-2">Filter by action:</label>
-                                <select id="actionFilter" class="form-select form-select-sm" style="width: 100px;">
-                                    <option value="all">All</option>
-                                    <option value="buy">Buy</option>
-                                    <option value="sell">Sell</option>
-                                    <option value="hold">Hold</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="card-header">Portfolio Value Over Time</div>
                     <div class="card-body">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Date/Time</th>
-                                    <th>Product</th>
-                                    <th>Action</th>
-                                    <th>Amount</th>
-                                    <th>Price</th>
-                                    <th>Value (USD)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tradeHistory">
-                                <!-- Trade history will be populated via JavaScript -->
-                            </tbody>
-                        </table>
+                        <img src="images/portfolio_value.png" alt="Portfolio Value Over Time" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">Target vs Current Allocation</div>
+                    <div class="card-body">
+                        <img src="images/allocation_comparison.png" alt="Target vs Current Allocation" class="img-fluid">
                     </div>
                 </div>
             </div>
@@ -249,344 +178,241 @@
     </div>
 
     <script>
-        // Function to load dashboard data
-        async function loadDashboardData() {
-            try {
-                // Load last updated timestamp
-                const timestampResponse = await fetch('data/last_updated.txt');
-                const timestamp = await timestampResponse.text();
-                document.getElementById('lastUpdated').textContent = timestamp;
-                
-                // Load portfolio data
-                const portfolioResponse = await fetch('data/portfolio_data.json');
-                const portfolioData = await portfolioResponse.json();
-                updatePortfolioDisplay(portfolioData);
-                
-                // Load trading data
-                const tradingResponse = await fetch('data/trading_data.json');
-                const tradingData = await tradingResponse.json();
-                updateTradeHistory(tradingData.recent_trades);
-                
-                // Load configuration and decisions
-                const configResponse = await fetch('data/config.json');
-                if (configResponse.ok) {
-                    const configData = await configResponse.json();
-                    updateConfigDisplay(configData);
-                }
-                
-                // Load latest decisions
-                const decisionsResponse = await fetch('data/latest_decisions.json');
-                if (decisionsResponse.ok) {
-                    const decisionsData = await decisionsResponse.json();
-                    updateDecisionsDisplay(decisionsData);
-                }
-                
-            } catch (error) {
-                console.error('Error loading dashboard data:', error);
-            }
+        // Function to load and display data
+        function loadData() {
+            // Load last updated timestamp
+            fetch('data/last_updated.txt')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('lastUpdated').textContent = data;
+                })
+                .catch(error => {
+                    console.error('Error loading last updated timestamp:', error);
+                    document.getElementById('lastUpdated').textContent = 'Error loading data';
+                });
+
+            // Load portfolio data
+            fetch('data/portfolio_data.json')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('portfolioValue').textContent = `$${parseFloat(data.portfolio_value_usd).toFixed(2)}`;
+                    document.getElementById('initialValue').textContent = `$${parseFloat(data.initial_value_usd).toFixed(2)}`;
+                    
+                    const totalReturn = parseFloat(data.total_return);
+                    const totalReturnElement = document.getElementById('totalReturn');
+                    totalReturnElement.textContent = `${totalReturn.toFixed(2)}%`;
+                    totalReturnElement.className = totalReturn >= 0 ? 'price-up' : 'price-down';
+                    
+                    // Update allocation table
+                    const allocationTable = document.getElementById('allocationTable');
+                    allocationTable.innerHTML = '';
+                    
+                    for (const asset of ['BTC', 'ETH', 'USD']) {
+                        if (data[asset]) {
+                            const row = document.createElement('tr');
+                            
+                            const assetCell = document.createElement('td');
+                            assetCell.textContent = asset;
+                            row.appendChild(assetCell);
+                            
+                            const currentCell = document.createElement('td');
+                            currentCell.textContent = `${parseFloat(data[asset].allocation).toFixed(1)}%`;
+                            row.appendChild(currentCell);
+                            
+                            const targetCell = document.createElement('td');
+                            targetCell.textContent = `${parseFloat(data[asset].target_allocation || 0).toFixed(1)}%`;
+                            row.appendChild(targetCell);
+                            
+                            const statusCell = document.createElement('td');
+                            const status = data[asset].rebalance_status || 'Unknown';
+                            statusCell.textContent = status;
+                            
+                            if (status === 'Overweight') {
+                                statusCell.className = 'price-down';
+                            } else if (status === 'Underweight') {
+                                statusCell.className = 'price-up';
+                            }
+                            
+                            row.appendChild(statusCell);
+                            allocationTable.appendChild(row);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading portfolio data:', error);
+                    document.getElementById('portfolioValue').textContent = 'Error loading data';
+                });
+
+            // Load latest decisions
+            fetch('data/latest_decisions.json')
+                .then(response => response.json())
+                .then(data => {
+                    const decisionsContainer = document.getElementById('latestDecisions');
+                    decisionsContainer.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        decisionsContainer.textContent = 'No decisions available';
+                        return;
+                    }
+                    
+                    for (const decision of data) {
+                        const decisionCard = document.createElement('div');
+                        decisionCard.className = 'card mb-3';
+                        
+                        const cardHeader = document.createElement('div');
+                        cardHeader.className = 'card-header d-flex justify-content-between align-items-center';
+                        
+                        const productId = document.createElement('span');
+                        productId.textContent = decision.product_id;
+                        cardHeader.appendChild(productId);
+                        
+                        const action = document.createElement('span');
+                        action.textContent = decision.action ? decision.action.toUpperCase() : 'UNKNOWN';
+                        action.className = decision.action === 'buy' ? 'badge bg-success' : 
+                                          decision.action === 'sell' ? 'badge bg-danger' : 'badge bg-secondary';
+                        cardHeader.appendChild(action);
+                        
+                        decisionCard.appendChild(cardHeader);
+                        
+                        const cardBody = document.createElement('div');
+                        cardBody.className = 'card-body';
+                        
+                        const priceRow = document.createElement('div');
+                        priceRow.className = 'd-flex justify-content-between';
+                        
+                        const priceLabel = document.createElement('span');
+                        priceLabel.textContent = 'Current Price:';
+                        priceRow.appendChild(priceLabel);
+                        
+                        const priceValue = document.createElement('span');
+                        priceValue.textContent = decision.current_price ? `$${parseFloat(decision.current_price).toFixed(2)}` : 'N/A';
+                        priceRow.appendChild(priceValue);
+                        
+                        cardBody.appendChild(priceRow);
+                        
+                        const confidenceRow = document.createElement('div');
+                        confidenceRow.className = 'd-flex justify-content-between';
+                        
+                        const confidenceLabel = document.createElement('span');
+                        confidenceLabel.textContent = 'Confidence:';
+                        confidenceRow.appendChild(confidenceLabel);
+                        
+                        const confidenceValue = document.createElement('span');
+                        confidenceValue.textContent = decision.confidence ? `${decision.confidence}%` : 'N/A';
+                        confidenceRow.appendChild(confidenceValue);
+                        
+                        cardBody.appendChild(confidenceRow);
+                        
+                        // Add risk level if available
+                        if (decision.risk_level) {
+                            const riskRow = document.createElement('div');
+                            riskRow.className = 'd-flex justify-content-between';
+                            
+                            const riskLabel = document.createElement('span');
+                            riskLabel.textContent = 'Risk Level:';
+                            riskRow.appendChild(riskLabel);
+                            
+                            const riskValue = document.createElement('span');
+                            const riskIndicator = document.createElement('span');
+                            riskIndicator.className = `risk-indicator risk-${decision.risk_level.toLowerCase()}`;
+                            riskValue.appendChild(riskIndicator);
+                            riskValue.appendChild(document.createTextNode(decision.risk_level));
+                            riskRow.appendChild(riskValue);
+                            
+                            cardBody.appendChild(riskRow);
+                        }
+                        
+                        const reasonRow = document.createElement('div');
+                        reasonRow.className = 'mt-2';
+                        
+                        const reasonLabel = document.createElement('div');
+                        reasonLabel.textContent = 'Reason:';
+                        reasonLabel.className = 'fw-bold';
+                        reasonRow.appendChild(reasonLabel);
+                        
+                        const reasonValue = document.createElement('div');
+                        reasonValue.textContent = decision.reason || 'No reason provided';
+                        reasonValue.className = 'small';
+                        reasonRow.appendChild(reasonValue);
+                        
+                        cardBody.appendChild(reasonRow);
+                        
+                        decisionCard.appendChild(cardBody);
+                        decisionsContainer.appendChild(decisionCard);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading latest decisions:', error);
+                    document.getElementById('latestDecisions').textContent = 'Error loading decisions';
+                });
+
+            // Load config data
+            fetch('data/config.json')
+                .then(response => response.json())
+                .then(data => {
+                    // Update risk level indicator
+                    const riskLevel = data.risk_level || 'unknown';
+                    const riskLevelElement = document.getElementById('riskLevel');
+                    riskLevelElement.textContent = riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1);
+                    
+                    const riskIndicator = document.getElementById('riskLevelIndicator');
+                    riskIndicator.className = `risk-indicator risk-${riskLevel.toLowerCase()}`;
+                    
+                    // Update risk weights if hybrid
+                    if (riskLevel.toLowerCase() === 'hybrid' && data.risk_weights) {
+                        document.getElementById('riskWeightsContainer').style.display = 'block';
+                        
+                        const lowWeight = data.risk_weights.low * 100;
+                        const mediumWeight = data.risk_weights.medium * 100;
+                        const highWeight = data.risk_weights.high * 100;
+                        
+                        document.getElementById('lowRiskWeight').style.width = `${lowWeight}%`;
+                        document.getElementById('mediumRiskWeight').style.width = `${mediumWeight}%`;
+                        document.getElementById('highRiskWeight').style.width = `${highWeight}%`;
+                        
+                        document.getElementById('lowRiskPercentage').textContent = `${lowWeight}%`;
+                        document.getElementById('mediumRiskPercentage').textContent = `${mediumWeight}%`;
+                        document.getElementById('highRiskPercentage').textContent = `${highWeight}%`;
+                    } else {
+                        document.getElementById('riskWeightsContainer').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading config data:', error);
+                });
         }
-        
-        // Function to update configuration display
-        function updateConfigDisplay(config) {
-            if (!config) return;
+
+        // Function to refresh data
+        function refreshData() {
+            // Show loading indicator
+            document.getElementById('lastUpdated').textContent = 'Refreshing...';
             
-            // Update configuration values
-            document.getElementById('configTradingPairs').textContent = config.trading_pairs || 'N/A';
-            document.getElementById('configInterval').textContent = `${config.decision_interval_minutes || 'N/A'} minutes`;
-            document.getElementById('configRiskLevel').textContent = config.risk_level || 'N/A';
-            document.getElementById('configLLMModel').textContent = config.llm_model || 'N/A';
-            document.getElementById('configRebalance').textContent = config.portfolio_rebalance ? 'Enabled' : 'Disabled';
-            document.getElementById('configMaxTrade').textContent = `${config.max_trade_percentage || 'N/A'}%`;
-            
-            // Update next decision time
-            const nextDecisionElement = document.getElementById('nextDecision');
-            if (config.next_decision_time) {
-                nextDecisionElement.textContent = `Next decision: ${config.next_decision_time}`;
-            } else {
-                nextDecisionElement.textContent = 'Next decision: Unknown';
-            }
-            
-            // Update simulation mode badge
-            const simulationBadge = document.getElementById('simulationBadge');
-            if (config.simulation_mode) {
-                simulationBadge.textContent = 'Simulation: Enabled';
-                simulationBadge.className = 'simulation-badge enabled';
-            } else {
-                simulationBadge.textContent = 'Simulation: Disabled';
-                simulationBadge.className = 'simulation-badge disabled';
-            }
-        }
-        
-        // Function to update decisions display
-        function updateDecisionsDisplay(decisions) {
-            const decisionsElement = document.getElementById('latestDecisions');
-            decisionsElement.innerHTML = '';
-            
-            if (!decisions || !decisions.length) {
-                decisionsElement.innerHTML = '<p class="text-muted">No decisions available</p>';
-                return;
-            }
-            
-            decisions.forEach(decision => {
-                const decisionBox = document.createElement('div');
-                decisionBox.className = `decision-box ${decision.action?.toLowerCase() || 'hold'}`;
-                
-                const timestamp = new Date(decision.timestamp).toLocaleString();
-                const product = decision.product_id || 'Unknown';
-                const action = decision.action?.toUpperCase() || 'HOLD';
-                const confidence = decision.confidence || 0;
-                const reason = decision.reason || 'No reason provided';
-                
-                // Price and price change information
-                const currentPrice = decision.current_price || decision.price || 'N/A';
-                const displayPrice = isNaN(parseFloat(currentPrice)) ? 'N/A' : `$${parseFloat(currentPrice).toFixed(2)}`;
-                
-                // Create price changes HTML if available
-                let priceChangesHtml = '';
-                if (decision.price_changes && Object.keys(decision.price_changes).length > 0) {
-                    const changes = decision.price_changes;
-                    priceChangesHtml = `
-                        <div class="mt-2 mb-2">
-                            <span class="badge ${parseFloat(changes['1h'] || 0) >= 0 ? 'bg-success' : 'bg-danger'} me-2">1h: ${parseFloat(changes['1h'] || 0).toFixed(2)}%</span>
-                            <span class="badge ${parseFloat(changes['4h'] || 0) >= 0 ? 'bg-success' : 'bg-danger'} me-2">4h: ${parseFloat(changes['4h'] || 0).toFixed(2)}%</span>
-                            <span class="badge ${parseFloat(changes['1d'] || 0) >= 0 ? 'bg-success' : 'bg-danger'} me-2">1d: ${parseFloat(changes['1d'] || 0).toFixed(2)}%</span>
-                            <span class="badge ${parseFloat(changes['5d'] || 0) >= 0 ? 'bg-success' : 'bg-danger'}">5d: ${parseFloat(changes['5d'] || 0).toFixed(2)}%</span>
-                        </div>
-                    `;
+            // Call API to refresh portfolio
+            fetch('/api/refresh_portfolio', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
                 }
-                
-                decisionBox.innerHTML = `
-                    <h5>
-                        ${product}: ${action} (${confidence}% confidence)
-                        <a href="https://www.coinbase.com/advanced-trade/spot/${product}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">View on Coinbase</a>
-                    </h5>
-                    <p class="text-muted mb-1">${timestamp}</p>
-                    <p class="mb-1"><strong>Current Price:</strong> ${displayPrice}</p>
-                    ${priceChangesHtml}
-                    <p class="mb-0"><strong>Reason:</strong> ${reason}</p>
-                `;
-                
-                decisionsElement.appendChild(decisionBox);
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Portfolio refresh response:', data);
+                // Reload data after a short delay
+                setTimeout(loadData, 1000);
+            })
+            .catch(error => {
+                console.error('Error refreshing portfolio:', error);
+                document.getElementById('lastUpdated').textContent = 'Error refreshing data';
+                // Try to reload data anyway
+                setTimeout(loadData, 1000);
             });
         }
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', loadData);
         
-        // Function to update portfolio display
-        function updatePortfolioDisplay(portfolio) {
-            // Update portfolio table
-            const portfolioTable = document.getElementById('portfolioTable');
-            let tableHtml = `
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Asset</th>
-                            <th>Amount</th>
-                            <th>Value (USD)</th>
-                            <th>Allocation</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            for (const asset of ['BTC', 'ETH', 'USD']) {
-                if (portfolio[asset]) {
-                    const amount = portfolio[asset].amount || 0;
-                    const valueUsd = portfolio[asset].value_usd || 0;
-                    const allocation = portfolio[asset].allocation || 0;
-                    
-                    tableHtml += `
-                        <tr>
-                            <td>${asset}</td>
-                            <td>${asset === 'BTC' ? amount.toFixed(8) : asset === 'ETH' ? amount.toFixed(6) : amount.toFixed(2)}</td>
-                            <td>$${valueUsd.toFixed(2)}</td>
-                            <td>${allocation.toFixed(2)}%</td>
-                        </tr>
-                    `;
-                }
-            }
-            
-            tableHtml += `
-                    </tbody>
-                </table>
-            `;
-            
-            portfolioTable.innerHTML = tableHtml;
-            
-            // Update performance stats
-            const performanceStats = document.getElementById('performanceStats');
-            const initialValue = portfolio.initial_value_usd || 0;
-            const currentValue = portfolio.portfolio_value_usd || 0;
-            const totalReturn = portfolio.total_return || 0;
-            const tradesExecuted = portfolio.trades_executed || 0;
-            
-            performanceStats.innerHTML = `
-                <div class="stats-box">
-                    <h6>Initial Value</h6>
-                    <p>$${initialValue.toFixed(2)}</p>
-                </div>
-                <div class="stats-box">
-                    <h6>Current Value</h6>
-                    <p>$${currentValue.toFixed(2)}</p>
-                </div>
-                <div class="stats-box">
-                    <h6>Total Return</h6>
-                    <p>${totalReturn.toFixed(2)}%</p>
-                </div>
-                <div class="stats-box">
-                    <h6>Trades Executed</h6>
-                    <p>${tradesExecuted}</p>
-                </div>
-            `;
-            
-            // Update rebalance table
-            const rebalanceTable = document.getElementById('rebalanceTable');
-            let rebalanceHtml = `
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Asset</th>
-                            <th>Target %</th>
-                            <th>Current %</th>
-                            <th>Deviation</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            const targetAllocations = { 'BTC': 40, 'ETH': 40, 'USD': 20 };
-            
-            for (const asset of ['BTC', 'ETH', 'USD']) {
-                if (portfolio[asset]) {
-                    const target = targetAllocations[asset];
-                    const current = portfolio[asset].allocation || 0;
-                    const deviation = portfolio[asset].deviation || 0;
-                    const status = portfolio[asset].rebalance_status || 'Unknown';
-                    
-                    rebalanceHtml += `
-                        <tr>
-                            <td>${asset}</td>
-                            <td>${target}%</td>
-                            <td>${current.toFixed(2)}%</td>
-                            <td>${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%</td>
-                            <td>${status}</td>
-                        </tr>
-                    `;
-                }
-            }
-            
-            rebalanceHtml += `
-                    </tbody>
-                </table>
-            `;
-            
-            rebalanceTable.innerHTML = rebalanceHtml;
-        }
-        
-        // Function to update trade history
-        function updateTradeHistory(trades) {
-            const tradeHistoryElement = document.getElementById('tradeHistory');
-            const actionFilter = document.getElementById('actionFilter');
-            const selectedAction = actionFilter ? actionFilter.value : 'all';
-            
-            tradeHistoryElement.innerHTML = '';
-            
-            if (trades && trades.length > 0) {
-                // Filter trades based on selected action
-                const filteredTrades = selectedAction === 'all' 
-                    ? trades 
-                    : trades.filter(trade => trade.action && trade.action.toLowerCase() === selectedAction.toLowerCase());
-                
-                if (filteredTrades.length === 0) {
-                    tradeHistoryElement.innerHTML = `<tr><td colspan="6" class="text-center">No ${selectedAction} trades found</td></tr>`;
-                    return;
-                }
-                
-                filteredTrades.forEach(trade => {
-                    const row = document.createElement('tr');
-                    const timestamp = new Date(trade.timestamp).toLocaleString();
-                    const productId = trade.product_id || '';
-                    const action = trade.action || '';
-                    const cryptoAmount = trade.crypto_amount || 0;
-                    const price = trade.price || 0;
-                    const tradeAmountUsd = trade.trade_amount_usd || 0;
-                    
-                    row.innerHTML = `
-                        <td>${timestamp}</td>
-                        <td>${productId}</td>
-                        <td>${action}</td>
-                        <td>${cryptoAmount.toFixed(8)}</td>
-                        <td>$${price.toFixed(2)}</td>
-                        <td>$${tradeAmountUsd.toFixed(2)}</td>
-                    `;
-                    tradeHistoryElement.appendChild(row);
-                });
-            } else {
-                tradeHistoryElement.innerHTML = '<tr><td colspan="6" class="text-center">No trades yet</td></tr>';
-            }
-        }
-        
-        // Function to refresh portfolio from Coinbase
-        async function refreshPortfolio() {
-            try {
-                const refreshBtn = document.getElementById('refreshPortfolioBtn');
-                refreshBtn.disabled = true;
-                refreshBtn.textContent = 'Refreshing...';
-                
-                // Get the current hostname and use it to construct the API URL
-                const hostname = window.location.hostname;
-                const apiUrl = `http://${hostname}:5000/api/refresh_portfolio`;
-                
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                });
-                
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    alert('Portfolio refreshed successfully from Coinbase!');
-                    // Reload dashboard data
-                    loadDashboardData();
-                } else {
-                    alert('Error refreshing portfolio: ' + result.message);
-                }
-            } catch (error) {
-                console.error('Error refreshing portfolio:', error);
-                alert('Error refreshing portfolio. Check console for details.');
-            } finally {
-                const refreshBtn = document.getElementById('refreshPortfolioBtn');
-                refreshBtn.disabled = false;
-                refreshBtn.textContent = 'Refresh Portfolio from Coinbase';
-            }
-        }
-        
-        // Add event listener for refresh button
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('refreshPortfolioBtn').addEventListener('click', refreshPortfolio);
-            
-            // Add event listener for action filter
-            const actionFilter = document.getElementById('actionFilter');
-            if (actionFilter) {
-                actionFilter.addEventListener('change', function() {
-                    // Reload trade history with the selected filter
-                    fetch('data/trading_data.json')
-                        .then(response => response.json())
-                        .then(data => {
-                            updateTradeHistory(data.recent_trades);
-                        })
-                        .catch(error => console.error('Error loading trade history:', error));
-                });
-            }
-            
-            // Load dashboard data
-            loadDashboardData();
-        });
-        
-        // Refresh dashboard every 60 seconds
-        setInterval(loadDashboardData, 60000);
+        // Refresh data every 60 seconds
+        setInterval(loadData, 60000);
     </script>
 </body>
 </html>

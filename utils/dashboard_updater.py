@@ -47,7 +47,7 @@ class DashboardUpdater:
             from config import (
                 TRADING_PAIRS, DECISION_INTERVAL_MINUTES, RISK_LEVEL,
                 LLM_MODEL, PORTFOLIO_REBALANCE, MAX_TRADE_PERCENTAGE,
-                SIMULATION_MODE
+                SIMULATION_MODE, RISK_WEIGHTS
             )
             
             # Calculate next decision time based on current time and interval
@@ -64,6 +64,7 @@ class DashboardUpdater:
                 "trading_pairs": ",".join(TRADING_PAIRS),
                 "decision_interval_minutes": DECISION_INTERVAL_MINUTES,
                 "risk_level": RISK_LEVEL,
+                "risk_weights": RISK_WEIGHTS,
                 "llm_model": LLM_MODEL,
                 "portfolio_rebalance": PORTFOLIO_REBALANCE,
                 "max_trade_percentage": MAX_TRADE_PERCENTAGE,
@@ -285,6 +286,9 @@ class DashboardUpdater:
                     if asset in portfolio_copy and isinstance(portfolio_copy[asset], dict):
                         if "allocation" not in portfolio_copy[asset]:
                             portfolio_copy[asset]["allocation"] = 0
+                            
+                        # Store target allocation in portfolio data for dashboard display
+                        portfolio_copy[asset]["target_allocation"] = target_allocations[asset]
                             
                         current_allocation = portfolio_copy[asset]["allocation"]
                         target = target_allocations[asset]
