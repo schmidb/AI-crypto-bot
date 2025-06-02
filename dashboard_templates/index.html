@@ -254,8 +254,10 @@
         
         // Function to update dashboard with data
         function updateDashboard(data) {
-            // Update timestamp
-            document.querySelector('.last-updated').textContent = 'Last updated: ' + new Date().toLocaleString();
+            // Update timestamp with UTC time for consistency
+            const now = new Date();
+            const utcTimestamp = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+            document.querySelector('.last-updated').textContent = 'Last updated: ' + utcTimestamp;
             
             // Update portfolio allocation chart with target allocation from config
             if (data && data.config && data.config.target_allocation) {
@@ -304,6 +306,49 @@
                     tableHTML += '</tbody>';
                     rebalanceTable.innerHTML = tableHTML;
                 }
+            }
+            
+            // Update recent trades section
+            const recentTradesContainer = document.getElementById('recent-trades');
+            if (recentTradesContainer && data.recent_trades && data.recent_trades.length > 0) {
+                let tradesHTML = '';
+                
+                data.recent_trades.forEach(trade => {
+                    // Format the timestamp to be consistent
+                    let timestamp = trade.timestamp;
+                    if (timestamp) {
+                        // Convert ISO string to Date object and format consistently
+                        const tradeDate = new Date(timestamp);
+                        timestamp = tradeDate.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+                    }
+                    
+                    tradesHTML += `
+                        <div class="trade-item">
+                            <strong class="${trade.action.toLowerCase()}">${trade.action.toUpperCase()}</strong>
+                            ${trade.product_id} - ${timestamp}
+                            <br>
+                            Price: $${parseFloat(trade.price).toFixed(2)} | 
+                            Amount: ${parseFloat(trade.crypto_amount).toFixed(6)} | 
+                            Confidence: ${trade.confidence}%
+                            <br>
+                            <small>${trade.reason}</small>
+                        </div>
+                    `;
+                });
+                
+                recentTradesContainer.innerHTML = tradesHTML;
+            }
+            
+            // Update bot status
+            if (data && data.status) {
+                document.getElementById('bot-status').textContent = `Status: ${data.status}`;
+            }
+            
+            // Update last decision time
+            if (data && data.timestamp) {
+                const decisionDate = new Date(data.timestamp);
+                const formattedDate = decisionDate.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+                document.getElementById('last-decision').textContent = `Last decision: ${formattedDate}`;
             }
             
             // This function would be called with data from the backend

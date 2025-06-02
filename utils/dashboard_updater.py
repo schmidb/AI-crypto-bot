@@ -271,7 +271,8 @@ class DashboardUpdater:
     def _update_timestamp(self) -> None:
         """Update last updated timestamp"""
         try:
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Use UTC time for consistency
+            timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
             
             with open(os.path.join(self.dashboard_dir, "data/last_updated.txt"), 'w') as f:
                 f.write(timestamp)

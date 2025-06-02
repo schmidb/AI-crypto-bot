@@ -52,7 +52,7 @@ class TradeLogger:
             
             # Create trade record
             trade = {
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.utcnow().isoformat(),  # Use UTC time for consistency
                 "product_id": product_id,
                 "action": result.get("action", "unknown"),
                 "price": price,

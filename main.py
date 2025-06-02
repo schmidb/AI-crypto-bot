@@ -108,7 +108,7 @@ class TradingBot:
                     if not existing_trade or existing_trade.get('price', 0) == 0:
                         # Create a placeholder "hold" trade with current price
                         placeholder_trade = {
-                            "timestamp": datetime.now().isoformat(),
+                            "timestamp": datetime.utcnow().isoformat(),  # Use UTC time for consistency
                             "product_id": product_id,
                             "action": "hold",
                             "price": data.get("price", 0),
@@ -195,7 +195,7 @@ class TradingBot:
                 "recent_trades": recent_trades,
                 "market_data": market_data,
                 "status": "running",
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.utcnow().isoformat()  # Use UTC time for consistency
             }
             
             # Get current portfolio data
