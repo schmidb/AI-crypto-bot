@@ -242,26 +242,46 @@ class DataCollector:
             # Calculate price changes for different time periods
             price_changes = {}
             
-            if not historical_data.empty:
-                # 1 hour change
-                if len(historical_data) >= 1:
-                    price_1h_ago = historical_data['close'].iloc[-1]
-                    price_changes["1h"] = ((price - price_1h_ago) / price_1h_ago) * 100
-                
-                # 4 hour change
-                if len(historical_data) >= 4:
-                    price_4h_ago = historical_data['close'].iloc[-4]
-                    price_changes["4h"] = ((price - price_4h_ago) / price_4h_ago) * 100
-                
-                # 1 day change (24 hours)
-                if len(historical_data) >= 24:
-                    price_1d_ago = historical_data['close'].iloc[-24]
-                    price_changes["1d"] = ((price - price_1d_ago) / price_1d_ago) * 100
-                
-                # 5 day change (120 hours)
-                if len(historical_data) >= 120:
-                    price_5d_ago = historical_data['close'].iloc[-120]
-                    price_changes["5d"] = ((price - price_5d_ago) / price_5d_ago) * 100
+            try:
+                if not historical_data.empty:
+                    # Ensure close values are numeric
+                    historical_data['close'] = pd.to_numeric(historical_data['close'], errors='coerce')
+                    
+                    # 1 hour change
+                    if len(historical_data) >= 1:
+                        price_1h_ago = float(historical_data['close'].iloc[-1])
+                        if price_1h_ago > 0:  # Avoid division by zero
+                            price_changes["1h"] = ((price - price_1h_ago) / price_1h_ago) * 100
+                        else:
+                            price_changes["1h"] = 0.0
+                    
+                    # 4 hour change
+                    if len(historical_data) >= 4:
+                        price_4h_ago = float(historical_data['close'].iloc[-4])
+                        if price_4h_ago > 0:  # Avoid division by zero
+                            price_changes["4h"] = ((price - price_4h_ago) / price_4h_ago) * 100
+                        else:
+                            price_changes["4h"] = 0.0
+                    
+                    # 1 day change (24 hours)
+                    if len(historical_data) >= 24:
+                        price_1d_ago = float(historical_data['close'].iloc[-24])
+                        if price_1d_ago > 0:  # Avoid division by zero
+                            price_changes["1d"] = ((price - price_1d_ago) / price_1d_ago) * 100
+                        else:
+                            price_changes["1d"] = 0.0
+                    
+                    # 5 day change (120 hours)
+                    if len(historical_data) >= 120:
+                        price_5d_ago = float(historical_data['close'].iloc[-120])
+                        if price_5d_ago > 0:  # Avoid division by zero
+                            price_changes["5d"] = ((price - price_5d_ago) / price_5d_ago) * 100
+                        else:
+                            price_changes["5d"] = 0.0
+            except Exception as e:
+                logger.error(f"Error calculating price changes: {e}")
+                # Provide empty price changes if calculation fails
+                price_changes = {"1h": 0.0, "4h": 0.0, "1d": 0.0, "5d": 0.0}
             
             # Create market data with available information - ensure all values are float
             market_data = {
