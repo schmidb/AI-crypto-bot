@@ -21,6 +21,11 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "vertex")
 LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash")  # Updated to use Gemini Flash
 LLM_LOCATION = os.getenv("LLM_LOCATION", "us-central1")
 
+# Trading settings
+TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")
+DECISION_INTERVAL_MINUTES = int(os.getenv("DECISION_INTERVAL_MINUTES", "60"))
+SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
+
 # Risk settings
 RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")  # low, medium, high, hybrid
 RISK_WEIGHTS = {
