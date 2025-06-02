@@ -29,6 +29,7 @@ AI-crypto-bot/
 ├── data_collector.py       # Market data collection
 ├── backtesting.py          # Backtesting module for strategy evaluation
 ├── backtest_cli.py         # Command-line interface for backtesting
+├── strategy_analyzer.py    # AI-powered strategy analysis and improvement
 ├── aws_setup/              # AWS deployment scripts
 │   ├── README.md           # AWS deployment guide
 │   └── setup_ec2.sh        # Automated setup script for EC2
@@ -38,7 +39,10 @@ AI-crypto-bot/
 ├── utils/                  # Utility functions
 │   ├── __init__.py
 │   ├── logger.py           # Logging functionality
-│   └── helpers.py          # Helper functions
+│   ├── helpers.py          # Helper functions
+│   ├── trade_logger.py     # Trade history logging
+│   ├── strategy_evaluator.py # Strategy performance evaluation
+│   └── dashboard_updater.py # Dashboard visualization updates
 └── tests/                  # Unit tests
     ├── __init__.py
     ├── test_coinbase.py
@@ -163,3 +167,40 @@ MAX_TRADE_PERCENTAGE=25       # Maximum percentage of holdings to trade at once
 - **Risk management**: Limits exposure through percentage-based position sizing
 - **Automated rebalancing**: Maintains your desired asset allocation
 - **Performance tracking**: Monitors your portfolio's growth over time
+
+## Strategy Analysis and Improvement
+
+The bot includes a dedicated strategy analyzer that uses AI to evaluate trading performance and suggest improvements.
+
+### How to Use the Strategy Analyzer
+
+The `strategy_analyzer.py` script feeds historical performance data to the LLM for analysis and recommendations:
+
+```bash
+# Analyze the last 30 days of trading performance (default)
+python strategy_analyzer.py
+
+# Analyze a specific number of days
+python strategy_analyzer.py --days 60
+```
+
+### What the Analyzer Provides
+
+The strategy analyzer generates a comprehensive report with:
+
+1. **Performance Analysis**: Detailed evaluation of your trading strategy's effectiveness
+2. **Pattern Recognition**: Identification of patterns in successful and unsuccessful trades
+3. **Strategic Recommendations**: Specific suggestions to improve your trading strategy
+4. **Parameter Adjustments**: Recommended changes to risk levels, trade sizes, etc.
+5. **Market Triggers**: Conditions that should prompt strategy adjustments
+
+### Using the Analysis
+
+Analysis reports are saved to the `reports/` directory as JSON files with timestamps. You can:
+
+1. Review the recommendations in the terminal output
+2. Examine the detailed analysis in the JSON report
+3. Implement suggested parameter adjustments in your `.env` file
+4. Modify trading logic based on the AI's recommendations
+
+This creates a feedback loop where your trading strategy continuously improves based on real performance data and AI analysis.
