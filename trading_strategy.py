@@ -290,6 +290,12 @@ class TradingStrategy:
         else:  # hold
             logger.info(f"Holding {base_currency} position")
             result["message"] = f"Holding {base_currency} position"
+            
+            # Add current price and zero amount for hold actions
+            # This ensures the dashboard shows the current price even for hold actions
+            result["trade_amount_usd"] = 0
+            result["crypto_amount"] = 0
+            result["price"] = current_price
         
         return result
     
