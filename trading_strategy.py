@@ -309,8 +309,11 @@ class TradingStrategy:
             # Update portfolio with current market values
             self.update_portfolio_values()
             
-            # Define target allocation
-            target_allocation = {"BTC": 40, "ETH": 40, "USD": 20}
+            # Define target allocation from config
+            from config import TARGET_ALLOCATION
+            target_allocation = TARGET_ALLOCATION
+            
+            logger.info(f"Target allocation: {target_allocation}")
             
             # Calculate rebalance actions
             actions = self.portfolio_manager.calculate_rebalance_actions(target_allocation)

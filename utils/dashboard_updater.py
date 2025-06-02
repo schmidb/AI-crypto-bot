@@ -450,12 +450,13 @@ class DashboardUpdater:
                 logger.warning("Invalid portfolio data for allocation comparison chart")
                 return
                 
-            # Target allocation
-            target = {"BTC": 40, "ETH": 40, "USD": 20}
+            # Import target allocation from config
+            from config import TARGET_ALLOCATION
+            target = TARGET_ALLOCATION
             
             # Current allocation
             current = {}
-            for asset in ["BTC", "ETH", "USD"]:
+            for asset in target.keys():
                 if asset in portfolio and isinstance(portfolio[asset], dict):
                     # Calculate allocation if not already present
                     if "allocation" not in portfolio[asset]:
