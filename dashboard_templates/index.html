@@ -66,6 +66,33 @@
         </div>
         
         <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Rebalance Status</h2>
+                    </div>
+                    <div class="card-body">
+                        <table id="rebalance-status" class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Current %</th>
+                                    <th>Target %</th>
+                                    <th>Difference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4">Loading allocation data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header">
@@ -229,6 +256,55 @@
         function updateDashboard(data) {
             // Update timestamp
             document.querySelector('.last-updated').textContent = 'Last updated: ' + new Date().toLocaleString();
+            
+            // Update portfolio allocation chart with target allocation from config
+            if (data && data.config && data.config.target_allocation) {
+                const targetAllocation = data.config.target_allocation;
+                
+                // Update allocation chart with target values from config
+                const allocationLabels = Object.keys(targetAllocation);
+                const allocationValues = allocationLabels.map(key => targetAllocation[key]);
+                
+                allocationChart.data.labels = allocationLabels;
+                allocationChart.data.datasets[0].data = allocationValues;
+                allocationChart.update();
+                
+                // Update rebalance status table if it exists
+                const rebalanceTable = document.getElementById('rebalance-status');
+                if (rebalanceTable) {
+                    let tableHTML = `
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Current %</th>
+                                <th>Target %</th>
+                                <th>Difference</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                    `;
+                    
+                    // Add rows for each asset
+                    for (const asset in targetAllocation) {
+                        const target = targetAllocation[asset];
+                        const current = data.portfolio && data.portfolio.allocations ? 
+                            data.portfolio.allocations[asset] || 0 : 0;
+                        const diff = current - target;
+                        
+                        tableHTML += `
+                            <tr>
+                                <td>${asset}</td>
+                                <td>${current.toFixed(2)}%</td>
+                                <td>${target.toFixed(2)}%</td>
+                                <td class="${diff > 5 ? 'text-danger' : diff < -5 ? 'text-danger' : 'text-success'}">${diff.toFixed(2)}%</td>
+                            </tr>
+                        `;
+                    }
+                    
+                    tableHTML += '</tbody>';
+                    rebalanceTable.innerHTML = tableHTML;
+                }
+            }
             
             // This function would be called with data from the backend
             console.log('Dashboard data:', data);
