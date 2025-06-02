@@ -61,7 +61,41 @@ class TradingBot:
         # Initialize strategy evaluator
         self.strategy_evaluator = StrategyEvaluator()
         
+        # Initialize dashboard with existing data
+        self.initialize_dashboard()
+        
         logger.info(f"Trading bot initialized with trading pairs: {TRADING_PAIRS}")
+        
+    def initialize_dashboard(self):
+        """Initialize dashboard with existing data on bot startup"""
+        try:
+            logger.info("Initializing dashboard with existing data")
+            
+            # Load existing trade history
+            trades = self.trading_strategy.trade_logger.get_recent_trades(10)
+            
+            # Get current market data
+            market_data = {}
+            for product_id in TRADING_PAIRS:
+                try:
+                    market_data[product_id] = self.data_collector.get_market_data(product_id)
+                except Exception as e:
+                    logger.error(f"Error getting market data for {product_id} during initialization: {e}")
+            
+            # Create trading data structure
+            trading_data = {
+                "recent_trades": trades,
+                "market_data": market_data
+            }
+            
+            # Get portfolio data
+            portfolio = self.trading_strategy.portfolio
+            
+            # Update dashboard with loaded data
+            self.dashboard_updater.update_dashboard(trading_data, portfolio)
+            logger.info("Dashboard initialized with existing data")
+        except Exception as e:
+            logger.error(f"Error initializing dashboard: {e}")
     
     def run_trading_cycle(self):
         """Run a single trading cycle for all configured trading pairs"""

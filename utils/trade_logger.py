@@ -73,14 +73,33 @@ class TradeLogger:
             List of recent trades
         """
         try:
-            with open(self.log_file, 'r') as f:
-                trades = json.load(f)
-            
-            # Sort trades by timestamp (newest first)
-            trades.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-            
-            # Return limited number of trades
-            return trades[:limit]
+            # Check if file exists
+            if not os.path.exists(self.log_file):
+                logger.warning(f"Trade history file not found: {self.log_file}")
+                return []
+                
+            # Check if file is empty
+            if os.path.getsize(self.log_file) == 0:
+                logger.warning(f"Trade history file is empty: {self.log_file}")
+                return []
+                
+            try:
+                with open(self.log_file, 'r') as f:
+                    trades = json.load(f)
+                
+                # Validate trades is a list
+                if not isinstance(trades, list):
+                    logger.warning(f"Trade history is not a list: {type(trades)}")
+                    return []
+                    
+                # Sort trades by timestamp (newest first)
+                trades.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+                
+                # Return limited number of trades
+                return trades[:limit]
+            except json.JSONDecodeError:
+                logger.error(f"Error decoding trade history JSON: {self.log_file}")
+                return []
             
         except Exception as e:
             logger.error(f"Error getting recent trades: {e}")

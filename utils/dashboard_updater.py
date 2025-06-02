@@ -109,6 +109,22 @@ class DashboardUpdater:
                         }
                         latest_decisions.append(decision)
             
+            # Try to load existing decisions first
+            existing_decisions = []
+            try:
+                existing_decisions_file = f"{self.dashboard_dir}/data/latest_decisions.json"
+                if os.path.exists(existing_decisions_file):
+                    with open(existing_decisions_file, 'r') as f:
+                        existing_decisions = json.load(f)
+                    logger.info(f"Loaded {len(existing_decisions)} existing decisions from file")
+            except Exception as e:
+                logger.warning(f"Error loading existing decisions: {e}")
+            
+            # If we have no new decisions but have existing ones, use those
+            if not latest_decisions and existing_decisions:
+                latest_decisions = existing_decisions
+                logger.info("Using existing decisions as no new decisions are available")
+            
             # Add market data to decisions if available
             if "market_data" in trading_data:
                 for decision in latest_decisions:
@@ -123,23 +139,14 @@ class DashboardUpdater:
                         if "price_changes" not in decision and "price_changes" in market_data:
                             decision["price_changes"] = market_data["price_changes"]
             
-            # Try to load existing decisions to preserve any that might be missing
-            try:
-                existing_decisions_file = f"{self.dashboard_dir}/data/latest_decisions.json"
-                if os.path.exists(existing_decisions_file):
-                    with open(existing_decisions_file, 'r') as f:
-                        existing_decisions = json.load(f)
-                    
-                    # Create a map of product_id to decision for quick lookup
-                    decision_map = {d.get("product_id"): d for d in latest_decisions if d.get("product_id")}
-                    
-                    # Add any existing decisions that aren't in the latest decisions
-                    for existing in existing_decisions:
-                        product_id = existing.get("product_id")
-                        if product_id and product_id not in decision_map:
-                            latest_decisions.append(existing)
-            except Exception as e:
-                logger.warning(f"Error loading existing decisions: {e}")
+            # Create a map of product_id to decision for quick lookup
+            decision_map = {d.get("product_id"): d for d in latest_decisions if d.get("product_id")}
+            
+            # Add any existing decisions that aren't in the latest decisions
+            for existing in existing_decisions:
+                product_id = existing.get("product_id")
+                if product_id and product_id not in decision_map:
+                    latest_decisions.append(existing)
             
             # Save to file
             with open(f"{self.dashboard_dir}/data/latest_decisions.json", "w") as f:
