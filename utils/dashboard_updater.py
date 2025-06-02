@@ -91,10 +91,20 @@ class DashboardUpdater:
                     product_id = trade.get("product_id")
                     if product_id and (product_id not in product_decisions or 
                                       trade.get("timestamp", "") > product_decisions[product_id].get("timestamp", "")):
+                        # Ensure the trade has a price field
+                        if "price" in trade and trade["price"] > 0:
+                            # Make sure current_price is also set for dashboard display
+                            if "current_price" not in trade or trade["current_price"] == 0:
+                                trade["current_price"] = trade["price"]
                         product_decisions[product_id] = trade
                 
                 # Convert to list
                 latest_decisions = list(product_decisions.values())
+                logger.info(f"Extracted {len(latest_decisions)} decisions from recent trades")
+                
+                # Debug log to check prices
+                for decision in latest_decisions:
+                    logger.info(f"Decision for {decision.get('product_id')}: price={decision.get('price')}, current_price={decision.get('current_price')}")
             
             # If we have trading results directly
             elif "trading_results" in trading_data:
@@ -105,9 +115,12 @@ class DashboardUpdater:
                             "action": result.get("action", "hold"),
                             "confidence": result.get("confidence", 0),
                             "reason": result.get("reason", "No reason provided"),
-                            "timestamp": result.get("timestamp", datetime.datetime.now().isoformat())
+                            "timestamp": result.get("timestamp", datetime.datetime.now().isoformat()),
+                            "price": result.get("price", 0),
+                            "current_price": result.get("current_price", result.get("price", 0))
                         }
                         latest_decisions.append(decision)
+                logger.info(f"Extracted {len(latest_decisions)} decisions from trading results")
             
             # Try to load existing decisions first
             existing_decisions = []
@@ -131,14 +144,20 @@ class DashboardUpdater:
                     product_id = decision.get("product_id")
                     if product_id in trading_data["market_data"]:
                         market_data = trading_data["market_data"][product_id]
-                        # Only add price if not already present or if price is zero
-                        if "current_price" not in decision or decision["current_price"] == 0:
-                            decision["current_price"] = market_data.get("price")
-                        elif "price" not in decision or decision["price"] == 0:
-                            decision["price"] = market_data.get("price")
+                        market_price = market_data.get("price", 0)
                         
-                        # Add price changes if available and not already present
-                        if "price_changes" not in decision and "price_changes" in market_data:
+                        # Always update current_price with the latest market price if available
+                        if market_price > 0:
+                            decision["current_price"] = market_price
+                            logger.info(f"Updated current_price for {product_id} to {market_price}")
+                            
+                            # If price is missing or zero, set it to the market price too
+                            if "price" not in decision or decision["price"] == 0:
+                                decision["price"] = market_price
+                                logger.info(f"Updated price for {product_id} to {market_price}")
+                        
+                        # Add price changes if available
+                        if "price_changes" in market_data:
                             decision["price_changes"] = market_data["price_changes"]
             
             # Create a map of product_id to decision for quick lookup
@@ -150,9 +169,23 @@ class DashboardUpdater:
                 if product_id and product_id not in decision_map:
                     latest_decisions.append(existing)
             
+            # Ensure all decisions have both price and current_price fields
+            for decision in latest_decisions:
+                if "price" in decision and decision["price"] > 0:
+                    if "current_price" not in decision or decision["current_price"] == 0:
+                        decision["current_price"] = decision["price"]
+                elif "current_price" in decision and decision["current_price"] > 0:
+                    if "price" not in decision or decision["price"] == 0:
+                        decision["price"] = decision["current_price"]
+            
+            # Create the directory if it doesn't exist
+            os.makedirs(f"{self.dashboard_dir}/data", exist_ok=True)
+            
             # Save to file
             with open(f"{self.dashboard_dir}/data/latest_decisions.json", "w") as f:
                 json.dump(latest_decisions, f, indent=2, default=str)
+            
+            logger.info(f"Saved {len(latest_decisions)} decisions to latest_decisions.json")
                 
         except Exception as e:
             logger.error(f"Error updating latest decisions: {e}")

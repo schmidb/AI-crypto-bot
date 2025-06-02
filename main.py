@@ -173,9 +173,23 @@ class TradingBot:
         
         # Update the dashboard with the results
         try:
+            # Get current market data for all trading pairs to ensure fresh prices
+            market_data = {}
+            for product_id in TRADING_PAIRS:
+                try:
+                    market_data[product_id] = self.data_collector.get_market_data(product_id)
+                    logger.info(f"Got fresh market data for {product_id}: price=${market_data[product_id].get('price', 0)}")
+                except Exception as e:
+                    logger.error(f"Error getting market data for {product_id}: {e}")
+            
+            # Get recent trades with the latest decisions
+            recent_trades = self.trading_strategy.trade_logger.get_recent_trades(10)
+            
             # Convert results to a proper format for the dashboard
             dashboard_data = {
                 "trading_results": results,
+                "recent_trades": recent_trades,
+                "market_data": market_data,
                 "status": "running",
                 "timestamp": datetime.now().isoformat()
             }
