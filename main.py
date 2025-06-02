@@ -13,6 +13,7 @@ from trading_strategy import TradingStrategy
 from utils.dashboard_updater import DashboardUpdater
 from utils.tax_report import TaxReportGenerator
 from utils.strategy_evaluator import StrategyEvaluator
+from utils.automated_analyzer import get_automated_analyzer
 from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, LOG_LEVEL, LOG_FILE
 
 # Configure logging
@@ -60,6 +61,9 @@ class TradingBot:
         
         # Initialize strategy evaluator
         self.strategy_evaluator = StrategyEvaluator()
+        
+        # Initialize automated analyzer
+        self.automated_analyzer = get_automated_analyzer()
         
         # Initialize dashboard with existing data
         self.initialize_dashboard()
@@ -247,6 +251,9 @@ class TradingBot:
         
         # Schedule portfolio rebalancing (once per day at 2 AM)
         schedule.every().day.at("02:00").do(self.trading_strategy.rebalance_portfolio)
+        
+        # Schedule daily strategy analysis at 3 AM
+        schedule.every().day.at("03:00").do(self.automated_analyzer.run_analysis)
         
         # Schedule dashboard updates every 5 minutes
         schedule.every(5).minutes.do(self.update_dashboard)

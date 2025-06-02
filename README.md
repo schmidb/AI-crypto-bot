@@ -184,6 +184,19 @@ python strategy_analyzer.py
 python strategy_analyzer.py --days 60
 ```
 
+### Automated Daily Strategy Analysis
+
+The bot automatically runs a strategy analysis every day at 3 AM and updates the dashboard with the results:
+
+1. **Daily Analysis**: The system collects performance data and sends it to the LLM for analysis
+2. **Dashboard Integration**: Analysis results are displayed on a dedicated "Strategy Analysis" page
+3. **Continuous Improvement**: Review the AI's recommendations to improve your trading strategy
+
+To access the strategy analysis dashboard:
+- Open the main dashboard in your browser
+- Click on the "Strategy Analysis" link in the navigation bar
+- Review the latest analysis, recommendations, and suggested parameter adjustments
+
 ### What the Analyzer Provides
 
 The strategy analyzer generates a comprehensive report with:
