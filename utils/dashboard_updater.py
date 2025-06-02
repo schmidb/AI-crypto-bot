@@ -74,4 +74,6 @@ class DashboardUpdater:
             from config import (
                 TRADING_PAIRS, DECISION_INTERVAL_MINUTES, RISK_LEVEL,
                 LLM_MODEL, PORTFOLIO_REBALANCE, MAX_TRADE_PERCENTAGE,
-                SIMULATION_MODE
+                SIMULATION_MODE, TARGET_ALLOCATION_BTC, TARGET_ALLOCATION_ETH,
+                TARGET_ALLOCATION_USD
+            )
