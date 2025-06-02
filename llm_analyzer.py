@@ -622,90 +622,6 @@ Respond with ONLY a JSON object in this format:
         """
 
         return prompt
-<<<<<<< HEAD
-    
-    def _get_llm_response(self, prompt: str) -> str:
-        """
-        Get response from LLM
-        
-        Args:
-            prompt: Formatted prompt string
-            
-        Returns:
-            LLM response string
-        """
-        if self.provider == "vertex" or self.provider == "vertex_ai":
-            return self._get_vertex_response(prompt)
-        else:
-            raise ValueError(f"Unsupported LLM provider: {self.provider}")
-    
-    def _get_vertex_response(self, prompt: str) -> str:
-        """
-        Get response from Google Cloud Vertex AI
-        
-        Args:
-            prompt: Formatted prompt string
-            
-        Returns:
-            Vertex AI response string
-        """
-        try:
-            # Map model name to API model ID if needed
-            model_id = self._map_model_name(self.model)
-            logger.info(f"Mapped model name '{self.model}' to API model ID: {model_id}")
-            
-            # Initialize Vertex AI
-            aiplatform.init(project=self.project_id, location=self.location)
-            
-            # Create endpoint URL for logging
-            endpoint_url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_id}:generateContent"
-            logger.info(f"Making API request to: {endpoint_url}")
-            
-            # Get credentials
-            credentials, _ = google.auth.default()
-            
-            # Create the model
-            endpoint = aiplatform.Endpoint(
-                endpoint_name=f"projects/{self.project_id}/locations/{self.location}/publishers/google/models/{model_id}"
-            )
-            
-            # Create the request
-            instances = [{"prompt": prompt}]
-            parameters = {
-                "temperature": 0.2,
-                "maxOutputTokens": 1024,
-                "topK": 40,
-                "topP": 0.95
-            }
-            
-            # Make the prediction
-            response = endpoint.predict(instances=instances, parameters=parameters)
-            response_text = response.predictions[0]
-            
-            return response_text
-            
-        except Exception as e:
-            logger.error(f"Error getting Vertex AI response: {e}")
-            raise
-    
-    def _map_model_name(self, model_name: str) -> str:
-        """
-        Map friendly model name to API model ID
-        
-        Args:
-            model_name: Friendly model name
-            
-        Returns:
-            API model ID
-        """
-        model_mapping = {
-            "text-bison": "text-bison",
-            "text-bison-32k": "text-bison-32k",
-            "gemini-pro": "gemini-pro",
-            "gemini-1.5-pro": "gemini-1.5-pro",
-            "gemini-1.5-flash": "gemini-1.5-flash",
-            "gemini-2.5-flash-preview-05-20": "gemini-2.5-flash-preview-05-20"
-=======
 
     def _parse_trading_decision(self, response: str) -> Dict[str, Any]:
         """Parse LLM response to extract trading decision"""
@@ -715,7 +631,6 @@ Respond with ONLY a JSON object in this format:
             "action": "hold",
             "confidence": 0,
             "reason": "No clear signal"
->>>>>>> parent of ff8e0f0 (new risk level)
         }
 
         try:
