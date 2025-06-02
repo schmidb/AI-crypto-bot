@@ -213,7 +213,18 @@
                 <!-- Trading Activity Section -->
                 <div class="card mt-4">
                     <div class="card-header">
-                        <h5>Recent Trading Activity</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5>Recent Trading Activity</h5>
+                            <div class="d-flex align-items-center">
+                                <label for="actionFilter" class="me-2">Filter by action:</label>
+                                <select id="actionFilter" class="form-select form-select-sm" style="width: 100px;">
+                                    <option value="all">All</option>
+                                    <option value="buy">Buy</option>
+                                    <option value="sell">Sell</option>
+                                    <option value="hold">Hold</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     <div class="card-body">
                         <table class="table table-striped">
@@ -327,7 +338,8 @@
                 const reason = decision.reason || 'No reason provided';
                 
                 // Price and price change information
-                const currentPrice = decision.current_price ? parseFloat(decision.current_price).toFixed(2) : 'N/A';
+                const currentPrice = decision.current_price || decision.price || 'N/A';
+                const displayPrice = isNaN(parseFloat(currentPrice)) ? 'N/A' : `$${parseFloat(currentPrice).toFixed(2)}`;
                 
                 // Create price changes HTML if available
                 let priceChangesHtml = '';
@@ -349,7 +361,7 @@
                         <a href="https://www.coinbase.com/advanced-trade/spot/${product}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">View on Coinbase</a>
                     </h5>
                     <p class="text-muted mb-1">${timestamp}</p>
-                    <p class="mb-1"><strong>Current Price:</strong> $${currentPrice}</p>
+                    <p class="mb-1"><strong>Current Price:</strong> ${displayPrice}</p>
                     ${priceChangesHtml}
                     <p class="mb-0"><strong>Reason:</strong> ${reason}</p>
                 `;
@@ -473,10 +485,23 @@
         // Function to update trade history
         function updateTradeHistory(trades) {
             const tradeHistoryElement = document.getElementById('tradeHistory');
+            const actionFilter = document.getElementById('actionFilter');
+            const selectedAction = actionFilter ? actionFilter.value : 'all';
+            
             tradeHistoryElement.innerHTML = '';
             
             if (trades && trades.length > 0) {
-                trades.forEach(trade => {
+                // Filter trades based on selected action
+                const filteredTrades = selectedAction === 'all' 
+                    ? trades 
+                    : trades.filter(trade => trade.action && trade.action.toLowerCase() === selectedAction.toLowerCase());
+                
+                if (filteredTrades.length === 0) {
+                    tradeHistoryElement.innerHTML = `<tr><td colspan="6" class="text-center">No ${selectedAction} trades found</td></tr>`;
+                    return;
+                }
+                
+                filteredTrades.forEach(trade => {
                     const row = document.createElement('tr');
                     const timestamp = new Date(trade.timestamp).toLocaleString();
                     const productId = trade.product_id || '';
@@ -541,6 +566,20 @@
         // Add event listener for refresh button
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('refreshPortfolioBtn').addEventListener('click', refreshPortfolio);
+            
+            // Add event listener for action filter
+            const actionFilter = document.getElementById('actionFilter');
+            if (actionFilter) {
+                actionFilter.addEventListener('change', function() {
+                    // Reload trade history with the selected filter
+                    fetch('data/trading_data.json')
+                        .then(response => response.json())
+                        .then(data => {
+                            updateTradeHistory(data.recent_trades);
+                        })
+                        .catch(error => console.error('Error loading trade history:', error));
+                });
+            }
             
             // Load dashboard data
             loadDashboardData();

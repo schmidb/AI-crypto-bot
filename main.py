@@ -264,11 +264,16 @@ class TradingBot:
             # Get trading data
             trading_data = {
                 "recent_trades": self.trading_strategy.trade_logger.get_recent_trades(10),
-                "market_data": {
-                    product_id: self.data_collector.get_market_data(product_id)
-                    for product_id in TRADING_PAIRS
-                }
+                "market_data": {}
             }
+            
+            # Get current market data for all trading pairs
+            for product_id in TRADING_PAIRS:
+                try:
+                    market_data = self.data_collector.get_market_data(product_id)
+                    trading_data["market_data"][product_id] = market_data
+                except Exception as e:
+                    logger.error(f"Error getting market data for {product_id}: {e}")
             
             # Get portfolio data - ensure it's a dictionary
             portfolio = self.trading_strategy.portfolio

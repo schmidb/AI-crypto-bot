@@ -115,11 +115,31 @@ class DashboardUpdater:
                     product_id = decision.get("product_id")
                     if product_id in trading_data["market_data"]:
                         market_data = trading_data["market_data"][product_id]
-                        decision["current_price"] = market_data.get("price")
+                        # Only add price if not already present
+                        if "current_price" not in decision and "price" not in decision:
+                            decision["current_price"] = market_data.get("price")
                         
-                        # Add price changes if available
-                        if "price_changes" in market_data:
+                        # Add price changes if available and not already present
+                        if "price_changes" not in decision and "price_changes" in market_data:
                             decision["price_changes"] = market_data["price_changes"]
+            
+            # Try to load existing decisions to preserve any that might be missing
+            try:
+                existing_decisions_file = f"{self.dashboard_dir}/data/latest_decisions.json"
+                if os.path.exists(existing_decisions_file):
+                    with open(existing_decisions_file, 'r') as f:
+                        existing_decisions = json.load(f)
+                    
+                    # Create a map of product_id to decision for quick lookup
+                    decision_map = {d.get("product_id"): d for d in latest_decisions if d.get("product_id")}
+                    
+                    # Add any existing decisions that aren't in the latest decisions
+                    for existing in existing_decisions:
+                        product_id = existing.get("product_id")
+                        if product_id and product_id not in decision_map:
+                            latest_decisions.append(existing)
+            except Exception as e:
+                logger.warning(f"Error loading existing decisions: {e}")
             
             # Save to file
             with open(f"{self.dashboard_dir}/data/latest_decisions.json", "w") as f:
