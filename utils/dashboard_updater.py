@@ -279,8 +279,9 @@ class DashboardUpdater:
                         portfolio_copy[asset]["allocation"] = round((asset_value / total_value) * 100, 2)
                 
                 # Calculate target allocations and deviations
-                target_allocations = {"BTC": 40, "ETH": 40, "USD": 20}
-                for asset in ["BTC", "ETH", "USD"]:
+                from config import TARGET_ALLOCATION
+                target_allocations = TARGET_ALLOCATION
+                for asset in [asset for asset in target_allocations.keys() if asset in ["BTC", "ETH", "USD"]]:
                     if asset in portfolio_copy and isinstance(portfolio_copy[asset], dict):
                         if "allocation" not in portfolio_copy[asset]:
                             portfolio_copy[asset]["allocation"] = 0
