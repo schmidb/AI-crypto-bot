@@ -47,7 +47,7 @@ class DashboardUpdater:
             from config import (
                 TRADING_PAIRS, DECISION_INTERVAL_MINUTES, RISK_LEVEL,
                 LLM_MODEL, PORTFOLIO_REBALANCE, MAX_TRADE_PERCENTAGE,
-                SIMULATION_MODE
+                SIMULATION_MODE, TARGET_ALLOCATION
             )
             
             # Calculate next decision time based on current time and interval
@@ -68,7 +68,8 @@ class DashboardUpdater:
                 "portfolio_rebalance": PORTFOLIO_REBALANCE,
                 "max_trade_percentage": MAX_TRADE_PERCENTAGE,
                 "simulation_mode": SIMULATION_MODE,
-                "next_decision_time": next_decision_time
+                "next_decision_time": next_decision_time,
+                "target_allocation": TARGET_ALLOCATION
             }
             
             with open(f"{self.dashboard_dir}/data/config.json", "w") as f:

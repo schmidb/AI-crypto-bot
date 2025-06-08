@@ -319,6 +319,9 @@ class Portfolio:
         # Save changes
         self.save()
         
+        # Log the trade to trade history
+        self._log_trade_to_history(asset, action, amount, price, usd_value)
+        
         return {
             "success": True,
             "action": action,
@@ -528,3 +531,52 @@ class Portfolio:
                 usd_available -= value_to_buy
         
         return actions
+    
+    def _log_trade_to_history(self, asset: str, action: str, amount: float, price: float, usd_value: float) -> None:
+        """
+        Log a trade to the trade history file.
+        
+        Args:
+            asset: Asset symbol (BTC, ETH)
+            action: Trade action (buy, sell)
+            amount: Amount of asset traded
+            price: Price per unit in USD
+            usd_value: Total USD value of the trade
+        """
+        try:
+            # Import here to avoid circular imports
+            from utils.trade_logger import TradeLogger
+            
+            # Create trade logger instance
+            trade_logger = TradeLogger()
+            
+            # Create decision and result dictionaries in the format expected by TradeLogger
+            product_id = f"{asset}-USD"
+            
+            decision = {
+                "action": action,
+                "confidence": 100,  # Portfolio trades are executed with full confidence
+                "reason": f"Portfolio trade: {action} {amount:.8f} {asset} at ${price:.2f}"
+            }
+            
+            result = {
+                "status": "success",
+                "action": action,
+                "product_id": product_id,
+                "timestamp": datetime.datetime.now().isoformat(),
+                "confidence": 100,
+                "reason": decision["reason"],
+                "current_price": price,
+                "price": price,
+                "crypto_amount": amount,
+                "trade_amount_usd": usd_value,
+                "price_changes": {}
+            }
+            
+            # Log the trade
+            trade_logger.log_trade(product_id, decision, result)
+            logger.info(f"Logged {action} trade: {amount:.8f} {asset} for ${usd_value:.2f}")
+            
+        except Exception as e:
+            logger.error(f"Error logging trade to history: {e}")
+            # Don't fail the trade execution if logging fails
