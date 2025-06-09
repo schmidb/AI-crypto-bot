@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Bot Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.css">
+    <style>
+        body { padding: 20px; }
+        .card { margin-bottom: 20px; }
+        .trade-item { padding: 10px; margin: 5px 0; border-bottom: 1px solid #eee; }
+        .buy { color: green; }
+        .sell { color: red; }
+        .hold { color: gray; }
+        .last-updated { font-style: italic; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="index.html">Crypto Trading Bot</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="index.html">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="analysis.html">Strategy Analysis</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <h1 class="mb-4">Crypto Trading Bot Dashboard</h1>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Portfolio Value</h2>
+                    </div>
+                    <div class="card-body">
+                        <h3 id="portfolio-value">$0.00</h3>
+                        <p id="portfolio-return">Return: 0.00%</p>
+                        <canvas id="portfolio-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Asset Allocation</h2>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="allocation-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Rebalance Status</h2>
+                    </div>
+                    <div class="card-body">
+                        <table id="rebalance-status" class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Current %</th>
+                                    <th>Target %</th>
+                                    <th>Difference</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="4">Loading allocation data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>BTC-USD</h2>
+                    </div>
+                    <div class="card-body">
+                        <h3 id="btc-price">$0.00</h3>
+                        <p id="btc-holdings">Holdings: 0.00 BTC</p>
+                        <canvas id="btc-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>ETH-USD</h2>
+                    </div>
+                    <div class="card-body">
+                        <h3 id="eth-price">$0.00</h3>
+                        <p id="eth-holdings">Holdings: 0.00 ETH</p>
+                        <canvas id="eth-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Recent Trades</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="recent-trades">
+                            <p>No trades yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Bot Status</h2>
+                    </div>
+                    <div class="card-body">
+                        <p id="bot-status">Status: Unknown</p>
+                        <p id="last-decision">Last decision: Never</p>
+                        <p><a href="analysis.html" class="btn btn-primary">View Strategy Analysis</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <p class="last-updated">Last updated: Never</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <script>
+        // Initialize charts
+        const portfolioCtx = document.getElementById('portfolio-chart').getContext('2d');
+        const portfolioChart = new Chart(portfolioCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Portfolio Value (USD)',
+                    data: [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: false
+                        }
+                    }]
+                }
+            }
+        });
+        
+        const allocationCtx = document.getElementById('allocation-chart').getContext('2d');
+        const allocationChart = new Chart(allocationCtx, {
+            type: 'pie',
+            data: {
+                labels: ['BTC', 'ETH', 'USD'],
+                datasets: [{
+                    label: 'Asset Allocation',
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(75, 192, 192, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            }
+        });
+        
+        const btcCtx = document.getElementById('btc-chart').getContext('2d');
+        const btcChart = new Chart(btcCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'BTC Price (USD)',
+                    data: [],
+                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: false
+                        }
+                    }]
+                }
+            }
+        });
+        
+        const ethCtx = document.getElementById('eth-chart').getContext('2d');
+        const ethChart = new Chart(ethCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'ETH Price (USD)',
+                    data: [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: false
+                        }
+                    }]
+                }
+            }
+        });
+        
+        // Function to load dashboard data from JSON files
+        async function loadDashboardData() {
+            try {
+                // Load config data
+                const configResponse = await fetch('data/config.json');
+                const configData = await configResponse.json();
+                
+                // Load portfolio data
+                const portfolioResponse = await fetch('data/portfolio_data.json');
+                const portfolioData = await portfolioResponse.json();
+                
+                // Combine data and update dashboard
+                const dashboardData = {
+                    config: configData,
+                    portfolio: portfolioData
+                };
+                
+                updateDashboard(dashboardData);
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                // Show error message in the dashboard
+                document.querySelector('.last-updated').textContent = 'Error loading data: ' + error.message;
+            }
+        }
+        
+        // Function to update dashboard with data
+        function updateDashboard(data) {
+            // Update timestamp
+            document.querySelector('.last-updated').textContent = 'Last updated: ' + new Date().toLocaleString();
+            
+            // Update portfolio allocation chart with target allocation from config
+            if (data && data.config && data.config.target_allocation) {
+                const targetAllocation = data.config.target_allocation;
+                
+                // Update allocation chart with target values from config
+                const allocationLabels = Object.keys(targetAllocation);
+                const allocationValues = allocationLabels.map(key => targetAllocation[key]);
+                
+                allocationChart.data.labels = allocationLabels;
+                allocationChart.data.datasets[0].data = allocationValues;
+                allocationChart.update();
+                
+                // Update rebalance status table if it exists
+                const rebalanceTable = document.getElementById('rebalance-status');
+                if (rebalanceTable) {
+                    let tableHTML = `
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Current %</th>
+                                <th>Target %</th>
+                                <th>Difference</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                    `;
+                    
+                    // Add rows for each asset
+                    for (const asset in targetAllocation) {
+                        const target = targetAllocation[asset];
+                        const current = data.portfolio && data.portfolio[asset] && data.portfolio[asset].allocation ? 
+                            data.portfolio[asset].allocation : 0;
+                        const diff = current - target;
+                        
+                        tableHTML += `
+                            <tr>
+                                <td>${asset}</td>
+                                <td>${current.toFixed(2)}%</td>
+                                <td>${target.toFixed(2)}%</td>
+                                <td class="${diff > 5 ? 'text-danger' : diff < -5 ? 'text-danger' : 'text-success'}">${diff.toFixed(2)}%</td>
+                            </tr>
+                        `;
+                    }
+                    
+                    tableHTML += '</tbody>';
+                    rebalanceTable.innerHTML = tableHTML;
+                }
+            }
+            
+            // This function would be called with data from the backend
+            console.log('Dashboard data:', data);
+        }
+        
+        // Load dashboard data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            
+            // Refresh data every 60 seconds
+            setInterval(loadDashboardData, 60000);
+        });
+    </script>
+</body>
+</html>
