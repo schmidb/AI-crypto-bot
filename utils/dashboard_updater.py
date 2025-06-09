@@ -54,8 +54,8 @@ class DashboardUpdater:
             import datetime
             now = datetime.datetime.now()
             minutes_to_add = DECISION_INTERVAL_MINUTES - (now.minute % DECISION_INTERVAL_MINUTES)
-            if minutes_to_add == DECISION_INTERVAL_MINUTES:
-                minutes_to_add = 0
+            if minutes_to_add == 0:  # If we're exactly at an interval boundary
+                minutes_to_add = DECISION_INTERVAL_MINUTES  # Add full interval
             next_decision = now + datetime.timedelta(minutes=minutes_to_add)
             next_decision = next_decision.replace(second=0, microsecond=0)
             next_decision_time = next_decision.strftime("%Y-%m-%d %H:%M:%S")

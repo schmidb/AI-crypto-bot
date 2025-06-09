@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Test</title>
+</head>
+<body>
+    <h1>Rebalance Status Test</h1>
+    <table id="rebalance-status" border="1">
+        <thead>
+            <tr>
+                <th>Asset</th>
+                <th>Current %</th>
+                <th>Target %</th>
+                <th>Difference</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td colspan="4">Loading...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        // Test data based on your actual files
+        const testData = {
+            config: {
+                target_allocation: {
+                    "BTC": 45.0,
+                    "ETH": 45.0,
+                    "USD": 10.0
+                }
+            },
+            portfolio: {
+                "BTC": {
+                    "allocation": 45.77
+                },
+                "ETH": {
+                    "allocation": 45.21
+                },
+                "USD": {
+                    "allocation": 9.02
+                }
+            }
+        };
+
+        function updateRebalanceTable(data) {
+            const targetAllocation = data.config.target_allocation;
+            const rebalanceTable = document.getElementById('rebalance-status');
+            
+            if (rebalanceTable && targetAllocation) {
+                let tableHTML = `
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Current %</th>
+                            <th>Target %</th>
+                            <th>Difference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+                
+                // Add rows for each asset
+                for (const asset in targetAllocation) {
+                    const target = targetAllocation[asset];
+                    const current = data.portfolio && data.portfolio[asset] && data.portfolio[asset].allocation ? 
+                        data.portfolio[asset].allocation : 0;
+                    const diff = current - target;
+                    
+                    tableHTML += `
+                        <tr>
+                            <td>${asset}</td>
+                            <td>${current.toFixed(2)}%</td>
+                            <td>${target.toFixed(2)}%</td>
+                            <td style="color: ${Math.abs(diff) > 5 ? 'red' : 'green'}">${diff.toFixed(2)}%</td>
+                        </tr>
+                    `;
+                }
+                
+                tableHTML += '</tbody>';
+                rebalanceTable.innerHTML = tableHTML;
+                
+                console.log('Table updated successfully');
+                console.log('Target allocation:', targetAllocation);
+                console.log('Portfolio data:', data.portfolio);
+            } else {
+                console.error('Missing table or target allocation data');
+            }
+        }
+
+        // Test the function
+        updateRebalanceTable(testData);
+    </script>
+</body>
+</html>
