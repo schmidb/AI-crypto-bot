@@ -14,9 +14,9 @@ This guide provides step-by-step instructions for deploying the AI Crypto Tradin
    - Select a region and zone (e.g., us-central1-a)
    - Choose machine type (e2-medium recommended)
    - Select Debian or Ubuntu as the boot disk
-   - Allow HTTP/HTTPS traffic if you plan to use the dashboard
-   - Add a firewall rule to allow TCP port 5000 for API access
-   - This is required for the "Refresh Portfolio from Coinbase" functionality
+   - Allow HTTP/HTTPS traffic for web dashboard access
+   - Add a firewall rule to allow TCP port 80 for dashboard access
+   - This is required for accessing the comprehensive web dashboard
    - Click "Create"
 
 ### 2. Connect to Your VM Instance

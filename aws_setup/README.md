@@ -11,9 +11,9 @@ This guide provides step-by-step instructions for deploying the AI Crypto Tradin
 3. **Configure your instance:**
    - Choose Amazon Linux 2023 AMI
    - Select an instance type (t2.medium or better recommended for production)
-   - Configure security groups to allow SSH access (port 22) and API access (port 5000)
-   - Add an inbound rule for TCP port 5000 to allow dashboard-to-API communication
-   - This is required for the "Refresh Portfolio from Coinbase" functionality
+   - Configure security groups to allow SSH access (port 22) and HTTP access (port 80)
+   - Add an inbound rule for TCP port 80 to allow web dashboard access
+   - This is required for accessing the comprehensive web dashboard
    - Launch the instance and download your key pair (.pem file)
 
 ### 2. Connect to Your EC2 Instance

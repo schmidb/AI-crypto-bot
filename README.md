@@ -1,19 +1,41 @@
 # AI-Powered Crypto Trading Bot
 
-A Python-based cryptocurrency trading bot that uses Google Cloud Vertex AI LLMs to make trading decisions for Bitcoin and Ethereum on Coinbase. This bot leverages the power of AI to analyze market trends, technical indicators, and historical data to make informed trading decisions.
+A Python-based cryptocurrency trading bot that uses Google Cloud Vertex AI LLMs to make trading decisions for Bitcoin, Ethereum, and Solana on Coinbase. This bot leverages the power of AI to analyze market trends, technical indicators, and historical data to make informed trading decisions.
 
 ## Features
 
+### 🤖 AI-Powered Trading
 - Connects to Coinbase Advanced Trade API for real-time data and trading
 - Uses Google Cloud Vertex AI for sophisticated market analysis and trading decisions
 - Supports multiple LLM models (Text-Bison, Gemini, PaLM)
-- Supports Bitcoin (BTC) and Ethereum (ETH) trading with USD pairs
+- Supports Bitcoin (BTC), Ethereum (ETH), and Solana (SOL) trading with USD pairs
 - Collects and analyzes historical market data with customizable timeframes
 - Calculates technical indicators (RSI, MACD, Bollinger Bands, etc.)
 - Implements risk management strategies based on configurable risk levels
-- Provides detailed logging and trade history for performance tracking
-- Scheduled trading at configurable intervals
+
+### 📊 Comprehensive Web Dashboard
+- **Real-time monitoring** with live portfolio tracking and performance metrics
+- **Bot status tracking** with uptime monitoring and operational status
+- **Live UTC clock** with consistent timezone display across all timestamps
+- **AI decision visualization** showing recent buy/sell/hold decisions with confidence levels
+- **Direct Coinbase integration** with quick access links to Advanced Trade platform
+- **Comprehensive activity log** with advanced filtering by action, asset, and time period
+- **Portfolio allocation charts** with visual representation of asset distribution
+- **Market data display** with real-time price updates and percentage changes
+- **Responsive design** optimized for desktop and mobile viewing
+
+### 🔍 Advanced Analytics
+- Detailed logging and trade history for performance tracking
+- Scheduled trading at configurable intervals (default: 60 minutes)
+- AI-powered strategy analysis and improvement recommendations
+- Backtesting module for strategy evaluation before live trading
+- Performance tracking with portfolio value history and return calculations
+
+### ☁️ Cloud Deployment Ready
 - Includes automated setup scripts for AWS EC2 and Google Cloud deployment
+- Supervisor process management for 24/7 operation
+- Nginx web server configuration for dashboard hosting
+- Automated data synchronization and backup capabilities
 
 ## Project Structure
 
@@ -30,6 +52,8 @@ AI-crypto-bot/
 ├── backtesting.py          # Backtesting module for strategy evaluation
 ├── backtest_cli.py         # Command-line interface for backtesting
 ├── strategy_analyzer.py    # AI-powered strategy analysis and improvement
+├── update_dashboard_links.sh # Dashboard symlink management script
+├── reset_bot_data.sh       # Bot data reset utility script
 ├── data/                   # All persistent data (single source of truth)
 │   ├── portfolio/          # Portfolio data and history
 │   │   ├── portfolio.json  # Current portfolio state
@@ -48,7 +72,8 @@ AI-crypto-bot/
 │   └── cache/              # Temporary and cache files
 │       ├── latest_decisions.json # Recent AI decisions
 │       ├── trading_data.json     # Trading performance cache
-│       └── last_updated.txt      # Last update timestamp
+│       ├── last_updated.txt      # Last update timestamp
+│       └── bot_startup.json      # Bot startup time and status
 ├── dashboard/              # Web dashboard (UI only)
 │   ├── static/             # HTML, CSS, JS files
 │   │   ├── index.html      # Main dashboard page
@@ -119,6 +144,15 @@ AI-crypto-bot/
    python main.py
    ```
 
+6. **Access the Dashboard** (if deployed with web server):
+   ```bash
+   # Local development
+   http://localhost/crypto-bot/
+   
+   # Cloud deployment
+   http://your-server-ip/crypto-bot/
+   ```
+
 ## Cloud Deployment Options
 
 For production deployment, use the automated setup scripts in the dedicated directories:
@@ -127,6 +161,69 @@ For production deployment, use the automated setup scripts in the dedicated dire
 - **Google Cloud Deployment**: [Google Cloud Deployment Guide](gcp_setup/README.md)
 
 These guides provide detailed instructions for setting up the bot on cloud platforms for 24/7 operation.
+
+## Web Dashboard Features
+
+The bot includes a comprehensive web dashboard that provides real-time monitoring and control capabilities:
+
+### 🖥️ Dashboard Overview
+- **Live Portfolio Tracking**: Real-time portfolio value, returns, and asset allocation
+- **Bot Status Monitoring**: Uptime tracking, process information, and operational status
+- **Market Data Display**: Current prices with 1h, 4h, 1d, and 5d percentage changes
+- **AI Decision Insights**: Recent buy/sell/hold decisions with confidence levels and reasoning
+
+### ⏰ Time & Status Features
+- **Live UTC Clock**: Real-time clock in the header showing server time
+- **Bot Uptime Display**: Shows how long the bot has been running since last restart
+- **Consistent Timestamps**: All times displayed in 24-hour UTC format for clarity
+- **Next Decision Timer**: Countdown to the next trading decision
+
+### 🔗 Coinbase Integration
+- **Direct Trading Links**: Quick access buttons to Coinbase Advanced Trade for each asset
+- **Seamless Workflow**: From AI analysis directly to live market data and trading
+- **Asset-Specific URLs**: Direct links to BTC-USD, ETH-USD, and SOL-USD pairs
+
+### 📊 Activity Log
+- **Complete Trading History**: Comprehensive log of all buy/sell/hold decisions
+- **Advanced Filtering**: Filter by action type, asset, or time period
+- **Detailed Information**: Timestamps, prices, amounts, confidence levels, and AI reasoning
+- **Real-time Updates**: Activity log refreshes automatically with new decisions
+
+### 🎨 User Experience
+- **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices
+- **Professional Interface**: Clean, modern design optimized for trading workflows
+- **Color-coded Actions**: Visual indicators for buy (green), sell (red), and hold (gray) decisions
+- **Interactive Elements**: Hover effects, expandable text, and smooth animations
+
+### 📱 Dashboard Access
+Once deployed, access your dashboard at:
+- **Local Development**: `http://localhost/crypto-bot/`
+- **Cloud Deployment**: `http://your-server-ip/crypto-bot/`
+
+## Utility Scripts
+
+The bot includes several utility scripts for maintenance and management:
+
+### Dashboard Management
+- **`update_dashboard_links.sh`**: Updates symlinks to latest market data files for web dashboard
+- **`reset_bot_data.sh`**: Resets bot data and portfolio state (use with caution)
+
+### Strategy Analysis
+- **`strategy_analyzer.py`**: Analyzes trading performance and provides AI-powered improvement recommendations
+  ```bash
+  # Analyze the last 30 days of trading performance
+  python strategy_analyzer.py
+  
+  # Analyze a specific number of days
+  python strategy_analyzer.py --days 60
+  ```
+
+### Backtesting
+- **`backtest_cli.py`**: Command-line interface for backtesting trading strategies
+  ```bash
+  # Run backtesting with default parameters
+  python backtest_cli.py
+  ```
 
 ## API Key Setup
 
