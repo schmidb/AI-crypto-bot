@@ -56,7 +56,30 @@ class TradingBot:
         # Initialize dashboard with existing data
         self.initialize_dashboard()
         
+        # Record bot startup time
+        self.record_startup_time()
+        
         logger.info(f"Trading bot initialized with trading pairs: {TRADING_PAIRS}")
+        
+    def record_startup_time(self):
+        """Record the bot startup time for uptime tracking"""
+        try:
+            startup_data = {
+                "startup_time": datetime.utcnow().isoformat(),
+                "pid": os.getpid(),
+                "trading_pairs": TRADING_PAIRS,
+                "decision_interval_minutes": DECISION_INTERVAL_MINUTES
+            }
+            
+            os.makedirs("data/cache", exist_ok=True)
+            with open("data/cache/bot_startup.json", "w") as f:
+                json.dump(startup_data, f, indent=2)
+            
+            logger.info(f"Bot startup time recorded: {startup_data['startup_time']}")
+            
+        except Exception as e:
+            logger.error(f"Error recording startup time: {e}")
+        
         
     def initialize_dashboard(self):
         """Initialize dashboard with existing data on bot startup"""

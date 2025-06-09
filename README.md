@@ -30,6 +30,33 @@ AI-crypto-bot/
 ├── backtesting.py          # Backtesting module for strategy evaluation
 ├── backtest_cli.py         # Command-line interface for backtesting
 ├── strategy_analyzer.py    # AI-powered strategy analysis and improvement
+├── data/                   # All persistent data (single source of truth)
+│   ├── portfolio/          # Portfolio data and history
+│   │   ├── portfolio.json  # Current portfolio state
+│   │   ├── portfolio_data.json # Dashboard portfolio data
+│   │   └── portfolio_history.csv # Historical portfolio values
+│   ├── trades/             # Trade history and logs
+│   │   └── trade_history.json # Complete trade history
+│   ├── market_data/        # Market price snapshots
+│   │   ├── BTC_USD_*.json  # Bitcoin price data
+│   │   ├── ETH_USD_*.json  # Ethereum price data
+│   │   └── SOL_USD_*.json  # Solana price data
+│   ├── reports/            # Analysis and performance reports
+│   │   └── *.json          # Strategy analysis reports
+│   ├── config/             # Dashboard configuration
+│   │   └── config.json     # Dashboard settings
+│   └── cache/              # Temporary and cache files
+│       ├── latest_decisions.json # Recent AI decisions
+│       ├── trading_data.json     # Trading performance cache
+│       └── last_updated.txt      # Last update timestamp
+├── dashboard/              # Web dashboard (UI only)
+│   ├── static/             # HTML, CSS, JS files
+│   │   ├── index.html      # Main dashboard page
+│   │   └── analysis.html   # Analysis dashboard
+│   └── images/             # Generated charts and visualizations
+│       ├── portfolio_allocation.png
+│       ├── portfolio_value.png
+│       └── allocation_comparison.png
 ├── aws_setup/              # AWS deployment scripts
 │   ├── README.md           # AWS deployment guide
 │   └── setup_ec2.sh        # Automated setup script for EC2

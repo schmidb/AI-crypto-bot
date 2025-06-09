@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class TradeLogger:
     """Logs and retrieves trade history"""
     
-    def __init__(self, log_file="data/trade_history.json"):
+    def __init__(self, log_file="data/trades/trade_history.json"):
         """Initialize the trade logger"""
         self.log_file = log_file
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
