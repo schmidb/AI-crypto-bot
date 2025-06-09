@@ -36,6 +36,10 @@ data/                       # Single source of truth
 ├── reports/                # Analysis reports
 ├── config/                 # Configuration
 └── cache/                  # Temporary files
+    ├── latest_decisions.json
+    ├── trading_data.json
+    ├── last_updated.txt
+    └── bot_startup.json    # NEW: Bot startup tracking
 
 dashboard/                  # UI only
 ├── static/                 # HTML, CSS, JS
@@ -74,3 +78,29 @@ dashboard/                  # UI only
 - `utils/dashboard_updater.py.backup` - Original dashboard updater
 
 The reorganization maintains all functionality while providing a much cleaner and more maintainable structure.
+
+## Recent Enhancements (June 2025)
+
+### Major Dashboard Upgrades:
+- **Bot uptime tracking** with startup timestamp recording in `data/cache/bot_startup.json`
+- **Live UTC clock** in dashboard header with consistent timezone display
+- **Coinbase integration** with direct links to Advanced Trade platform for all assets
+- **Comprehensive activity log** with advanced filtering by action, asset, and time period
+- **Enhanced bot status monitoring** with detailed operational information and next decision timing
+
+### New Utility Scripts:
+- `update_dashboard_links.sh`: Automated dashboard symlink management
+- `reset_bot_data.sh`: Bot data reset utility (use with caution)
+
+### Dashboard Features:
+- **Real-time monitoring**: Live portfolio tracking with automatic updates
+- **Professional interface**: Color-coded trading actions with confidence levels
+- **Responsive design**: Optimized for desktop, tablet, and mobile viewing
+- **Interactive elements**: Hover effects, expandable reasoning, and smooth animations
+- **Direct market access**: Seamless workflow from AI analysis to live Coinbase data
+
+### Technical Improvements:
+- All timestamps standardized to 24-hour UTC format
+- Enhanced data synchronization between bot and dashboard
+- Improved error handling and visual feedback
+- Professional trading interface matching industry standards
