@@ -72,6 +72,40 @@ class Portfolio:
         logger.info("Creating new portfolio with default values")
         return self._create_default_portfolio()
     
+    def _get_supported_currencies(self) -> set:
+        """
+        Get supported currencies from trading pairs configuration.
+        
+        Returns:
+            Set of supported currency symbols
+        """
+        try:
+            # Import config to get trading pairs
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+            from config import Config
+            
+            config = Config()
+            trading_pairs = config.get_trading_pairs()
+            
+            # Extract unique crypto currencies from trading pairs
+            crypto_currencies = set()
+            for pair in trading_pairs:
+                if '-USD' in pair:
+                    crypto = pair.replace('-USD', '')
+                    crypto_currencies.add(crypto)
+            
+            # Always include USD
+            crypto_currencies.add('USD')
+            
+            return crypto_currencies
+            
+        except Exception as e:
+            logger.warning(f"Could not get trading pairs from config, using defaults: {e}")
+            # Fallback to default currencies
+            return {'BTC', 'ETH', 'USD'}
+
     def _create_default_portfolio(self) -> Dict[str, Any]:
         """
         Create a default portfolio structure with initial values.
@@ -79,26 +113,42 @@ class Portfolio:
         Returns:
             Dictionary containing default portfolio data
         """
+        # Get trading pairs from environment
+        crypto_currencies = self._get_supported_currencies()
+        
         portfolio = {
-            "BTC": {
-                "amount": self.initial_btc,
-                "initial_amount": self.initial_btc,
-                "last_price_usd": 0.0
-            },
-            "ETH": {
-                "amount": self.initial_eth,
-                "initial_amount": self.initial_eth,
-                "last_price_usd": 0.0
-            },
-            "USD": {
-                "amount": self.initial_usd,
-                "initial_amount": self.initial_usd
-            },
             "trades_executed": 0,
             "portfolio_value_usd": 0.0,
             "initial_value_usd": 0.0,
             "last_updated": datetime.datetime.now().isoformat()
         }
+        
+        # Initialize each currency in the portfolio
+        for currency in crypto_currencies:
+            if currency == 'USD':
+                portfolio[currency] = {
+                    "amount": self.initial_usd,
+                    "initial_amount": self.initial_usd
+                }
+            elif currency == 'BTC':
+                portfolio[currency] = {
+                    "amount": self.initial_btc,
+                    "initial_amount": self.initial_btc,
+                    "last_price_usd": 0.0
+                }
+            elif currency == 'ETH':
+                portfolio[currency] = {
+                    "amount": self.initial_eth,
+                    "initial_amount": self.initial_eth,
+                    "last_price_usd": 0.0
+                }
+            else:
+                # Default to 0 for other currencies
+                portfolio[currency] = {
+                    "amount": 0.0,
+                    "initial_amount": 0.0,
+                    "last_price_usd": 0.0
+                }
         
         # Save the new portfolio
         self.data = portfolio
@@ -119,53 +169,58 @@ class Portfolio:
         # Make a copy to avoid modifying the input
         validated = copy.deepcopy(portfolio)
         
+        # Get supported currencies
+        crypto_currencies = self._get_supported_currencies()
+        
         # Ensure top-level keys exist
         required_top_keys = [
-            "BTC", "ETH", "USD", "trades_executed", 
-            "portfolio_value_usd", "initial_value_usd", "last_updated"
+            "trades_executed", "portfolio_value_usd", "initial_value_usd", "last_updated"
         ]
         
         for key in required_top_keys:
             if key not in validated:
-                if key in ["BTC", "ETH"]:
-                    validated[key] = {
-                        "amount": 0.0,
-                        "initial_amount": 0.0,
-                        "last_price_usd": 0.0
-                    }
-                elif key == "USD":
-                    validated[key] = {
-                        "amount": 0.0,
-                        "initial_amount": 0.0
-                    }
-                elif key in ["portfolio_value_usd", "initial_value_usd", "trades_executed"]:
+                if key in ["portfolio_value_usd", "initial_value_usd", "trades_executed"]:
                     validated[key] = 0.0
                 elif key == "last_updated":
                     validated[key] = datetime.datetime.now().isoformat()
         
-        # Ensure asset keys exist
-        for asset in ["BTC", "ETH", "USD"]:
-            if not isinstance(validated[asset], dict):
-                if asset in ["BTC", "ETH"]:
-                    validated[asset] = {
+        # Ensure all currency keys exist
+        for currency in crypto_currencies:
+            if currency not in validated:
+                if currency == 'USD':
+                    validated[currency] = {
+                        "amount": 0.0,
+                        "initial_amount": 0.0
+                    }
+                else:
+                    validated[currency] = {
                         "amount": 0.0,
                         "initial_amount": 0.0,
                         "last_price_usd": 0.0
                     }
-                else:  # USD
-                    validated[asset] = {
-                        "amount": 0.0,
-                        "initial_amount": 0.0
-                    }
             else:
-                # Ensure asset dict has required keys
-                required_asset_keys = ["amount", "initial_amount"]
-                if asset in ["BTC", "ETH"]:
-                    required_asset_keys.append("last_price_usd")
-                    
-                for key in required_asset_keys:
-                    if key not in validated[asset]:
-                        validated[asset][key] = 0.0
+                # Ensure currency dict has required keys
+                if not isinstance(validated[currency], dict):
+                    if currency == 'USD':
+                        validated[currency] = {
+                            "amount": 0.0,
+                            "initial_amount": 0.0
+                        }
+                    else:
+                        validated[currency] = {
+                            "amount": 0.0,
+                            "initial_amount": 0.0,
+                            "last_price_usd": 0.0
+                        }
+                else:
+                    # Ensure currency dict has required keys
+                    required_asset_keys = ["amount", "initial_amount"]
+                    if currency != 'USD':
+                        required_asset_keys.append("last_price_usd")
+                        
+                    for key in required_asset_keys:
+                        if key not in validated[currency]:
+                            validated[currency][key] = 0.0
         
         return validated
     
@@ -185,17 +240,17 @@ class Portfolio:
         except Exception as e:
             logger.error(f"Error saving portfolio to {self.portfolio_file}: {e}")
     
-    def update_prices(self, btc_price: float, eth_price: float) -> None:
+    def update_prices(self, prices: Dict[str, float]) -> None:
         """
         Update asset prices and recalculate portfolio value.
         
         Args:
-            btc_price: Current BTC price in USD
-            eth_price: Current ETH price in USD
+            prices: Dictionary of asset prices (e.g., {"BTC": 50000, "ETH": 3000, "SOL": 100})
         """
-        # Update prices
-        self.data["BTC"]["last_price_usd"] = btc_price
-        self.data["ETH"]["last_price_usd"] = eth_price
+        # Update prices for all provided assets
+        for asset, price in prices.items():
+            if asset in self.data and asset != 'USD':
+                self.data[asset]["last_price_usd"] = price
         
         # Recalculate portfolio value
         self._calculate_portfolio_value()
@@ -210,19 +265,29 @@ class Portfolio:
         Returns:
             Total portfolio value in USD
         """
-        btc_value = self.data["BTC"]["amount"] * self.data["BTC"]["last_price_usd"]
-        eth_value = self.data["ETH"]["amount"] * self.data["ETH"]["last_price_usd"]
-        usd_value = self.data["USD"]["amount"]
+        total_value = 0.0
+        initial_value = 0.0
         
-        total_value = btc_value + eth_value + usd_value
+        # Calculate value for all assets
+        for asset, data in self.data.items():
+            if isinstance(data, dict) and "amount" in data:
+                if asset == 'USD':
+                    # USD value is direct
+                    asset_value = data["amount"]
+                    initial_asset_value = data["initial_amount"]
+                else:
+                    # Crypto value = amount * price
+                    price = data.get("last_price_usd", 0.0)
+                    asset_value = data["amount"] * price
+                    initial_asset_value = data["initial_amount"] * price
+                
+                total_value += asset_value
+                initial_value += initial_asset_value
+        
         self.data["portfolio_value_usd"] = total_value
         
-        # Calculate initial value if not set
-        if self.data["initial_value_usd"] == 0.0:
-            initial_btc_value = self.data["BTC"]["initial_amount"] * self.data["BTC"]["last_price_usd"]
-            initial_eth_value = self.data["ETH"]["initial_amount"] * self.data["ETH"]["last_price_usd"]
-            initial_usd_value = self.data["USD"]["initial_amount"]
-            initial_value = initial_btc_value + initial_eth_value + initial_usd_value
+        # Calculate initial value if not set or if it's zero
+        if self.data.get("initial_value_usd", 0.0) == 0.0:
             self.data["initial_value_usd"] = initial_value
         
         return total_value
@@ -236,17 +301,27 @@ class Portfolio:
         """
         total_value = self.data["portfolio_value_usd"]
         if total_value <= 0:
-            return {"BTC": 0.0, "ETH": 0.0, "USD": 0.0}
+            # Return zero allocation for all assets
+            allocation = {}
+            for asset, data in self.data.items():
+                if isinstance(data, dict) and "amount" in data:
+                    allocation[asset] = 0.0
+            return allocation
             
-        btc_value = self.data["BTC"]["amount"] * self.data["BTC"]["last_price_usd"]
-        eth_value = self.data["ETH"]["amount"] * self.data["ETH"]["last_price_usd"]
-        usd_value = self.data["USD"]["amount"]
+        allocation = {}
         
-        return {
-            "BTC": (btc_value / total_value) * 100,
-            "ETH": (eth_value / total_value) * 100,
-            "USD": (usd_value / total_value) * 100
-        }
+        # Calculate allocation for all assets
+        for asset, data in self.data.items():
+            if isinstance(data, dict) and "amount" in data:
+                if asset == 'USD':
+                    asset_value = data["amount"]
+                else:
+                    price = data.get("last_price_usd", 0.0)
+                    asset_value = data["amount"] * price
+                
+                allocation[asset] = (asset_value / total_value) * 100
+        
+        return allocation
     
     def get_total_return(self) -> float:
         """
@@ -268,7 +343,7 @@ class Portfolio:
         Execute a trade and update portfolio.
         
         Args:
-            asset: Asset symbol (BTC, ETH)
+            asset: Asset symbol (BTC, ETH, SOL, etc.)
             action: Trade action (buy, sell)
             amount: Amount of asset to trade
             price: Price per unit in USD
@@ -276,11 +351,18 @@ class Portfolio:
         Returns:
             Dictionary with trade details
         """
-        if asset not in ["BTC", "ETH"]:
-            raise ValueError(f"Unsupported asset: {asset}")
+        # Check if asset is supported
+        if asset not in self.data or asset == 'USD':
+            return {
+                "success": False,
+                "message": f"Unsupported asset for trading: {asset}"
+            }
             
         if action not in ["buy", "sell"]:
-            raise ValueError(f"Unsupported action: {action}")
+            return {
+                "success": False,
+                "message": f"Unsupported action: {action}"
+            }
         
         # Calculate USD value
         usd_value = amount * price
@@ -349,23 +431,29 @@ class Portfolio:
                     "success": False,
                     "message": f"Invalid exchange data type: {type(exchange_data)}"
                 }
-                
-            # Extract asset amounts
-            btc_amount = exchange_data.get("BTC", {}).get("amount", self.data["BTC"]["amount"])
-            eth_amount = exchange_data.get("ETH", {}).get("amount", self.data["ETH"]["amount"])
-            usd_amount = exchange_data.get("USD", {}).get("amount", self.data["USD"]["amount"])
             
-            # Update portfolio with new amounts
-            self.data["BTC"]["amount"] = btc_amount
-            self.data["ETH"]["amount"] = eth_amount
-            self.data["USD"]["amount"] = usd_amount
+            updated_assets = []
             
-            # Preserve price data if not provided
-            if "last_price_usd" in exchange_data.get("BTC", {}):
-                self.data["BTC"]["last_price_usd"] = exchange_data["BTC"]["last_price_usd"]
-                
-            if "last_price_usd" in exchange_data.get("ETH", {}):
-                self.data["ETH"]["last_price_usd"] = exchange_data["ETH"]["last_price_usd"]
+            # Update all assets present in exchange data
+            for asset, asset_data in exchange_data.items():
+                if isinstance(asset_data, dict) and "amount" in asset_data:
+                    # Ensure asset exists in portfolio
+                    if asset not in self.data:
+                        if asset == 'USD':
+                            self.data[asset] = {"amount": 0.0, "initial_amount": 0.0}
+                        else:
+                            self.data[asset] = {"amount": 0.0, "initial_amount": 0.0, "last_price_usd": 0.0}
+                    
+                    # Update amount
+                    old_amount = self.data[asset]["amount"]
+                    new_amount = asset_data.get("amount", old_amount)
+                    self.data[asset]["amount"] = new_amount
+                    
+                    # Update price if provided
+                    if asset != 'USD' and "last_price_usd" in asset_data:
+                        self.data[asset]["last_price_usd"] = asset_data["last_price_usd"]
+                    
+                    updated_assets.append(f"{asset}: {old_amount} -> {new_amount}")
             
             # Recalculate portfolio value
             self._calculate_portfolio_value()
@@ -375,11 +463,9 @@ class Portfolio:
             
             return {
                 "success": True,
-                "message": "Portfolio updated from exchange data",
-                "btc_amount": btc_amount,
-                "eth_amount": eth_amount,
-                "usd_amount": usd_amount,
-                "portfolio_value_usd": self.data["portfolio_value_usd"]
+                "message": f"Portfolio updated from exchange data: {', '.join(updated_assets)}",
+                "portfolio_value_usd": self.data["portfolio_value_usd"],
+                "updated_assets": len(updated_assets)
             }
             
         except Exception as e:
@@ -403,48 +489,50 @@ class Portfolio:
         Get current value of an asset in USD.
         
         Args:
-            asset: Asset symbol (BTC, ETH, USD)
+            asset: Asset symbol (BTC, ETH, SOL, USD, etc.)
             
         Returns:
             Asset value in USD
         """
-        if asset not in ["BTC", "ETH", "USD"]:
-            raise ValueError(f"Unsupported asset: {asset}")
+        if asset not in self.data:
+            return 0.0
             
         if asset == "USD":
             return self.data["USD"]["amount"]
             
-        return self.data[asset]["amount"] * self.data[asset]["last_price_usd"]
+        amount = self.data[asset].get("amount", 0.0)
+        price = self.data[asset].get("last_price_usd", 0.0)
+        return amount * price
     
     def get_asset_amount(self, asset: str) -> float:
         """
         Get amount of an asset.
         
         Args:
-            asset: Asset symbol (BTC, ETH, USD)
+            asset: Asset symbol (BTC, ETH, SOL, USD, etc.)
             
         Returns:
             Asset amount
         """
-        if asset not in ["BTC", "ETH", "USD"]:
-            raise ValueError(f"Unsupported asset: {asset}")
+        if asset not in self.data:
+            return 0.0
             
-        return self.data[asset]["amount"]
+        return self.data[asset].get("amount", 0.0)
     
     def get_asset_price(self, asset: str) -> float:
         """
         Get current price of an asset.
         
         Args:
-            asset: Asset symbol (BTC, ETH)
+            asset: Asset symbol (BTC, ETH, SOL, etc.)
             
         Returns:
             Asset price in USD
         """
-        if asset not in ["BTC", "ETH"]:
-            raise ValueError(f"Unsupported asset: {asset}")
+        if asset not in self.data or asset == "USD":
+            return 0.0 if asset != "USD" else 1.0
             
-        return self.data[asset]["last_price_usd"]
+        return self.data[asset].get("last_price_usd", 0.0)
     
     def calculate_rebalance_actions(self, target_allocation: Dict[str, float]) -> List[Dict[str, Any]]:
         """
@@ -456,9 +544,17 @@ class Portfolio:
         Returns:
             List of actions to take for rebalancing
         """
+        # Get all assets in portfolio
+        portfolio_assets = set()
+        for asset, data in self.data.items():
+            if isinstance(data, dict) and "amount" in data:
+                portfolio_assets.add(asset)
+        
         # Validate target allocation
-        if not all(asset in target_allocation for asset in ["BTC", "ETH", "USD"]):
-            raise ValueError("Target allocation must include BTC, ETH, and USD")
+        target_assets = set(target_allocation.keys())
+        if not target_assets.issubset(portfolio_assets):
+            missing_assets = target_assets - portfolio_assets
+            raise ValueError(f"Target allocation includes unsupported assets: {missing_assets}")
             
         if abs(sum(target_allocation.values()) - 100) > 0.01:
             raise ValueError("Target allocation percentages must sum to 100")
@@ -467,10 +563,10 @@ class Portfolio:
         current_allocation = self.get_asset_allocation()
         
         # Calculate differences
-        differences = {
-            asset: target_allocation[asset] - current_allocation[asset]
-            for asset in ["BTC", "ETH", "USD"]
-        }
+        differences = {}
+        for asset in target_assets:
+            current_pct = current_allocation.get(asset, 0.0)
+            differences[asset] = target_allocation[asset] - current_pct
         
         # Calculate portfolio value
         portfolio_value = self.data["portfolio_value_usd"]
@@ -479,7 +575,9 @@ class Portfolio:
         actions = []
         
         # First handle assets that need to be reduced (sold)
-        for asset in ["BTC", "ETH"]:
+        crypto_assets = [asset for asset in target_assets if asset != 'USD']
+        
+        for asset in crypto_assets:
             if differences[asset] < -1.0:  # Only rebalance if difference is significant
                 # Calculate amount to sell
                 current_value = self.get_asset_value(asset)
@@ -488,20 +586,21 @@ class Portfolio:
                 
                 # Calculate asset amount
                 price = self.get_asset_price(asset)
-                amount_to_sell = value_to_sell / price
-                
-                actions.append({
-                    "action": "sell",
-                    "asset": asset,
-                    "amount": amount_to_sell,
-                    "usd_value": value_to_sell,
-                    "reason": "rebalance"
-                })
+                if price > 0:
+                    amount_to_sell = value_to_sell / price
+                    
+                    actions.append({
+                        "action": "sell",
+                        "asset": asset,
+                        "amount": amount_to_sell,
+                        "usd_value": value_to_sell,
+                        "reason": "rebalance"
+                    })
         
         # Then handle assets that need to be increased (bought)
         usd_available = self.get_asset_amount("USD")
         
-        for asset in ["BTC", "ETH"]:
+        for asset in crypto_assets:
             if differences[asset] > 1.0:  # Only rebalance if difference is significant
                 # Calculate amount to buy
                 current_value = self.get_asset_value(asset)
@@ -517,18 +616,19 @@ class Portfolio:
                     
                 # Calculate asset amount
                 price = self.get_asset_price(asset)
-                amount_to_buy = value_to_buy / price
-                
-                actions.append({
-                    "action": "buy",
-                    "asset": asset,
-                    "amount": amount_to_buy,
-                    "usd_value": value_to_buy,
-                    "reason": "rebalance"
-                })
-                
-                # Update available USD
-                usd_available -= value_to_buy
+                if price > 0:
+                    amount_to_buy = value_to_buy / price
+                    
+                    actions.append({
+                        "action": "buy",
+                        "asset": asset,
+                        "amount": amount_to_buy,
+                        "usd_value": value_to_buy,
+                        "reason": "rebalance"
+                    })
+                    
+                    # Update available USD
+                    usd_available -= value_to_buy
         
         return actions
     

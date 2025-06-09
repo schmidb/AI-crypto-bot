@@ -47,7 +47,7 @@ class DashboardUpdater:
             from config import (
                 TRADING_PAIRS, DECISION_INTERVAL_MINUTES, RISK_LEVEL,
                 LLM_MODEL, PORTFOLIO_REBALANCE, MAX_TRADE_PERCENTAGE,
-                SIMULATION_MODE, TARGET_ALLOCATION
+                SIMULATION_MODE, TARGET_ALLOCATION, DASHBOARD_TRADE_HISTORY_LIMIT
             )
             
             # Calculate next decision time based on current time and interval
@@ -69,7 +69,8 @@ class DashboardUpdater:
                 "max_trade_percentage": MAX_TRADE_PERCENTAGE,
                 "simulation_mode": SIMULATION_MODE,
                 "next_decision_time": next_decision_time,
-                "target_allocation": TARGET_ALLOCATION
+                "target_allocation": TARGET_ALLOCATION,
+                "dashboard_trade_history_limit": DASHBOARD_TRADE_HISTORY_LIMIT
             }
             
             with open(f"{self.dashboard_dir}/data/config.json", "w") as f:
@@ -220,10 +221,32 @@ class DashboardUpdater:
                 
                 # Copy HTML files if they exist in dashboard_templates
                 templates_dir = "dashboard_templates"
+                logger.info(f"Checking for templates directory: {templates_dir}")
                 if os.path.exists(templates_dir):
                     html_files = [f for f in os.listdir(templates_dir) if f.endswith(".html")]
+                    logger.info(f"Found {len(html_files)} HTML template files: {html_files}")
                     for file in html_files:
-                        shutil.copy2(f"{templates_dir}/{file}", web_dashboard_dir)
+                        src_path = f"{templates_dir}/{file}"
+                        dst_path = f"{web_dashboard_dir}/{file}"
+                        try:
+                            shutil.copy2(src_path, dst_path)
+                            logger.info(f"Copied template file: {file}")
+                        except Exception as e:
+                            logger.error(f"Error copying template file {file}: {e}")
+                    
+                    # Also copy CSS files
+                    css_files = [f for f in os.listdir(templates_dir) if f.endswith(".css")]
+                    logger.info(f"Found {len(css_files)} CSS template files: {css_files}")
+                    for file in css_files:
+                        src_path = f"{templates_dir}/{file}"
+                        dst_path = f"{web_dashboard_dir}/{file}"
+                        try:
+                            shutil.copy2(src_path, dst_path)
+                            logger.info(f"Copied CSS file: {file}")
+                        except Exception as e:
+                            logger.error(f"Error copying CSS file {file}: {e}")
+                else:
+                    logger.warning(f"Templates directory not found: {templates_dir}")
                 
                 logger.info(f"Dashboard files synced to web server directory: {web_dashboard_dir}")
             except PermissionError as e:
@@ -261,7 +284,12 @@ class DashboardUpdater:
             # Calculate allocation percentages
             total_value = float(portfolio_copy["portfolio_value_usd"])
             if total_value > 0:
-                for asset in ["BTC", "ETH", "USD"]:
+                # Get all assets dynamically from the portfolio (excluding metadata fields)
+                asset_keys = [key for key in portfolio_copy.keys() 
+                             if isinstance(portfolio_copy[key], dict) and 
+                             key not in ["portfolio_value_usd", "initial_value_usd", "total_return", "last_updated"]]
+                
+                for asset in asset_keys:
                     if asset in portfolio_copy and isinstance(portfolio_copy[asset], dict):
                         # Ensure asset dict has required keys
                         if "amount" not in portfolio_copy[asset]:
@@ -282,7 +310,9 @@ class DashboardUpdater:
                 # Calculate target allocations and deviations
                 from config import TARGET_ALLOCATION
                 target_allocations = TARGET_ALLOCATION
-                for asset in [asset for asset in target_allocations.keys() if asset in ["BTC", "ETH", "USD"]]:
+                
+                # Process all assets that have target allocations
+                for asset in target_allocations.keys():
                     if asset in portfolio_copy and isinstance(portfolio_copy[asset], dict):
                         if "allocation" not in portfolio_copy[asset]:
                             portfolio_copy[asset]["allocation"] = 0
@@ -319,7 +349,17 @@ class DashboardUpdater:
                 json.dump(portfolio_copy, f, indent=2, default=str)
             
             # Log the updated portfolio values for debugging
-            logger.info(f"Dashboard portfolio updated - BTC: {portfolio_copy['BTC']['amount']}, ETH: {portfolio_copy['ETH']['amount']}, USD: {portfolio_copy['USD']['amount']}, Total: ${portfolio_copy['portfolio_value_usd']}")
+            asset_summary = []
+            asset_keys = [key for key in portfolio_copy.keys() 
+                         if isinstance(portfolio_copy[key], dict) and 
+                         key not in ["portfolio_value_usd", "initial_value_usd", "total_return", "last_updated"]]
+            
+            for asset in sorted(asset_keys):  # Sort for consistent logging
+                if asset in portfolio_copy and isinstance(portfolio_copy[asset], dict):
+                    amount = portfolio_copy[asset].get("amount", 0)
+                    asset_summary.append(f"{asset}: {amount}")
+            
+            logger.info(f"Dashboard portfolio updated - {', '.join(asset_summary)}, Total: ${portfolio_copy['portfolio_value_usd']}")
             
             # Append to historical portfolio value for time series
             self._append_portfolio_history(portfolio_copy)
@@ -408,7 +448,12 @@ class DashboardUpdater:
             labels = []
             sizes = []
             
-            for asset in ["BTC", "ETH", "USD"]:
+            # Get all assets dynamically from the portfolio (excluding metadata fields)
+            asset_keys = [key for key in portfolio.keys() 
+                         if isinstance(portfolio[key], dict) and 
+                         key not in ["portfolio_value_usd", "initial_value_usd", "total_return", "last_updated"]]
+            
+            for asset in asset_keys:
                 if asset in portfolio and isinstance(portfolio[asset], dict):
                     asset_data = portfolio[asset]
                     

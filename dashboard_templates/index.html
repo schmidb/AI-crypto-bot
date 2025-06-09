@@ -257,7 +257,14 @@
                 const timestamp = await timestampResponse.text();
                 document.getElementById('lastUpdated').textContent = timestamp;
                 
-                // Load portfolio data
+                // Load configuration first (needed for target allocations)
+                const configResponse = await fetch('data/config.json');
+                if (configResponse.ok) {
+                    const configData = await configResponse.json();
+                    updateConfigDisplay(configData);
+                }
+                
+                // Load portfolio data (after config is loaded)
                 const portfolioResponse = await fetch('data/portfolio_data.json');
                 const portfolioData = await portfolioResponse.json();
                 updatePortfolioDisplay(portfolioData);
@@ -266,13 +273,6 @@
                 const tradingResponse = await fetch('data/trading_data.json');
                 const tradingData = await tradingResponse.json();
                 updateTradeHistory(tradingData.recent_trades);
-                
-                // Load configuration and decisions
-                const configResponse = await fetch('data/config.json');
-                if (configResponse.ok) {
-                    const configData = await configResponse.json();
-                    updateConfigDisplay(configData);
-                }
                 
                 // Load latest decisions
                 const decisionsResponse = await fetch('data/latest_decisions.json');
@@ -286,9 +286,15 @@
             }
         }
         
+        // Global variable to store config data
+        let globalConfig = null;
+        
         // Function to update configuration display
         function updateConfigDisplay(config) {
             if (!config) return;
+            
+            // Store config globally for use in other functions
+            globalConfig = config;
             
             // Update configuration values
             document.getElementById('configTradingPairs').textContent = config.trading_pairs || 'N/A';
@@ -387,16 +393,37 @@
                     <tbody>
             `;
             
-            for (const asset of ['BTC', 'ETH', 'USD']) {
+            // Get all assets from portfolio (dynamically)
+            const assets = Object.keys(portfolio).filter(key => 
+                typeof portfolio[key] === 'object' && 
+                portfolio[key] !== null && 
+                'amount' in portfolio[key]
+            );
+            
+            for (const asset of assets) {
                 if (portfolio[asset]) {
                     const amount = portfolio[asset].amount || 0;
                     const valueUsd = portfolio[asset].value_usd || 0;
                     const allocation = portfolio[asset].allocation || 0;
                     
+                    // Format amount based on asset type
+                    let formattedAmount;
+                    if (asset === 'BTC') {
+                        formattedAmount = amount.toFixed(8);
+                    } else if (asset === 'ETH') {
+                        formattedAmount = amount.toFixed(6);
+                    } else if (asset === 'SOL') {
+                        formattedAmount = amount.toFixed(4);
+                    } else if (asset === 'USD') {
+                        formattedAmount = amount.toFixed(2);
+                    } else {
+                        formattedAmount = amount.toFixed(6); // Default for other cryptos
+                    }
+                    
                     tableHtml += `
                         <tr>
                             <td>${asset}</td>
-                            <td>${asset === 'BTC' ? amount.toFixed(8) : asset === 'ETH' ? amount.toFixed(6) : amount.toFixed(2)}</td>
+                            <td>${formattedAmount}</td>
                             <td>$${valueUsd.toFixed(2)}</td>
                             <td>${allocation.toFixed(2)}%</td>
                         </tr>
@@ -453,25 +480,31 @@
                     <tbody>
             `;
             
-            const targetAllocations = { 'BTC': 40, 'ETH': 40, 'USD': 20 };
+            // Use target allocations from config if available, otherwise use defaults
+            let targetAllocations = { 'BTC': 30, 'ETH': 30, 'SOL': 30, 'USD': 10 };
+            if (globalConfig && globalConfig.target_allocation) {
+                targetAllocations = globalConfig.target_allocation;
+            }
             
-            for (const asset of ['BTC', 'ETH', 'USD']) {
-                if (portfolio[asset]) {
-                    const target = targetAllocations[asset];
-                    const current = portfolio[asset].allocation || 0;
-                    const deviation = portfolio[asset].deviation || 0;
-                    const status = portfolio[asset].rebalance_status || 'Unknown';
-                    
-                    rebalanceHtml += `
-                        <tr>
-                            <td>${asset}</td>
-                            <td>${target}%</td>
-                            <td>${current.toFixed(2)}%</td>
-                            <td>${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%</td>
-                            <td>${status}</td>
-                        </tr>
-                    `;
-                }
+            // Get all assets from target allocation (dynamically)
+            const allAssets = Object.keys(targetAllocations);
+            
+            for (const asset of allAssets) {
+                const target = targetAllocations[asset] || 0;
+                const current = (portfolio[asset] && portfolio[asset].allocation) ? portfolio[asset].allocation : 0;
+                const deviation = (portfolio[asset] && portfolio[asset].deviation) ? portfolio[asset].deviation : (current - target);
+                const status = (portfolio[asset] && portfolio[asset].rebalance_status) ? portfolio[asset].rebalance_status : 
+                    (Math.abs(deviation) > 5 ? (deviation > 0 ? 'Overweight' : 'Underweight') : 'Balanced');
+                
+                rebalanceHtml += `
+                    <tr>
+                        <td>${asset}</td>
+                        <td>${target}%</td>
+                        <td>${current.toFixed(2)}%</td>
+                        <td>${deviation > 0 ? '+' : ''}${deviation.toFixed(2)}%</td>
+                        <td>${status}</td>
+                    </tr>
+                `;
             }
             
             rebalanceHtml += `

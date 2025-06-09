@@ -194,45 +194,80 @@ class CoinbaseClient:
     def get_portfolio(self) -> Dict[str, Any]:
         """Get complete portfolio data from Coinbase"""
         try:
+            # Get trading pairs from environment
+            from config import Config
+            config = Config()
+            trading_pairs = config.get_trading_pairs()
+            
+            # Extract unique crypto currencies from trading pairs
+            crypto_currencies = set()
+            for pair in trading_pairs:
+                if '-USD' in pair:
+                    crypto = pair.replace('-USD', '')
+                    crypto_currencies.add(crypto)
+            
+            # Always include USD
+            crypto_currencies.add('USD')
+            
             # Get all accounts/wallets
             accounts = self.get_accounts()
             
-            # Initialize portfolio structure
+            # Initialize portfolio structure dynamically
             portfolio = {
-                "BTC": {"amount": 0, "initial_amount": 0, "last_price_usd": 0},
-                "ETH": {"amount": 0, "initial_amount": 0, "last_price_usd": 0},
-                "USD": {"amount": 0, "initial_amount": 0},
                 "trades_executed": 0,
                 "portfolio_value_usd": 0,
                 "initial_value_usd": 0,
                 "last_updated": datetime.now().isoformat()
             }
             
+            # Initialize each currency in the portfolio
+            for currency in crypto_currencies:
+                if currency == 'USD':
+                    portfolio[currency] = {"amount": 0, "initial_amount": 0}
+                else:
+                    portfolio[currency] = {"amount": 0, "initial_amount": 0, "last_price_usd": 0}
+            
             # Fill in actual balances from Coinbase
             for account in accounts:
                 currency = account.get("currency")
-                if currency in ["BTC", "ETH", "USD"]:
+                if currency in crypto_currencies:
                     balance = float(account.get("available_balance", {}).get("value", 0))
                     portfolio[currency]["amount"] = balance
                     portfolio[currency]["initial_amount"] = balance  # Set initial amount to current balance
             
-            # Get current prices for BTC and ETH
-            btc_price = float(self.get_product_price("BTC-USD").get("price", 0))
-            eth_price = float(self.get_product_price("ETH-USD").get("price", 0))
+            # Get current prices for all crypto currencies
+            total_value = 0
+            for currency in crypto_currencies:
+                if currency != 'USD':
+                    try:
+                        price_data = self.get_product_price(f"{currency}-USD")
+                        price = float(price_data.get("price", 0))
+                        portfolio[currency]["last_price_usd"] = price
+                        
+                        # Calculate value
+                        currency_value = portfolio[currency]["amount"] * price
+                        total_value += currency_value
+                        
+                        logger.info(f"Retrieved {currency}: amount={portfolio[currency]['amount']}, price=${price}")
+                    except Exception as e:
+                        logger.warning(f"Could not get price for {currency}-USD: {e}")
+                        portfolio[currency]["last_price_usd"] = 0
+                else:
+                    # Add USD value
+                    total_value += portfolio["USD"]["amount"]
             
-            # Update prices in portfolio
-            portfolio["BTC"]["last_price_usd"] = btc_price
-            portfolio["ETH"]["last_price_usd"] = eth_price
+            # Update total portfolio value
+            portfolio["portfolio_value_usd"] = total_value
+            portfolio["initial_value_usd"] = total_value  # Set initial value to current value
             
-            # Calculate total portfolio value
-            btc_value = portfolio["BTC"]["amount"] * btc_price
-            eth_value = portfolio["ETH"]["amount"] * eth_price
-            usd_value = portfolio["USD"]["amount"]
+            # Log portfolio summary
+            currency_summary = []
+            for currency in sorted(crypto_currencies):
+                amount = portfolio[currency]["amount"]
+                if amount > 0:
+                    currency_summary.append(f"{currency}={amount}")
             
-            portfolio["portfolio_value_usd"] = btc_value + eth_value + usd_value
-            portfolio["initial_value_usd"] = portfolio["portfolio_value_usd"]  # Set initial value to current value
-            
-            logger.info(f"Retrieved portfolio from Coinbase: BTC={portfolio['BTC']['amount']}, ETH={portfolio['ETH']['amount']}, USD={portfolio['USD']['amount']}")
+            logger.info(f"Retrieved portfolio from Coinbase: {', '.join(currency_summary)}")
             return portfolio
             
         except Exception as e:

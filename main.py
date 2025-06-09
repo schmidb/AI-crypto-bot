@@ -13,19 +13,11 @@ from trading_strategy import TradingStrategy
 from utils.dashboard_updater import DashboardUpdater
 from utils.tax_report import TaxReportGenerator
 from utils.strategy_evaluator import StrategyEvaluator
-from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, LOG_LEVEL, LOG_FILE
+from utils.logger import get_supervisor_logger
+from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES
 
-# Configure logging
-logging.basicConfig(
-    level=getattr(logging, LOG_LEVEL),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
-    ]
-)
-
-logger = logging.getLogger(__name__)
+# Configure logging with daily rotation
+logger = get_supervisor_logger()
 
 class TradingBot:
     """Main trading bot class that orchestrates the trading process"""
@@ -410,7 +402,17 @@ class TradingBot:
                             portfolio[key]["last_price_usd"] = 0
             
             # Log portfolio values before updating dashboard
-            logger.info(f"Updating dashboard with portfolio - BTC: {portfolio['BTC']['amount']}, ETH: {portfolio['ETH']['amount']}, USD: {portfolio['USD']['amount']}, Total: ${portfolio['portfolio_value_usd']}")
+            asset_summary = []
+            asset_keys = [key for key in portfolio.keys() 
+                         if isinstance(portfolio[key], dict) and 
+                         key not in ["portfolio_value_usd", "initial_value_usd", "total_return", "last_updated"]]
+            
+            for asset in sorted(asset_keys):  # Sort for consistent logging
+                if asset in portfolio and isinstance(portfolio[asset], dict):
+                    amount = portfolio[asset].get("amount", 0)
+                    asset_summary.append(f"{asset}: {amount}")
+            
+            logger.info(f"Updating dashboard with portfolio - {', '.join(asset_summary)}, Total: ${portfolio['portfolio_value_usd']}")
             
             # Update dashboard
             self.dashboard_updater.update_dashboard(trading_data, portfolio)

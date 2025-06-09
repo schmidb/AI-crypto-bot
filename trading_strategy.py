@@ -13,7 +13,8 @@ from utils.portfolio import Portfolio
 from config import (
     RISK_LEVEL, 
     PORTFOLIO_REBALANCE,
-    MAX_TRADE_PERCENTAGE
+    MAX_TRADE_PERCENTAGE,
+    TRADING_PAIRS
 )
 
 logger = logging.getLogger(__name__)
@@ -51,16 +52,34 @@ class TradingStrategy:
     def update_portfolio_values(self) -> None:
         """Update portfolio with current market prices"""
         try:
-            # Get current prices
-            btc_price_data = self.client.get_product_price("BTC-USD")
-            eth_price_data = self.client.get_product_price("ETH-USD")
+            # Get current prices for all configured trading pairs
+            prices = {}
             
-            # Extract price values as floats
-            btc_price = float(btc_price_data.get("price", 0))
-            eth_price = float(eth_price_data.get("price", 0))
+            for trading_pair in TRADING_PAIRS:
+                try:
+                    # Extract the crypto asset from the trading pair (e.g., BTC from BTC-USD)
+                    crypto_asset = trading_pair.split("-")[0]
+                    
+                    # Get price data from Coinbase
+                    price_data = self.client.get_product_price(trading_pair)
+                    price = float(price_data.get("price", 0))
+                    
+                    if price > 0:
+                        prices[crypto_asset] = price
+                        logger.debug(f"Retrieved price for {crypto_asset}: ${price:.2f}")
+                    else:
+                        logger.warning(f"Invalid price received for {trading_pair}: {price}")
+                        
+                except Exception as e:
+                    logger.error(f"Error getting price for {trading_pair}: {e}")
+                    continue
             
-            # Update portfolio with current prices
-            self.portfolio_manager.update_prices(btc_price, eth_price)
+            # Update portfolio with current prices (pass as dictionary)
+            if prices:
+                self.portfolio_manager.update_prices(prices)
+                logger.info(f"Updated prices for {len(prices)} assets: {list(prices.keys())}")
+            else:
+                logger.warning("No valid prices retrieved, skipping portfolio update")
             
             # Update local portfolio copy
             self._portfolio = self.portfolio_manager.to_dict()
