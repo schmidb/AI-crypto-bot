@@ -2,7 +2,6 @@ import logging
 import json
 import os
 import datetime
-import shutil
 from typing import Dict, List, Any
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,10 +11,10 @@ matplotlib.use('Agg')  # Use non-interactive backend
 logger = logging.getLogger(__name__)
 
 class DashboardUpdater:
-    """Updates the web dashboard with latest trading data and portfolio information"""
+    """Updates local dashboard data files - web server sync handled separately"""
     
     def __init__(self):
-        """Initialize the dashboard updater with new data structure"""
+        """Initialize the dashboard updater for local data management only"""
         # Create directories if they don't exist
         os.makedirs("data/portfolio", exist_ok=True)
         os.makedirs("data/cache", exist_ok=True)
@@ -23,24 +22,24 @@ class DashboardUpdater:
         os.makedirs("dashboard/images", exist_ok=True)
     
     def update_dashboard(self, trading_data: Dict[str, Any], portfolio: Dict[str, Any]) -> None:
-        """Update the dashboard with latest trading and portfolio data"""
+        """Update local dashboard data files only"""
         try:
-            logger.info("Starting dashboard update with new structure")
+            logger.info("Updating local dashboard data")
             self._update_trading_cache(trading_data)
             self._update_portfolio_data(portfolio)
             self._update_config_data()
             self._update_latest_decisions(trading_data)
             self._generate_charts(trading_data, portfolio)
             self._update_timestamp()
-            self._sync_to_webserver()
+            logger.info("Local dashboard data updated successfully")
         except Exception as e:
-            logger.error(f"Error updating dashboard: {e}")
+            logger.error(f"Error updating local dashboard data: {e}")
     
     def _update_trading_cache(self, trading_data: Dict[str, Any]) -> None:
         """Update trading data cache file"""
         with open("data/cache/trading_data.json", "w") as f:
             json.dump(trading_data, f, indent=2)
-        logger.info("Updated trading data cache")
+        logger.debug("Updated trading data cache")
     
     def _update_portfolio_data(self, portfolio: Dict[str, Any]) -> None:
         """Update portfolio data file"""
@@ -49,18 +48,18 @@ class DashboardUpdater:
                 logger.warning(f"Invalid portfolio data: {type(portfolio)}")
                 return
             
-            # Process portfolio data (same logic as before)
+            # Process portfolio data
             import copy
             portfolio_copy = copy.deepcopy(portfolio)
             
             # Add timestamp
             portfolio_copy["last_updated"] = datetime.datetime.now().isoformat()
             
-            # Save to new location
+            # Save to portfolio data file
             with open("data/portfolio/portfolio_data.json", "w") as f:
                 json.dump(portfolio_copy, f, indent=2, default=str)
             
-            logger.info("Updated portfolio data")
+            logger.debug("Updated portfolio data")
             
             # Update portfolio history
             self._append_portfolio_history(portfolio_copy)
@@ -76,29 +75,33 @@ class DashboardUpdater:
             # Create new history file if it doesn't exist
             if not os.path.exists(history_file):
                 with open(history_file, "w") as f:
-                    f.write("timestamp,portfolio_value_usd,btc_amount,eth_amount,usd_amount,btc_price,eth_price\n")
+                    f.write("timestamp,portfolio_value_usd,btc_amount,eth_amount,sol_amount,usd_amount,btc_price,eth_price,sol_price\n")
             
-            # Extract and append data (same logic as before)
+            # Extract and append data
             timestamp = datetime.datetime.now().isoformat()
             portfolio_value = float(portfolio.get("portfolio_value_usd", 0))
             
             # Extract asset data with validation
             btc_data = portfolio.get("BTC", {})
             eth_data = portfolio.get("ETH", {})
+            sol_data = portfolio.get("SOL", {})
             usd_data = portfolio.get("USD", {})
             
             if not isinstance(btc_data, dict): btc_data = {"amount": 0, "last_price_usd": 0}
             if not isinstance(eth_data, dict): eth_data = {"amount": 0, "last_price_usd": 0}
+            if not isinstance(sol_data, dict): sol_data = {"amount": 0, "last_price_usd": 0}
             if not isinstance(usd_data, dict): usd_data = {"amount": 0}
             
             btc_amount = float(btc_data.get("amount", 0))
             eth_amount = float(eth_data.get("amount", 0))
+            sol_amount = float(sol_data.get("amount", 0))
             usd_amount = float(usd_data.get("amount", 0))
             btc_price = float(btc_data.get("last_price_usd", 0))
             eth_price = float(eth_data.get("last_price_usd", 0))
+            sol_price = float(sol_data.get("last_price_usd", 0))
             
             with open(history_file, "a") as f:
-                f.write(f"{timestamp},{portfolio_value},{btc_amount},{eth_amount},{usd_amount},{btc_price},{eth_price}\n")
+                f.write(f"{timestamp},{portfolio_value},{btc_amount},{eth_amount},{sol_amount},{usd_amount},{btc_price},{eth_price},{sol_price}\n")
                 
         except Exception as e:
             logger.error(f"Error appending portfolio history: {e}")
@@ -133,9 +136,19 @@ class DashboardUpdater:
     def _update_latest_decisions(self, trading_data: Dict[str, Any]) -> None:
         """Update latest trading decisions cache"""
         try:
-            # Same logic as before, but save to new location
             latest_decisions = []
-            # ... (same processing logic)
+            
+            # Extract recent trades if available
+            if "recent_trades" in trading_data and trading_data["recent_trades"]:
+                for trade in trading_data["recent_trades"][-3:]:  # Last 3 trades
+                    decision = {
+                        "timestamp": trade.get("timestamp", ""),
+                        "asset": trade.get("product_id", "").split("-")[0] if trade.get("product_id") else "Unknown",
+                        "action": trade.get("action", "unknown"),
+                        "confidence": trade.get("confidence", 0),
+                        "reasoning": trade.get("reason", trade.get("reasoning", "No reasoning provided"))
+                    }
+                    latest_decisions.append(decision)
             
             with open("data/cache/latest_decisions.json", "w") as f:
                 json.dump(latest_decisions, f, indent=2, default=str)
@@ -146,8 +159,8 @@ class DashboardUpdater:
     def _generate_charts(self, trading_data: Dict[str, Any], portfolio: Dict[str, Any]) -> None:
         """Generate charts for the dashboard"""
         try:
-            self._generate_portfolio_allocation_chart(portfolio)
             self._generate_portfolio_value_chart()
+            self._generate_portfolio_allocation_chart(portfolio)
             self._generate_target_vs_current_allocation(portfolio)
         except Exception as e:
             logger.error(f"Error generating charts: {e}")
@@ -168,15 +181,15 @@ class DashboardUpdater:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             
             plt.figure(figsize=(12, 6))
-            plt.plot(df['timestamp'], df['portfolio_value_usd'])
-            plt.title('Portfolio Value Over Time')
-            plt.xlabel('Date')
-            plt.ylabel('Value (USD)')
-            plt.grid(True)
+            plt.plot(df['timestamp'], df['portfolio_value_usd'], linewidth=2, color='#4CAF50')
+            plt.title('Portfolio Value Over Time', fontsize=16, fontweight='bold')
+            plt.xlabel('Date', fontsize=12)
+            plt.ylabel('Value (USD)', fontsize=12)
+            plt.grid(True, alpha=0.3)
             plt.xticks(rotation=45)
             plt.tight_layout()
             
-            plt.savefig("dashboard/images/portfolio_value.png")
+            plt.savefig("dashboard/images/portfolio_value.png", dpi=150, bbox_inches='tight')
             plt.close()
             
         except Exception as e:
@@ -184,13 +197,91 @@ class DashboardUpdater:
     
     def _generate_portfolio_allocation_chart(self, portfolio: Dict[str, Any]) -> None:
         """Generate pie chart showing portfolio allocation"""
-        # Same logic as before, save to dashboard/images/
-        pass
+        try:
+            if not portfolio:
+                return
+            
+            # Extract asset values
+            assets = {}
+            for asset in ['BTC', 'ETH', 'SOL', 'USD']:
+                if asset in portfolio and isinstance(portfolio[asset], dict):
+                    amount = portfolio[asset].get('amount', 0)
+                    price = portfolio[asset].get('last_price_usd', 1 if asset == 'USD' else 0)
+                    value = amount * price
+                    if value > 0:
+                        assets[asset] = value
+            
+            if not assets:
+                return
+            
+            # Create pie chart
+            plt.figure(figsize=(10, 8))
+            colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
+            wedges, texts, autotexts = plt.pie(
+                assets.values(), 
+                labels=assets.keys(), 
+                autopct='%1.1f%%',
+                colors=colors,
+                startangle=90
+            )
+            
+            plt.title('Portfolio Allocation', fontsize=16, fontweight='bold')
+            plt.axis('equal')
+            
+            plt.savefig("dashboard/images/portfolio_allocation.png", dpi=150, bbox_inches='tight')
+            plt.close()
+            
+        except Exception as e:
+            logger.error(f"Error generating portfolio allocation chart: {e}")
     
     def _generate_target_vs_current_allocation(self, portfolio: Dict[str, Any]) -> None:
         """Generate bar chart comparing target vs current allocation"""
-        # Same logic as before, save to dashboard/images/
-        pass
+        try:
+            from config import TARGET_ALLOCATION
+            
+            if not portfolio or not TARGET_ALLOCATION:
+                return
+            
+            # Calculate current allocation percentages
+            total_value = portfolio.get('portfolio_value_usd', 0)
+            if total_value <= 0:
+                return
+            
+            current_allocation = {}
+            for asset in TARGET_ALLOCATION.keys():
+                if asset in portfolio and isinstance(portfolio[asset], dict):
+                    amount = portfolio[asset].get('amount', 0)
+                    price = portfolio[asset].get('last_price_usd', 1 if asset == 'USD' else 0)
+                    value = amount * price
+                    current_allocation[asset] = (value / total_value) * 100
+                else:
+                    current_allocation[asset] = 0
+            
+            # Create comparison chart
+            assets = list(TARGET_ALLOCATION.keys())
+            target_values = [TARGET_ALLOCATION[asset] for asset in assets]
+            current_values = [current_allocation.get(asset, 0) for asset in assets]
+            
+            x = range(len(assets))
+            width = 0.35
+            
+            plt.figure(figsize=(12, 6))
+            plt.bar([i - width/2 for i in x], target_values, width, label='Target', color='#4CAF50', alpha=0.7)
+            plt.bar([i + width/2 for i in x], current_values, width, label='Current', color='#2196F3', alpha=0.7)
+            
+            plt.xlabel('Assets', fontsize=12)
+            plt.ylabel('Allocation (%)', fontsize=12)
+            plt.title('Target vs Current Allocation', fontsize=16, fontweight='bold')
+            plt.xticks(x, assets)
+            plt.legend()
+            plt.grid(True, alpha=0.3)
+            plt.tight_layout()
+            
+            plt.savefig("dashboard/images/allocation_comparison.png", dpi=150, bbox_inches='tight')
+            plt.close()
+            
+        except Exception as e:
+            logger.error(f"Error generating allocation comparison chart: {e}")
     
     def _update_timestamp(self) -> None:
         """Update the last updated timestamp"""
@@ -200,96 +291,3 @@ class DashboardUpdater:
                 f.write(timestamp)
         except Exception as e:
             logger.error(f"Error updating timestamp: {e}")
-    
-    def _sync_to_webserver(self):
-        """Copy dashboard files to web server directory"""
-        try:
-            web_dashboard_dir = "/var/www/html/crypto-bot"
-            
-            if not os.path.exists(web_dashboard_dir):
-                logger.info(f"Web dashboard directory {web_dashboard_dir} not found, skipping sync")
-                return
-            
-            # Copy data files from new structure
-            os.makedirs(f"{web_dashboard_dir}/data", exist_ok=True)
-            
-            # Copy portfolio data
-            if os.path.exists("data/portfolio/portfolio_data.json"):
-                shutil.copy2("data/portfolio/portfolio_data.json", f"{web_dashboard_dir}/data/")
-            
-            # Copy cache data
-            cache_files = ["latest_decisions.json", "trading_data.json", "last_updated.txt", "bot_startup.json"]
-            for file in cache_files:
-                if os.path.exists(f"data/cache/{file}"):
-                    shutil.copy2(f"data/cache/{file}", f"{web_dashboard_dir}/data/")
-            
-            # Copy config
-            if os.path.exists("data/config/config.json"):
-                shutil.copy2("data/config/config.json", f"{web_dashboard_dir}/data/")
-            
-            # Update market data symlinks
-            self._update_market_data_symlinks(web_dashboard_dir)
-            
-            # Copy images
-            if os.path.exists("dashboard/images"):
-                os.makedirs(f"{web_dashboard_dir}/images", exist_ok=True)
-                for file in os.listdir("dashboard/images"):
-                    shutil.copy2(f"dashboard/images/{file}", f"{web_dashboard_dir}/images/")
-            
-            # Copy static files
-            if os.path.exists("dashboard/static"):
-                for file in os.listdir("dashboard/static"):
-                    if file.endswith((".html", ".css", ".js")):
-                        shutil.copy2(f"dashboard/static/{file}", f"{web_dashboard_dir}/")
-            
-            logger.info("Dashboard files synced to web server")
-            
-        except Exception as e:
-            logger.error(f"Error syncing dashboard files: {e}")
-    
-    def _update_market_data_symlinks(self, web_dashboard_dir: str) -> None:
-        """Update symlinks to latest market data files"""
-        try:
-            import glob
-            
-            data_dir = os.path.abspath("data")
-            web_data_dir = f"{web_dashboard_dir}/data"
-            
-            # Update symlinks for each trading pair
-            assets = ['BTC', 'ETH', 'SOL']
-            
-            for asset in assets:
-                # Find the latest market data file for this asset
-                pattern = f"{data_dir}/{asset}_USD_*.json"
-                files = glob.glob(pattern)
-                
-                if files:
-                    # Sort by filename (which includes timestamp) and get the latest
-                    latest_file = sorted(files)[-1]
-                    symlink_path = f"{web_data_dir}/{asset.lower()}_latest.json"
-                    
-                    # Remove existing symlink if it exists
-                    if os.path.islink(symlink_path):
-                        os.unlink(symlink_path)
-                    elif os.path.exists(symlink_path):
-                        os.remove(symlink_path)
-                    
-                    # Create new symlink
-                    os.symlink(latest_file, symlink_path)
-                    logger.info(f"Updated {asset} market data symlink to {latest_file}")
-            
-            # Also update trade history symlink
-            trade_history_path = f"{data_dir}/trades/trade_history.json"
-            if os.path.exists(trade_history_path):
-                symlink_path = f"{web_data_dir}/trade_history.json"
-                
-                if os.path.islink(symlink_path):
-                    os.unlink(symlink_path)
-                elif os.path.exists(symlink_path):
-                    os.remove(symlink_path)
-                
-                os.symlink(trade_history_path, symlink_path)
-                logger.info("Updated trade history symlink")
-                
-        except Exception as e:
-            logger.error(f"Error updating market data symlinks: {e}")

@@ -11,9 +11,98 @@ A Python-based cryptocurrency trading bot that uses Google Cloud Vertex AI LLMs 
 - Supports Bitcoin (BTC), Ethereum (ETH), and Solana (SOL) trading with USD pairs
 - Collects and analyzes historical market data with customizable timeframes
 - Calculates technical indicators (RSI, MACD, Bollinger Bands, etc.)
-- Implements risk management strategies based on configurable risk levels
+- **Enhanced Active Trading Strategy** with lowered confidence thresholds for more frequent trades
+- **Dynamic Risk Management** using position sizing instead of trade avoidance
+- **Weighted Technical Analysis** with MACD (40%), RSI (30%), and Bollinger Bands (30%)
+- **Narrowed RSI Ranges** (45-55 neutral zone) for more definitive signals
 
-### 📊 Comprehensive Web Dashboard
+## Enhanced Trading Strategy Features
+
+### 🎯 Active Trading Configuration
+The bot now implements an enhanced trading strategy designed for more frequent and profitable trades:
+
+#### Lowered Confidence Thresholds
+- **Buy/Sell Threshold**: Reduced from 80% to 60% confidence for more active trading
+- **Trend Alignment Bonus**: +10% confidence when multiple indicators align
+- **Counter-Trend Penalty**: -5% confidence for signals against the trend
+- **Result**: More trading opportunities while maintaining quality decisions
+
+#### Weighted Technical Analysis
+- **MACD (40% weight)**: Primary trend indicator for major market direction
+- **RSI (30% weight)**: Momentum indicator with narrowed ranges (45-55 neutral)
+- **Bollinger Bands (30% weight)**: Volatility and breakout detection
+- **Smart Conflict Resolution**: Clear hierarchy when indicators disagree
+
+#### Dynamic Risk Management
+Instead of avoiding trades during high-risk periods, the bot now adjusts position sizes:
+- **High Risk**: 50% position size (still trades but smaller amounts)
+- **Medium Risk**: 75% position size
+- **Low Risk**: 100% position size (full allocation)
+
+#### Enhanced Portfolio Management
+- **Target Allocation**: 80% crypto / 20% USD for optimal trading flexibility
+- **Automatic Rebalancing**: Maintains target allocation when drift exceeds 5%
+- **USD Buffer**: Ensures liquidity for buying opportunities
+
+### 📊 Technical Indicator Improvements
+
+#### RSI Analysis (Narrowed Ranges)
+- **Oversold**: RSI < 45 (was 40) - Strong buy signal
+- **Overbought**: RSI > 55 (was 60) - Strong sell signal  
+- **Neutral Zone**: 45-55 (narrowed from 40-60)
+- **Result**: More definitive buy/sell signals
+
+#### MACD Priority System
+- **Primary Trend Indicator**: Highest weight in decision making
+- **Crossover Detection**: Identifies trend changes early
+- **Histogram Analysis**: Confirms momentum strength
+- **Trend Alignment**: Boosts confidence when other indicators agree
+
+#### Bollinger Bands Strategy
+- **Breakout Detection**: Distinguishes between breakouts and overextensions
+- **Volume Confirmation**: Considers momentum for breakout validation
+- **Mean Reversion**: Identifies oversold/overbought conditions
+
+### ⚙️ Configuration Options
+
+Add these settings to your `.env` file for enhanced trading:
+
+```env
+# Enhanced Trading Strategy Configuration
+CONFIDENCE_THRESHOLD_BUY=60
+CONFIDENCE_THRESHOLD_SELL=60
+CONFIDENCE_BOOST_TREND_ALIGNED=10
+CONFIDENCE_PENALTY_COUNTER_TREND=5
+
+# Technical Analysis Settings
+RSI_NEUTRAL_MIN=45
+RSI_NEUTRAL_MAX=55
+MACD_SIGNAL_WEIGHT=0.4
+RSI_SIGNAL_WEIGHT=0.3
+BOLLINGER_SIGNAL_WEIGHT=0.3
+
+# Risk Management (Position Sizing)
+RISK_HIGH_POSITION_MULTIPLIER=0.5
+RISK_MEDIUM_POSITION_MULTIPLIER=0.75
+RISK_LOW_POSITION_MULTIPLIER=1.0
+
+# Trade Size Limits
+MIN_TRADE_USD=10.0
+MAX_POSITION_SIZE_USD=1000.0
+
+# Portfolio Rebalancing
+REBALANCE_THRESHOLD_PERCENT=5
+REBALANCE_CHECK_INTERVAL_MINUTES=180
+```
+
+### 🚀 Performance Improvements
+
+The enhanced strategy delivers:
+- **More Trading Opportunities**: Lower thresholds mean more signals
+- **Better Risk Management**: Position sizing instead of trade avoidance
+- **Improved Decision Quality**: Weighted indicator analysis
+- **Dynamic Portfolio**: Automatic rebalancing for optimal allocation
+- **Consistent Activity**: Trades during all market conditions with appropriate sizing
 - **Real-time monitoring** with live portfolio tracking and performance metrics
 - **Bot status tracking** with uptime monitoring and operational status
 - **Live UTC clock** with consistent timezone display across all timestamps
@@ -139,12 +228,42 @@ AI-crypto-bot/
    # Edit .env with your API keys and configuration
    ```
 
-5. **Run the bot**:
+5. **Configure Enhanced Trading Strategy**:
+   Add these settings to your `.env` file:
+   ```env
+   # Enhanced Trading Strategy Configuration
+   CONFIDENCE_THRESHOLD_BUY=60
+   CONFIDENCE_THRESHOLD_SELL=60
+   CONFIDENCE_BOOST_TREND_ALIGNED=10
+   CONFIDENCE_PENALTY_COUNTER_TREND=5
+
+   # Technical Analysis Settings
+   RSI_NEUTRAL_MIN=45
+   RSI_NEUTRAL_MAX=55
+   MACD_SIGNAL_WEIGHT=0.4
+   RSI_SIGNAL_WEIGHT=0.3
+   BOLLINGER_SIGNAL_WEIGHT=0.3
+
+   # Risk Management (Position Sizing)
+   RISK_HIGH_POSITION_MULTIPLIER=0.5
+   RISK_MEDIUM_POSITION_MULTIPLIER=0.75
+   RISK_LOW_POSITION_MULTIPLIER=1.0
+
+   # Trade Size Limits
+   MIN_TRADE_USD=10.0
+   MAX_POSITION_SIZE_USD=1000.0
+
+   # Portfolio Rebalancing
+   REBALANCE_THRESHOLD_PERCENT=5
+   REBALANCE_CHECK_INTERVAL_MINUTES=180
+   ```
+
+6. **Run the bot**:
    ```bash
    python main.py
    ```
 
-6. **Access the Dashboard** (if deployed with web server):
+7. **Access the Dashboard** (if deployed with web server):
    ```bash
    # Local development
    http://localhost/crypto-bot/
@@ -200,13 +319,59 @@ Once deployed, access your dashboard at:
 - **Local Development**: `http://localhost/crypto-bot/`
 - **Cloud Deployment**: `http://your-server-ip/crypto-bot/`
 
-## Utility Scripts
+## Web Server Sync Configuration
+
+The bot includes a centralized web server sync mechanism that can be enabled or disabled via environment variables.
+
+### Configuration
+
+Add these variables to your `.env` file:
+
+```bash
+# Web Server Sync Configuration
+WEBSERVER_SYNC_ENABLED=true                    # Enable/disable web server sync
+WEBSERVER_SYNC_PATH=/var/www/html/crypto-bot   # Path to web server directory
+```
+
+### How It Works
+
+- **Single Sync Point**: All web server synchronization happens in one place in `main.py`
+- **Configurable**: Can be completely disabled by setting `WEBSERVER_SYNC_ENABLED=false`
+- **Automatic**: Syncs after each trading cycle and every 30 minutes
+- **Efficient**: Uses symlinks for data files, copies static files only when needed
+
+### Manual Sync
+
+You can manually sync the dashboard to the web server:
+
+```bash
+# Manual sync (respects WEBSERVER_SYNC_ENABLED setting)
+python3 sync_webserver.py
+
+# Force sync (ignores WEBSERVER_SYNC_ENABLED setting)
+python3 sync_webserver.py  # and choose 'y' when prompted
+```
+
+### Sync Behavior
+
+When enabled, the bot will:
+1. **After each trading cycle**: Update local data, then sync to web server
+2. **Every 30 minutes**: Scheduled sync to ensure web server is up-to-date
+3. **On startup**: Initial sync after dashboard initialization
+
+When disabled:
+- Only local dashboard data is updated
+- No web server operations are performed
+- Useful for development or when running without a web server
+
+### Utility Scripts
 
 The bot includes several utility scripts for maintenance and management:
 
-### Dashboard Management
-- **`update_dashboard_links.sh`**: Updates symlinks to latest market data files for web dashboard
+- **`sync_webserver.py`**: Manual web server sync script
 - **`reset_bot_data.sh`**: Resets bot data and portfolio state (use with caution)
+- **`cleanup_logs.sh`**: Cleans up old log files
+- **`cleanup_old_files.sh`**: Removes old market data files
 
 ### Strategy Analysis
 - **`strategy_analyzer.py`**: Analyzes trading performance and provides AI-powered improvement recommendations

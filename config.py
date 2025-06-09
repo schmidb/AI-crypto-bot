@@ -52,9 +52,39 @@ class Config:
         # Dashboard settings
         self.DASHBOARD_TRADE_HISTORY_LIMIT = int(os.getenv("DASHBOARD_TRADE_HISTORY_LIMIT", "10"))
         
+        # Web Server Sync settings
+        self.WEBSERVER_SYNC_ENABLED = os.getenv("WEBSERVER_SYNC_ENABLED", "false").lower() == "true"
+        self.WEBSERVER_SYNC_PATH = os.getenv("WEBSERVER_SYNC_PATH", "/var/www/html/crypto-bot")
+        
         # Logging settings
         self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
         self.LOG_FILE = os.getenv("LOG_FILE", "logs/crypto_bot.log")
+        
+        # Enhanced Trading Strategy Settings
+        self.CONFIDENCE_THRESHOLD_BUY = float(os.getenv("CONFIDENCE_THRESHOLD_BUY", "60"))
+        self.CONFIDENCE_THRESHOLD_SELL = float(os.getenv("CONFIDENCE_THRESHOLD_SELL", "60"))
+        self.CONFIDENCE_BOOST_TREND_ALIGNED = float(os.getenv("CONFIDENCE_BOOST_TREND_ALIGNED", "10"))
+        self.CONFIDENCE_PENALTY_COUNTER_TREND = float(os.getenv("CONFIDENCE_PENALTY_COUNTER_TREND", "5"))
+        
+        # Technical Analysis Settings
+        self.RSI_NEUTRAL_MIN = float(os.getenv("RSI_NEUTRAL_MIN", "45"))
+        self.RSI_NEUTRAL_MAX = float(os.getenv("RSI_NEUTRAL_MAX", "55"))
+        self.MACD_SIGNAL_WEIGHT = float(os.getenv("MACD_SIGNAL_WEIGHT", "0.4"))
+        self.RSI_SIGNAL_WEIGHT = float(os.getenv("RSI_SIGNAL_WEIGHT", "0.3"))
+        self.BOLLINGER_SIGNAL_WEIGHT = float(os.getenv("BOLLINGER_SIGNAL_WEIGHT", "0.3"))
+        
+        # Risk Management Settings
+        self.RISK_HIGH_POSITION_MULTIPLIER = float(os.getenv("RISK_HIGH_POSITION_MULTIPLIER", "0.5"))
+        self.RISK_MEDIUM_POSITION_MULTIPLIER = float(os.getenv("RISK_MEDIUM_POSITION_MULTIPLIER", "0.75"))
+        self.RISK_LOW_POSITION_MULTIPLIER = float(os.getenv("RISK_LOW_POSITION_MULTIPLIER", "1.0"))
+        
+        # Trade Size Limits
+        self.MIN_TRADE_USD = float(os.getenv("MIN_TRADE_USD", "10.0"))
+        self.MAX_POSITION_SIZE_USD = float(os.getenv("MAX_POSITION_SIZE_USD", "1000.0"))
+        
+        # Portfolio Rebalancing
+        self.REBALANCE_THRESHOLD_PERCENT = float(os.getenv("REBALANCE_THRESHOLD_PERCENT", "5"))
+        self.REBALANCE_CHECK_INTERVAL_MINUTES = int(os.getenv("REBALANCE_CHECK_INTERVAL_MINUTES", "180"))
     
     def get_trading_pairs(self) -> List[str]:
         """Get list of trading pairs"""
@@ -103,6 +133,10 @@ TARGET_ALLOCATION = config.TARGET_ALLOCATION
 
 # Dashboard settings
 DASHBOARD_TRADE_HISTORY_LIMIT = config.DASHBOARD_TRADE_HISTORY_LIMIT
+
+# Web Server Sync settings
+WEBSERVER_SYNC_ENABLED = config.WEBSERVER_SYNC_ENABLED
+WEBSERVER_SYNC_PATH = config.WEBSERVER_SYNC_PATH
 
 # Logging settings
 LOG_LEVEL = config.LOG_LEVEL

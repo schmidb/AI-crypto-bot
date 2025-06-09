@@ -152,7 +152,7 @@ class TradingStrategy:
     
     def _execute_decision(self, product_id: str, decision: Dict) -> Dict:
         """
-        Execute a trading decision
+        Execute a trading decision with modified thresholds for more active trading
         
         Args:
             product_id: Trading pair (e.g., 'BTC-USD')
@@ -164,6 +164,22 @@ class TradingStrategy:
         action = decision.get("action", "hold")
         confidence = decision.get("confidence", 0)
         reason = decision.get("reason", "No reason provided")
+        
+        # Lower confidence thresholds for more active trading
+        BUY_CONFIDENCE_THRESHOLD = 60  # Lowered from original higher threshold
+        SELL_CONFIDENCE_THRESHOLD = 60  # Lowered from original higher threshold
+        
+        # Adjust confidence based on trend alignment
+        if "trend_aligned" in decision:
+            confidence += 10  # Boost confidence when aligned with trend
+        
+        # Convert high risk to position sizing rather than preventing trades
+        risk_level = decision.get("risk_assessment", "medium")
+        risk_multiplier = {
+            "high": 0.5,    # Trade at 50% size during high risk
+            "medium": 0.75, # Trade at 75% size during medium risk
+            "low": 1.0      # Trade at full size during low risk
+        }.get(risk_level, 0.75)
         
         logger.info(f"Decision for {product_id}: {action} (confidence: {confidence})")
         logger.info(f"Reason: {reason}")
@@ -187,7 +203,7 @@ class TradingStrategy:
         # Extract the base currency (BTC or ETH) from the product ID
         base_currency = product_id.split("-")[0]
         
-        if action == "buy":
+        if action == "buy" and confidence >= BUY_CONFIDENCE_THRESHOLD:
             # Calculate how much USD to use for buying
             available_usd = self.portfolio_manager.get_asset_amount("USD")
             
@@ -197,8 +213,8 @@ class TradingStrategy:
                 result["message"] = f"No USD available for buying {base_currency}"
                 return result
             
-            # Calculate trade size based on confidence and max trade percentage
-            trade_percentage = (confidence / 100) * MAX_TRADE_PERCENTAGE
+            # Calculate trade size based on confidence, max trade percentage, and risk multiplier
+            trade_percentage = (confidence / 100) * MAX_TRADE_PERCENTAGE * risk_multiplier
             trade_amount_usd = available_usd * (trade_percentage / 100)
             
             # Minimum trade amount
@@ -247,7 +263,7 @@ class TradingStrategy:
                 result["status"] = "error"
                 result["message"] = str(e)
         
-        elif action == "sell":
+        elif action == "sell" and confidence >= SELL_CONFIDENCE_THRESHOLD:
             # Calculate how much crypto to sell
             available_crypto = self.portfolio_manager.get_asset_amount(base_currency)
             
@@ -257,8 +273,8 @@ class TradingStrategy:
                 result["message"] = f"No {base_currency} available for selling"
                 return result
             
-            # Calculate trade size based on confidence and max trade percentage
-            trade_percentage = (confidence / 100) * MAX_TRADE_PERCENTAGE
+            # Calculate trade size based on confidence, max trade percentage, and risk multiplier
+            trade_percentage = (confidence / 100) * MAX_TRADE_PERCENTAGE * risk_multiplier
             crypto_amount = available_crypto * (trade_percentage / 100)
             
             # Minimum trade amount (0.001 BTC or 0.01 ETH)

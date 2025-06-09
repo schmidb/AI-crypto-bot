@@ -158,8 +158,42 @@ def get_supervisor_logger():
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(formatter)
             logger.addHandler(console_handler)
+            
+            # Log a clear separation line for bot startup
+            logger.info("="*80)
+            logger.info("BOT STARTUP - NEW SESSION STARTING")
+            logger.info("="*80)
         
         return logger
     else:
         # When running standalone, use file logging
-        return get_daily_rotating_logger("supervisor", "supervisor")
+        logger = get_daily_rotating_logger("supervisor", "supervisor")
+        
+        # Log a clear separation line for bot startup
+        logger.info("="*80)
+        logger.info("BOT STARTUP - NEW SESSION STARTING")
+        logger.info("="*80)
+        
+        return logger
+
+def log_bot_shutdown(logger):
+    """
+    Log a clear separation line for bot shutdown
+    
+    Args:
+        logger: The logger instance to use
+    """
+    logger.info("="*80)
+    logger.info("BOT SHUTDOWN - SESSION ENDING")
+    logger.info("="*80)
+
+def log_bot_restart(logger):
+    """
+    Log a clear separation line for bot restart
+    
+    Args:
+        logger: The logger instance to use
+    """
+    logger.info("="*80)
+    logger.info("BOT RESTART - RESTARTING SESSION")
+    logger.info("="*80)

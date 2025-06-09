@@ -11,10 +11,11 @@ from llm_analyzer import LLMAnalyzer
 from data_collector import DataCollector
 from trading_strategy import TradingStrategy
 from utils.dashboard_updater import DashboardUpdater
+from utils.webserver_sync import WebServerSync
 from utils.tax_report import TaxReportGenerator
 from utils.strategy_evaluator import StrategyEvaluator
-from utils.logger import get_supervisor_logger
-from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES
+from utils.logger import get_supervisor_logger, log_bot_shutdown
+from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED
 
 # Configure logging with daily rotation
 logger = get_supervisor_logger()
@@ -44,8 +45,11 @@ class TradingBot:
         # Initialize portfolio with current market values
         self.trading_strategy.update_portfolio_values()
         
-        # Initialize dashboard updater
+        # Initialize dashboard updater (local data only)
         self.dashboard_updater = DashboardUpdater()
+        
+        # Initialize web server sync (if enabled)
+        self.webserver_sync = WebServerSync()
         
         # Initialize tax report generator
         self.tax_report_generator = TaxReportGenerator()
@@ -56,10 +60,24 @@ class TradingBot:
         # Initialize dashboard with existing data
         self.initialize_dashboard()
         
+        # Perform initial web server sync
+        self.sync_to_webserver()
+        
         # Record bot startup time
         self.record_startup_time()
         
         logger.info(f"Trading bot initialized with trading pairs: {TRADING_PAIRS}")
+        
+    def sync_to_webserver(self):
+        """Centralized web server sync - only place where web server sync happens"""
+        try:
+            if WEBSERVER_SYNC_ENABLED:
+                logger.info("Syncing dashboard to web server")
+                self.webserver_sync.sync_to_webserver()
+            else:
+                logger.debug("Web server sync disabled")
+        except Exception as e:
+            logger.error(f"Error syncing to web server: {e}")
         
     def record_startup_time(self):
         """Record the bot startup time for uptime tracking"""
@@ -226,8 +244,12 @@ class TradingBot:
                         "trades_executed": 0
                     }
             
+            # Update local dashboard data
             self.dashboard_updater.update_dashboard(dashboard_data, portfolio)
-            logger.info("Dashboard updated successfully")
+            logger.info("Local dashboard updated successfully")
+            
+            # Sync to web server (centralized sync point)
+            self.sync_to_webserver()
         except Exception as e:
             logger.error(f"Error updating dashboard: {e}")
         
@@ -263,8 +285,8 @@ class TradingBot:
         # Schedule portfolio rebalancing (once per day at 2 AM)
         schedule.every().day.at("02:00").do(self.trading_strategy.rebalance_portfolio)
         
-        # Schedule dashboard updates every 5 minutes
-        schedule.every(5).minutes.do(self.update_dashboard)
+        # Schedule web server sync every 30 minutes (only sync point)
+        schedule.every(30).minutes.do(self.sync_to_webserver)
         
         # Start a simple API server for dashboard interactions
         import threading
@@ -290,7 +312,7 @@ class TradingBot:
                 # Refresh portfolio from Coinbase
                 result = self.trading_strategy.refresh_portfolio_from_coinbase()
                 
-                # Explicitly update the dashboard with the latest portfolio data
+                # Update local dashboard data only
                 try:
                     # Get current portfolio data
                     portfolio = self.trading_strategy.portfolio
@@ -301,11 +323,11 @@ class TradingBot:
                         "timestamp": datetime.now().isoformat()
                     }
                     
-                    # Update the dashboard
+                    # Update the local dashboard
                     self.dashboard_updater.update_dashboard(dashboard_data, portfolio)
-                    logger.info("Dashboard updated with refreshed portfolio data")
+                    logger.info("Local dashboard updated with refreshed portfolio data")
                 except Exception as e:
-                    logger.error(f"Error updating dashboard after portfolio refresh: {e}")
+                    logger.error(f"Error updating local dashboard after portfolio refresh: {e}")
                 
                 return result
             except Exception as e:
@@ -362,8 +384,8 @@ class TradingBot:
         logger.info(f"API server started on port {port}")
         httpd.serve_forever()
             
-    def update_dashboard(self):
-        """Update the dashboard with latest data"""
+    def update_local_dashboard(self):
+        """Update local dashboard data only (no web server sync)"""
         try:
             # Get trading data
             trading_data = {
@@ -435,14 +457,14 @@ class TradingBot:
                     amount = portfolio[asset].get("amount", 0)
                     asset_summary.append(f"{asset}: {amount}")
             
-            logger.info(f"Updating dashboard with portfolio - {', '.join(asset_summary)}, Total: ${portfolio['portfolio_value_usd']}")
+            logger.info(f"Updating local dashboard with portfolio - {', '.join(asset_summary)}, Total: ${portfolio['portfolio_value_usd']}")
             
-            # Update dashboard
+            # Update local dashboard only
             self.dashboard_updater.update_dashboard(trading_data, portfolio)
-            logger.info("Dashboard updated")
+            logger.info("Local dashboard updated")
             
         except Exception as e:
-            logger.error(f"Error updating dashboard: {e}")
+            logger.error(f"Error updating local dashboard: {e}")
             
     def generate_tax_report(self):
         """Generate a tax report with current year's data"""
@@ -486,7 +508,15 @@ if __name__ == "__main__":
         bot = TradingBot()
         bot.start_scheduled_trading()
     except KeyboardInterrupt:
+        from utils.logger import log_bot_shutdown
+        log_bot_shutdown(logger)
         logger.info("Trading bot stopped by user")
     except Exception as e:
+        from utils.logger import log_bot_shutdown
+        log_bot_shutdown(logger)
         logger.error(f"Unexpected error: {e}")
         raise
+    finally:
+        # Ensure we always log shutdown, even if not caught by the above
+        from utils.logger import log_bot_shutdown
+        log_bot_shutdown(logger)

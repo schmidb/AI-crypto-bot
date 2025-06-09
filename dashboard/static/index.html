@@ -4,216 +4,268 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Crypto Trading Bot Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { 
-            background-color: #f8f9fa; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --bs-primary-rgb: 30, 60, 114;
+            --bs-secondary-rgb: 42, 82, 152;
         }
-        .card { 
-            margin-bottom: 20px; 
-            border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-radius: 10px;
+        
+        body {
+            background: linear-gradient(135deg, rgb(var(--bs-primary-rgb)) 0%, rgb(var(--bs-secondary-rgb)) 100%);
+            min-height: 100vh;
+            color: #fff;
         }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffd700;
         }
-        .metric-card {
-            text-align: center;
-            padding: 20px;
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
         }
-        .metric-value {
-            font-size: 2rem;
+
+        .status-online { background-color: var(--bs-success); }
+        .status-offline { background-color: var(--bs-danger); }
+        .status-warning { background-color: var(--bs-warning); }
+
+        .portfolio-value {
+            font-size: 2em;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: var(--bs-success);
         }
-        .metric-label {
-            color: #6c757d;
-            font-size: 0.9rem;
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
         }
-        .positive { color: #28a745; }
-        .negative { color: #dc3545; }
-        .neutral { color: #6c757d; }
-        .status-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
+
+        .nav-link:hover {
+            color: #fff;
         }
-        .status-active { background-color: #d4edda; color: #155724; }
-        .status-simulation { background-color: #fff3cd; color: #856404; }
-        .allocation-table th { background-color: #f8f9fa; }
-        .rebalance-needed { background-color: #fff3cd; }
-        .rebalance-ok { background-color: #d4edda; }
-        .chart-container { position: relative; height: 300px; }
-        .last-updated { 
-            text-align: center; 
-            color: #6c757d; 
-            font-style: italic; 
-            margin-top: 30px; 
+
+        .nav-link.active {
+            color: #ffd700 !important;
+            border-color: #ffd700 !important;
+        }
+
+        .table {
+            color: #fff;
+        }
+
+        .table td, .table th {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .progress {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #live-clock {
+            color: #a0c4ff;
+        }
+
+        .coinbase-link {
+            color: #fff;
+            text-decoration: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            background: rgba(255, 255, 255, 0.1);
+            transition: background-color 0.3s;
+        }
+
+        .coinbase-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .countdown-timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .filter-controls {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .decision-reason {
+            max-height: 3.6em;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .decision-reason.expanded {
+            max-height: none;
+        }
+
+        .expand-button {
+            cursor: pointer;
+            color: #ffd700;
+            font-size: 0.9em;
+        }
+
+        .allocation-comparison {
+            height: 200px;
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <!-- Header -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="#">
-                    <i class="fas fa-robot me-2"></i>AI Crypto Trading Bot
-                </a>
-                <div class="navbar-nav ms-auto">
-                    <span class="navbar-text me-3" id="bot-status-badge">
-                        <span class="status-badge status-simulation">Simulation Mode</span>
-                    </span>
-                </div>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-robot me-2"></i>
+                AI Crypto Bot
+            </a>
+            <div class="navbar-nav me-auto">
+                <a class="nav-link active" href="index.html">Dashboard</a>
+                <a class="nav-link" href="analysis.html">Analysis</a>
             </div>
-        </nav>
-
-        <!-- Portfolio Overview -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card metric-card">
-                    <div class="metric-value" id="portfolio-value">$0.00</div>
-                    <div class="metric-label">Portfolio Value</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card metric-card">
-                    <div class="metric-value" id="portfolio-return">0.00%</div>
-                    <div class="metric-label">Total Return</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card metric-card">
-                    <div class="metric-value" id="trades-count">0</div>
-                    <div class="metric-label">Trades Executed</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card metric-card">
-                    <div class="metric-value" id="last-update-time">Never</div>
-                    <div class="metric-label">Last Update</div>
-                </div>
+            <div class="ms-auto">
+                <span id="live-clock" class="me-3">
+                    <i class="far fa-clock me-1"></i>
+                    Loading...
+                </span>
+                <span id="bot-uptime">
+                    <i class="fas fa-history me-1"></i>
+                    Uptime: Loading...
+                </span>
             </div>
         </div>
+    </nav>
 
-        <!-- Charts Row -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            <!-- Bot Status Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Current Allocation</h5>
+                        <h5 class="card-title mb-0">Bot Status</h5>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="allocation-chart"></canvas>
+                        <div class="d-flex align-items-center mb-3">
+                            <span class="status-indicator status-online me-2"></span>
+                            <span id="bot-status">Online</span>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Next Decision:</small>
+                            <div id="next-decision-timer" class="countdown-timer">Loading...</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Last Update:</small>
+                            <div id="last-update">Loading...</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Portfolio Value History</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="portfolio-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Asset Prices -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card">
+            <!-- Portfolio Overview Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fab fa-bitcoin me-2"></i>Bitcoin (BTC)</h5>
+                        <h5 class="card-title mb-0">Portfolio Overview</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="metric-value" id="btc-price">$0.00</div>
-                                <div class="metric-label">Current Price</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="metric-value" id="btc-holdings">0.00000000</div>
-                                <div class="metric-label">Holdings (BTC)</div>
-                            </div>
+                        <div class="portfolio-value" id="total-value">$0.00</div>
+                        <div class="mb-3" id="portfolio-change">
+                            <span class="text-success">
+                                <i class="fas fa-caret-up"></i> 0.00%
+                            </span>
+                            (24h)
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar bg-warning" style="width: 40%" title="BTC">40%</div>
+                            <div class="progress-bar bg-info" style="width: 40%" title="ETH">40%</div>
+                            <div class="progress-bar bg-success" style="width: 20%" title="USD">20%</div>
+                        </div>
+                        <small class="text-muted">Current Asset Allocation</small>
+                        <div class="allocation-comparison mt-3">
+                            <canvas id="allocationComparisonChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fab fa-ethereum me-2"></i>Ethereum (ETH)</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="metric-value" id="eth-price">$0.00</div>
-                                <div class="metric-label">Current Price</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="metric-value" id="eth-holdings">0.000000</div>
-                                <div class="metric-label">Holdings (ETH)</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-sun me-2"></i>Solana (SOL)</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="metric-value" id="sol-price">$0.00</div>
-                                <div class="metric-label">Current Price</div>
-                            </div>
-                            <div class="col-6">
-                                <div class="metric-value" id="sol-holdings">0.000000</div>
-                                <div class="metric-label">Holdings (SOL)</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Rebalance Status -->
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="card">
+            <!-- Market Overview Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Portfolio Rebalance Status</h5>
+                        <h5 class="card-title mb-0">Market Overview</h5>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover allocation-table">
+                            <table class="table table-sm">
                                 <thead>
                                     <tr>
                                         <th>Asset</th>
-                                        <th>Current Allocation</th>
-                                        <th>Target Allocation</th>
-                                        <th>Difference</th>
-                                        <th>Status</th>
+                                        <th>Price</th>
+                                        <th>1h</th>
+                                        <th>4h</th>
+                                        <th>24h</th>
+                                        <th>5d</th>
+                                        <th>Trade</th>
                                     </tr>
                                 </thead>
-                                <tbody id="rebalance-table-body">
+                                <tbody id="market-data">
                                     <tr>
-                                        <td colspan="5" class="text-center">Loading allocation data...</td>
+                                        <td>BTC</td>
+                                        <td>$0.00</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td>
+                                            <a href="https://pro.coinbase.com/trade/BTC-USD" target="_blank" class="coinbase-link">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>ETH</td>
+                                        <td>$0.00</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td>
+                                            <a href="https://pro.coinbase.com/trade/ETH-USD" target="_blank" class="coinbase-link">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>SOL</td>
+                                        <td>$0.00</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td class="text-success">+0.00%</td>
+                                        <td>
+                                            <a href="https://pro.coinbase.com/trade/SOL-USD" target="_blank" class="coinbase-link">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -221,253 +273,449 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Configuration -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card">
+            <!-- Recent Decisions Card -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Bot Configuration</h5>
+                        <h5 class="card-title mb-0">Recent Decisions</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <strong>Trading Pairs:</strong><br>
-                                <span id="config-pairs">Loading...</span>
-                            </div>
-                            <div class="col-6">
-                                <strong>Decision Interval:</strong><br>
-                                <span id="config-interval">Loading...</span>
-                            </div>
+                        <div id="recent-decisions" class="list-group list-group-flush bg-transparent">
+                            <!-- Decisions will be populated here -->
                         </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-6">
-                                <strong>Risk Level:</strong><br>
-                                <span id="config-risk">Loading...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading History Card -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-bs-toggle="tab" href="#trade-history">Trade History</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-bs-toggle="tab" href="#performance">Performance</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="trade-history">
+                                <div class="filter-controls mb-3">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Asset</label>
+                                            <select class="form-select bg-dark text-light" id="asset-filter">
+                                                <option value="">All</option>
+                                                <option value="BTC">BTC</option>
+                                                <option value="ETH">ETH</option>
+                                                <option value="SOL">SOL</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Action</label>
+                                            <select class="form-select bg-dark text-light" id="action-filter">
+                                                <option value="">All</option>
+                                                <option value="BUY">Buy</option>
+                                                <option value="SELL">Sell</option>
+                                                <option value="HOLD">Hold</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Time Period</label>
+                                            <select class="form-select bg-dark text-light" id="time-filter">
+                                                <option value="24h">Last 24 Hours</option>
+                                                <option value="7d">Last 7 Days</option>
+                                                <option value="30d">Last 30 Days</option>
+                                                <option value="all">All Time</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Sort By</label>
+                                            <select class="form-select bg-dark text-light" id="sort-filter">
+                                                <option value="time-desc">Time (Newest)</option>
+                                                <option value="time-asc">Time (Oldest)</option>
+                                                <option value="amount-desc">Amount (Highest)</option>
+                                                <option value="amount-asc">Amount (Lowest)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th>Action</th>
+                                                <th>Asset</th>
+                                                <th>Amount</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
+                                                <th>Confidence</th>
+                                                <th>Reasoning</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="trade-history-data">
+                                            <!-- Trade history will be populated here -->
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div class="col-6">
-                                <strong>Max Trade %:</strong><br>
-                                <span id="config-max-trade">Loading...</span>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-6">
-                                <strong>LLM Model:</strong><br>
-                                <span id="config-model">Loading...</span>
-                            </div>
-                            <div class="col-6">
-                                <strong>Rebalancing:</strong><br>
-                                <span id="config-rebalance">Loading...</span>
+                            <div class="tab-pane fade" id="performance">
+                                <div id="performance-chart">
+                                    <!-- Performance chart will be added here -->
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="recent-trades">
-                            <p class="text-muted">No recent trades</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-
-        <div class="last-updated" id="last-updated">Last updated: Never</div>
     </div>
 
+    <!-- Bootstrap 5 JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js for performance charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Initialize charts
-        const allocationChart = new Chart(document.getElementById('allocation-chart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['BTC', 'ETH', 'SOL', 'USD'],
-                datasets: [{
-                    data: [0, 0, 0, 0],
-                    backgroundColor: [
-                        '#f7931a',
-                        '#627eea',
-                        '#9945ff',
-                        '#28a745'
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
+        // Function to update the live clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerHTML = 
+                '<i class="far fa-clock me-1"></i>' + 
+                now.toUTCString();
+        }
 
-        const portfolioChart = new Chart(document.getElementById('portfolio-chart'), {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Portfolio Value (USD)',
-                    data: [],
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    borderWidth: 2,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: false
-                    }
-                }
-            }
-        });
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock();
 
-        // Load and update dashboard data
-        async function loadDashboardData() {
+        // Function to load data
+        async function loadData(url) {
             try {
-                // Load config data
-                const configResponse = await fetch('../data/config/config.json');
-                const configData = await configResponse.json();
-                
-                // Load portfolio data
-                const portfolioResponse = await fetch('../data/portfolio/portfolio_data.json');
-                const portfolioData = await portfolioResponse.json();
-                
-                updateDashboard({ config: configData, portfolio: portfolioData });
-                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
             } catch (error) {
-                console.error('Error loading dashboard data:', error);
-                document.getElementById('last-updated').textContent = 'Error loading data: ' + error.message;
+                console.error('Error loading data:', error);
+                return null;
             }
         }
 
-        function updateDashboard(data) {
-            const { config, portfolio } = data;
-            
-            // Update timestamp
-            document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleString();
-            
-            // Update portfolio metrics
-            if (portfolio) {
-                const currentValue = portfolio.portfolio_value_usd || 0;
-                const initialValue = portfolio.initial_value_usd || 0;
-                const returnPct = initialValue > 0 ? ((currentValue - initialValue) / initialValue * 100) : 0;
-                
-                document.getElementById('portfolio-value').textContent = '$' + currentValue.toFixed(2);
-                document.getElementById('portfolio-return').textContent = returnPct.toFixed(2) + '%';
-                document.getElementById('portfolio-return').className = 'metric-value ' + (returnPct >= 0 ? 'positive' : 'negative');
-                document.getElementById('trades-count').textContent = portfolio.trades_executed || 0;
-                
-                if (portfolio.last_updated) {
-                    const lastUpdate = new Date(portfolio.last_updated);
-                    document.getElementById('last-update-time').textContent = lastUpdate.toLocaleTimeString();
+        // Function to update bot status
+        async function updateBotStatus() {
+            const data = await loadData('../data/cache/bot_startup.json');
+            if (data) {
+                const startTime = new Date(data.startup_time);
+                const uptime = Math.floor((new Date() - startTime) / 1000);
+                document.getElementById('bot-uptime').innerHTML = 
+                    '<i class="fas fa-history me-1"></i>Uptime: ' + 
+                    formatUptime(uptime);
+
+                // Update next decision countdown
+                if (data.next_decision_time) {
+                    updateCountdown(new Date(data.next_decision_time));
                 }
+            }
+        }
+
+        // Function to update countdown timer
+        function updateCountdown(nextDecisionTime) {
+            function updateTimer() {
+                const now = new Date();
+                const diff = nextDecisionTime - now;
                 
-                // Update individual asset data
-                ['BTC', 'ETH', 'SOL'].forEach(asset => {
-                    if (portfolio[asset]) {
-                        const price = portfolio[asset].last_price_usd || 0;
-                        const amount = portfolio[asset].amount || 0;
+                if (diff <= 0) {
+                    document.getElementById('next-decision-timer').textContent = 'Due now';
+                    return;
+                }
+
+                const minutes = Math.floor(diff / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+                document.getElementById('next-decision-timer').textContent = 
+                    `${minutes}m ${seconds}s`;
+            }
+
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        }
+
+        // Function to format uptime
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = seconds % 60;
+            
+            return `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`;
+        }
+
+        // Function to update market data
+        async function updateMarketData() {
+            const assets = ['BTC', 'ETH', 'SOL'];
+            const timeframes = ['1h', '4h', '24h', '5d'];
+            
+            for (const asset of assets) {
+                const data = await loadData(`../data/market_data/${asset}_USD_latest.json`);
+                if (data) {
+                    // Find the row by looking for the asset in the first cell
+                    const rows = document.querySelectorAll('#market-data tr');
+                    let targetRow = null;
+                    
+                    for (const row of rows) {
+                        if (row.cells[0] && row.cells[0].textContent.trim() === asset) {
+                            targetRow = row;
+                            break;
+                        }
+                    }
+                    
+                    if (targetRow) {
+                        targetRow.cells[1].textContent = `$${parseFloat(data.price).toLocaleString()}`;
                         
-                        document.getElementById(asset.toLowerCase() + '-price').textContent = '$' + price.toLocaleString();
-                        document.getElementById(asset.toLowerCase() + '-holdings').textContent = 
-                            amount.toFixed(asset === 'BTC' ? 8 : 6);
+                        timeframes.forEach((timeframe, index) => {
+                            const change = data.price_changes?.[timeframe] || 0;
+                            const cell = targetRow.cells[index + 2];
+                            cell.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                            cell.className = change >= 0 ? 'text-success' : 'text-danger';
+                        });
                     }
-                });
-                
-                // Update allocation chart
-                const totalValue = currentValue;
-                const allocations = [];
-                ['BTC', 'ETH', 'SOL', 'USD'].forEach(asset => {
-                    if (portfolio[asset]) {
-                        const assetValue = asset === 'USD' ? portfolio[asset].amount : 
-                            (portfolio[asset].amount * portfolio[asset].last_price_usd);
-                        allocations.push(totalValue > 0 ? (assetValue / totalValue * 100) : 0);
-                    } else {
-                        allocations.push(0);
-                    }
-                });
-                
-                allocationChart.data.datasets[0].data = allocations;
-                allocationChart.update();
-            }
-            
-            // Update configuration
-            if (config) {
-                document.getElementById('config-pairs').textContent = config.trading_pairs || 'N/A';
-                document.getElementById('config-interval').textContent = (config.decision_interval_minutes || 0) + ' minutes';
-                document.getElementById('config-risk').textContent = (config.risk_level || 'N/A').toUpperCase();
-                document.getElementById('config-max-trade').textContent = (config.max_trade_percentage || 0) + '%';
-                document.getElementById('config-model').textContent = config.llm_model || 'N/A';
-                document.getElementById('config-rebalance').textContent = config.portfolio_rebalance ? 'Enabled' : 'Disabled';
-                
-                // Update rebalance table
-                if (config.target_allocation && portfolio) {
-                    updateRebalanceTable(config.target_allocation, portfolio);
                 }
             }
         }
 
-        function updateRebalanceTable(targetAllocation, portfolio) {
-            const tbody = document.getElementById('rebalance-table-body');
-            const totalValue = portfolio.portfolio_value_usd || 0;
-            
-            let tableHTML = '';
-            
-            Object.keys(targetAllocation).forEach(asset => {
-                const target = targetAllocation[asset];
-                let current = 0;
+        // Function to update portfolio data
+        async function updatePortfolio() {
+            const data = await loadData('../data/portfolio/portfolio.json');
+            if (data) {
+                document.getElementById('total-value').textContent = 
+                    '$' + parseFloat(data.portfolio_value_usd).toLocaleString();
                 
-                if (portfolio[asset]) {
-                    const assetValue = asset === 'USD' ? portfolio[asset].amount : 
-                        (portfolio[asset].amount * portfolio[asset].last_price_usd);
-                    current = totalValue > 0 ? (assetValue / totalValue * 100) : 0;
-                }
-                
-                const diff = current - target;
-                const needsRebalance = Math.abs(diff) > 5;
-                
-                tableHTML += `
-                    <tr class="${needsRebalance ? 'rebalance-needed' : 'rebalance-ok'}">
-                        <td><strong>${asset}</strong></td>
-                        <td>${current.toFixed(2)}%</td>
-                        <td>${target.toFixed(2)}%</td>
-                        <td class="${diff > 0 ? 'positive' : diff < 0 ? 'negative' : 'neutral'}">
-                            ${diff > 0 ? '+' : ''}${diff.toFixed(2)}%
-                        </td>
-                        <td>
-                            <span class="badge ${needsRebalance ? 'bg-warning' : 'bg-success'}">
-                                ${needsRebalance ? 'Needs Rebalance' : 'OK'}
-                            </span>
-                        </td>
-                    </tr>
+                // Calculate portfolio change
+                const changePercent = ((data.portfolio_value_usd - data.initial_value_usd) / data.initial_value_usd) * 100;
+                const changeClass = changePercent >= 0 ? 'text-success' : 'text-danger';
+                const changeIcon = changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down';
+                document.getElementById('portfolio-change').innerHTML = `
+                    <span class="${changeClass}">
+                        <i class="fas ${changeIcon}"></i> 
+                        ${Math.abs(changePercent).toFixed(2)}%
+                    </span>
+                    (Total)
                 `;
-            });
-            
-            tbody.innerHTML = tableHTML;
+
+                // Calculate current allocations
+                const totalValue = data.portfolio_value_usd;
+                const current = {
+                    BTC: (data.BTC?.amount * data.BTC?.last_price_usd / totalValue) * 100 || 0,
+                    ETH: (data.ETH?.amount * data.ETH?.last_price_usd / totalValue) * 100 || 0,
+                    SOL: (data.SOL?.amount * data.SOL?.last_price_usd / totalValue) * 100 || 0,
+                    USD: (data.USD?.amount / totalValue) * 100 || 0
+                };
+
+                // Use target allocations for comparison
+                const previous = {
+                    BTC: 40,  // Target allocation
+                    ETH: 40,  // Target allocation
+                    SOL: 0,   // Target allocation
+                    USD: 20   // Target allocation
+                };
+
+                // Update allocation chart
+                updateAllocationComparison(current, previous);
+            }
         }
 
-        // Load data on page load and refresh every 60 seconds
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDashboardData();
-            setInterval(loadDashboardData, 60000);
+        // Function to update allocation comparison chart
+        function updateAllocationComparison(current, previous) {
+            const ctx = document.getElementById('allocationComparisonChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['BTC', 'ETH', 'SOL', 'USD'],
+                    datasets: [
+                        {
+                            label: 'Current',
+                            data: [
+                                current.BTC || current.btc || 0,
+                                current.ETH || current.eth || 0,
+                                current.SOL || current.sol || 0,
+                                current.USD || current.usd || 0
+                            ],
+                            backgroundColor: 'rgba(255, 215, 0, 0.5)'
+                        },
+                        {
+                            label: 'Previous',
+                            data: [
+                                previous.BTC || previous.btc || 0,
+                                previous.ETH || previous.eth || 0,
+                                previous.SOL || previous.sol || 0,
+                                previous.USD || previous.usd || 0
+                            ],
+                            ],
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: value => value + '%'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update trade history with filtering
+        async function updateTradeHistory() {
+            const data = await loadData('../data/trades/trade_history.json');
+            if (data && data.trades) {
+                let filteredTrades = data.trades;
+                
+                // Apply filters
+                const assetFilter = document.getElementById('asset-filter').value;
+                const actionFilter = document.getElementById('action-filter').value;
+                const timeFilter = document.getElementById('time-filter').value;
+                const sortFilter = document.getElementById('sort-filter').value;
+
+                if (assetFilter) {
+                    filteredTrades = filteredTrades.filter(trade => trade.asset === assetFilter);
+                }
+
+                if (actionFilter) {
+                    filteredTrades = filteredTrades.filter(trade => trade.action === actionFilter);
+                }
+
+                if (timeFilter !== 'all') {
+                    const now = new Date();
+                    const timeLimit = {
+                        '24h': 24 * 60 * 60 * 1000,
+                        '7d': 7 * 24 * 60 * 60 * 1000,
+                        '30d': 30 * 24 * 60 * 60 * 1000
+                    }[timeFilter];
+                    
+                    filteredTrades = filteredTrades.filter(trade => 
+                        (now - new Date(trade.timestamp)) <= timeLimit
+                    );
+                }
+
+                // Apply sorting
+                filteredTrades.sort((a, b) => {
+                    switch (sortFilter) {
+                        case 'time-desc':
+                            return new Date(b.timestamp) - new Date(a.timestamp);
+                        case 'time-asc':
+                            return new Date(a.timestamp) - new Date(b.timestamp);
+                        case 'amount-desc':
+                            return b.amount - a.amount;
+                        case 'amount-asc':
+                            return a.amount - b.amount;
+                        default:
+                            return 0;
+                    }
+                });
+
+                const tradeHistoryHtml = filteredTrades
+                    .map(trade => `
+                        <tr>
+                            <td>${new Date(trade.timestamp).toLocaleString()}</td>
+                            <td class="${trade.action === 'BUY' ? 'text-success' : 'text-danger'}">
+                                ${trade.action}
+                            </td>
+                            <td>${trade.asset}</td>
+                            <td>${parseFloat(trade.amount).toFixed(8)}</td>
+                            <td>$${parseFloat(trade.price).toLocaleString()}</td>
+                            <td>$${parseFloat(trade.total).toLocaleString()}</td>
+                            <td>${(trade.confidence * 100).toFixed(1)}%</td>
+                            <td>
+                                <div class="decision-reason">
+                                    ${trade.reasoning || 'No reasoning provided'}
+                                </div>
+                                <span class="expand-button">Show more</span>
+                            </td>
+                        </tr>
+                    `)
+                    .join('');
+                document.getElementById('trade-history-data').innerHTML = tradeHistoryHtml;
+
+                // Add click handlers for expand buttons
+                document.querySelectorAll('.expand-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const reason = this.previousElementSibling;
+                        reason.classList.toggle('expanded');
+                        this.textContent = reason.classList.contains('expanded') ? 
+                            'Show less' : 'Show more';
+                    });
+                });
+            }
+        }
+
+        // Function to update recent decisions
+        async function updateRecentDecisions() {
+            const data = await loadData('../data/cache/latest_decisions.json');
+            if (data && data.decisions) {
+                const decisionsHtml = data.decisions
+                    .slice(0, 5)
+                    .map(decision => `
+                        <div class="list-group-item bg-transparent border-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong>${decision.asset}</strong>
+                                <span class="badge ${decision.action === 'BUY' ? 'bg-success' : 
+                                                    decision.action === 'SELL' ? 'bg-danger' : 
+                                                    'bg-warning'}">
+                                    ${decision.action}
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                ${new Date(decision.timestamp).toLocaleString()}
+                            </small>
+                            <div class="mt-1">
+                                Confidence: ${(decision.confidence * 100).toFixed(1)}%
+                            </div>
+                            <div class="decision-reason mt-2">
+                                ${decision.reasoning || 'No reasoning provided'}
+                            </div>
+                            <span class="expand-button">Show more</span>
+                        </div>
+                    `)
+                    .join('');
+                document.getElementById('recent-decisions').innerHTML = decisionsHtml;
+
+                // Add click handlers for expand buttons
+                document.querySelectorAll('.expand-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const reason = this.previousElementSibling;
+                        reason.classList.toggle('expanded');
+                        this.textContent = reason.classList.contains('expanded') ? 
+                            'Show less' : 'Show more';
+                    });
+                });
+            }
+        }
+
+        // Add filter change handlers
+        ['asset-filter', 'action-filter', 'time-filter', 'sort-filter'].forEach(id => {
+            document.getElementById(id).addEventListener('change', updateTradeHistory);
         });
+
+        // Update all data initially and every 60 seconds
+        function updateAllData() {
+            updateBotStatus();
+            updateMarketData();
+            updatePortfolio();
+            updateTradeHistory();
+            updateRecentDecisions();
+        }
+
+        updateAllData();
+        setInterval(updateAllData, 60000);
     </script>
 </body>
 </html>

@@ -606,19 +606,44 @@ Respond with ONLY a JSON object in this format:
 
         prompt = f"""
         You are an expert cryptocurrency trading advisor. Analyze the following market data for {product_id} and provide a trading decision.
+        Use the new lowered thresholds and improved indicator logic for more active trading.
 
         Current price: ${current_price}
-        Risk level: {risk_level}
+        Risk level: {risk_level} (Note: High risk reduces position size but doesn't prevent trades)
 
-        Technical Indicators:
-        - RSI: {rsi_value} ({rsi_signal})
-        - MACD: {macd_value} (Trend: {macd_trend})
-        - Bollinger Bands: Price is {bb_signal} (Upper: ${bb_upper}, Middle: ${bb_middle}, Lower: ${bb_lower})
+        TECHNICAL ANALYSIS (Weighted Decision):
+        1. MACD (40% weight): {macd_value} (Trend: {macd_trend})
+           - Primary trend indicator
+           - Strong buy signal if positive and trending up
+           - Strong sell signal if negative and trending down
+
+        2. RSI (30% weight): {rsi_value} ({rsi_signal})
+           - Narrowed ranges: < 45 oversold (buy), > 55 overbought (sell)
+           - 45-55 is neutral zone
+           - Trend confirmation when aligned with MACD
+
+        3. Bollinger Bands (30% weight): 
+           - Current: {bb_signal}
+           - Upper: ${bb_upper}
+           - Middle: ${bb_middle}
+           - Lower: ${bb_lower}
+           - Breakouts with trend confirmation are strong signals
+
+        TRADING THRESHOLDS (Lowered for More Activity):
+        - Buy signals need only 60% confidence (was 80%)
+        - Sell signals need only 60% confidence (was 80%)
+        - Add 10% confidence when multiple indicators align
+        - Subtract 5% confidence for counter-trend signals
+
+        RISK ADJUSTMENTS:
+        - High risk: Reduce position size by 50%
+        - Medium risk: Reduce position size by 25%
+        - Low risk: Full position size
 
         Based on this data, provide a trading decision in the following format:
         ACTION: [buy/sell/hold]
         CONFIDENCE: [0-100]
-        REASON: [brief explanation of your decision]
+        REASON: [brief explanation including specific indicator analysis]
         """
 
         return prompt

@@ -3,48 +3,471 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Strategy Analysis</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>AI Crypto Bot - Analysis Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { padding: 20px; }
-        .analysis-card { margin-bottom: 20px; }
-        .recommendation { padding: 10px; margin: 5px 0; background-color: #f8f9fa; border-radius: 5px; }
-        .param-adjustment { display: flex; justify-content: space-between; padding: 5px 0; }
-        .last-updated { font-style: italic; margin-top: 20px; }
+        :root {
+            --bs-primary-rgb: 30, 60, 114;
+            --bs-secondary-rgb: 42, 82, 152;
+        }
+        
+        body {
+            background: linear-gradient(135deg, rgb(var(--bs-primary-rgb)) 0%, rgb(var(--bs-secondary-rgb)) 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffd700;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        .nav-link.active {
+            color: #ffd700 !important;
+            border-color: #ffd700 !important;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        .metric-card {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .performance-positive {
+            color: var(--bs-success);
+        }
+
+        .performance-negative {
+            color: var(--bs-danger);
+        }
+
+        .performance-neutral {
+            color: var(--bs-warning);
+        }
+
+        #live-clock {
+            color: #a0c4ff;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="index.html">Crypto Trading Bot</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link" href="index.html">Dashboard</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="analysis.html">Strategy Analysis</a>
-                        </li>
-                    </ul>
-                </div>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-robot me-2"></i>
+                AI Crypto Bot
+            </a>
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="index.html">Dashboard</a>
+                <a class="nav-link active" href="analysis.html">Analysis</a>
             </div>
-        </nav>
-
-        <h1 class="mb-4">Trading Strategy Analysis</h1>
-        
-        <div id="analysis-content">
-            <div class="alert alert-info">
-                No analysis data available yet. The first analysis will be generated soon.
+            <div class="ms-auto">
+                <span id="live-clock" class="me-3">
+                    <i class="far fa-clock me-1"></i>
+                    Loading...
+                </span>
             </div>
         </div>
-        
-        <p class="last-updated">Last updated: Never</p>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            <!-- Performance Metrics Row -->
+            <div class="col-md-3">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <div class="metric-value performance-positive" id="total-return">+0.00%</div>
+                        <div class="metric-label">Total Return</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <div class="metric-value" id="win-rate">0%</div>
+                        <div class="metric-label">Win Rate</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <div class="metric-value" id="total-trades">0</div>
+                        <div class="metric-label">Total Trades</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card metric-card h-100">
+                    <div class="card-body">
+                        <div class="metric-value performance-positive" id="avg-confidence">0%</div>
+                        <div class="metric-label">Avg Confidence</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Value Chart -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Portfolio Value Over Time</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="portfolioChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Asset Allocation -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Asset Allocation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading Activity -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Trading Activity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance by Asset -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Performance by Asset</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="assetPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategy Analysis -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">AI Strategy Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="strategy-analysis">
+                            <div class="text-center">
+                                <div class="spinner-border text-warning" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading AI analysis...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Function to update the live clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerHTML = 
+                '<i class="far fa-clock me-1"></i>' + 
+                now.toUTCString();
+        }
+
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Function to load data
+        async function loadData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                return null;
+            }
+        }
+
+        // Chart configurations
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#fff'
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: '#fff'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y: {
+                    ticks: {
+                        color: '#fff'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        };
+
+        // Initialize charts
+        let portfolioChart, allocationChart, activityChart, assetPerformanceChart;
+
+        function initializeCharts() {
+            // Portfolio Value Chart
+            const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+            portfolioChart = new Chart(portfolioCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: [],
+                        borderColor: '#ffd700',
+                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Asset Allocation Chart
+            const allocationCtx = document.getElementById('allocationChart').getContext('2d');
+            allocationChart = new Chart(allocationCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['BTC', 'ETH', 'SOL', 'USD'],
+                    datasets: [{
+                        data: [40, 40, 10, 10],
+                        backgroundColor: [
+                            '#f7931a',
+                            '#627eea',
+                            '#9945ff',
+                            '#4caf50'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Trading Activity Chart
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            activityChart = new Chart(activityCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['BUY', 'SELL', 'HOLD'],
+                    datasets: [{
+                        label: 'Actions',
+                        data: [0, 0, 0],
+                        backgroundColor: [
+                            '#4caf50',
+                            '#f44336',
+                            '#ff9800'
+                        ]
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Asset Performance Chart
+            const assetPerfCtx = document.getElementById('assetPerformanceChart').getContext('2d');
+            assetPerformanceChart = new Chart(assetPerfCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['BTC', 'ETH', 'SOL'],
+                    datasets: [{
+                        label: 'Performance (%)',
+                        data: [0, 0, 0],
+                        backgroundColor: [
+                            '#f7931a',
+                            '#627eea',
+                            '#9945ff'
+                        ]
+                    }]
+                },
+                options: chartOptions
+            });
+        }
+
+        // Function to update performance metrics
+        async function updateMetrics() {
+            const portfolioData = await loadData('../data/portfolio/portfolio_data.json');
+            const tradeData = await loadData('../data/trades/trade_history.json');
+            
+            if (portfolioData) {
+                // Update total return
+                const totalReturn = portfolioData.total_return || 0;
+                const returnElement = document.getElementById('total-return');
+                returnElement.textContent = `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}%`;
+                returnElement.className = `metric-value ${totalReturn >= 0 ? 'performance-positive' : 'performance-negative'}`;
+            }
+
+            if (tradeData && tradeData.trades) {
+                const trades = tradeData.trades;
+                
+                // Update total trades
+                document.getElementById('total-trades').textContent = trades.length;
+                
+                // Calculate win rate
+                const winningTrades = trades.filter(trade => trade.profit > 0).length;
+                const winRate = trades.length > 0 ? (winningTrades / trades.length * 100) : 0;
+                document.getElementById('win-rate').textContent = `${winRate.toFixed(1)}%`;
+                
+                // Calculate average confidence
+                const avgConfidence = trades.length > 0 ? 
+                    trades.reduce((sum, trade) => sum + (trade.confidence || 0), 0) / trades.length * 100 : 0;
+                document.getElementById('avg-confidence').textContent = `${avgConfidence.toFixed(1)}%`;
+            }
+        }
+
+        // Function to update portfolio chart
+        async function updatePortfolioChart() {
+            const data = await loadData('../data/portfolio/portfolio_history.csv');
+            if (data) {
+                // Parse CSV data and update chart
+                // This would need to be implemented based on your CSV structure
+            }
+        }
+
+        // Function to update trading activity chart
+        async function updateActivityChart() {
+            const data = await loadData('../data/trades/trade_history.json');
+            if (data && data.trades) {
+                const trades = data.trades;
+                const buyCount = trades.filter(t => t.action === 'BUY').length;
+                const sellCount = trades.filter(t => t.action === 'SELL').length;
+                const holdCount = trades.filter(t => t.action === 'HOLD').length;
+                
+                activityChart.data.datasets[0].data = [buyCount, sellCount, holdCount];
+                activityChart.update();
+            }
+        }
+
+        // Function to load strategy analysis
+        async function loadStrategyAnalysis() {
+            const data = await loadData('../data/reports/strategy_performance.json');
+            if (data) {
+                const analysisHtml = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Key Insights:</h6>
+                            <ul>
+                                ${data.insights ? data.insights.map(insight => `<li>${insight}</li>`).join('') : '<li>No insights available</li>'}
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Recommendations:</h6>
+                            <ul>
+                                ${data.recommendations ? data.recommendations.map(rec => `<li>${rec}</li>`).join('') : '<li>No recommendations available</li>'}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('strategy-analysis').innerHTML = analysisHtml;
+            } else {
+                document.getElementById('strategy-analysis').innerHTML = 
+                    '<p class="text-muted">No strategy analysis data available.</p>';
+            }
+        }
+
+        // Initialize everything
+        function initializeAnalysis() {
+            initializeCharts();
+            updateMetrics();
+            updatePortfolioChart();
+            updateActivityChart();
+            loadStrategyAnalysis();
+        }
+
+        // Run initialization when page loads
+        document.addEventListener('DOMContentLoaded', initializeAnalysis);
+
+        // Update data every 5 minutes
+        setInterval(() => {
+            updateMetrics();
+            updateActivityChart();
+            loadStrategyAnalysis();
+        }, 300000);
+    </script>
 </body>
 </html>
