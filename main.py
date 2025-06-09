@@ -467,12 +467,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         raise
-    def refresh_portfolio(self):
-        """Refresh portfolio data from Coinbase"""
-        try:
-            result = self.trading_strategy.refresh_portfolio_from_coinbase()
-            logger.info(f"Portfolio refresh result: {result['status']}")
-            return result
-        except Exception as e:
-            logger.error(f"Error refreshing portfolio: {e}")
-            return {"status": "error", "message": str(e)}
