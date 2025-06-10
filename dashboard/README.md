@@ -57,7 +57,7 @@ dashboard/
 
 The dashboard reads data from the following locations:
 
-- **Portfolio Data**: `../data/portfolio/portfolio_data.json`
+- **Portfolio Data**: `../data/portfolio/portfolio.json`
 - **Market Data**: `../data/market_data/[ASSET]_USD_latest.json`
 - **AI Decisions**: `../data/cache/latest_decisions.json`
 - **Trading History**: `../data/trades/trade_history.json`

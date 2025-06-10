@@ -214,7 +214,7 @@ DirectoryIndex index.html
         """Sync data files using group permissions"""
         try:
             data_files = {
-                "data/portfolio/portfolio_data.json": "data/portfolio/portfolio_data.json",
+                "data/portfolio/portfolio.json": "data/portfolio/portfolio.json",
                 "data/config/config.json": "data/config/config.json", 
                 "data/cache/latest_decisions.json": "data/cache/latest_decisions.json",
                 "data/cache/trading_data.json": "data/cache/trading_data.json",
@@ -316,14 +316,14 @@ DirectoryIndex index.html
             with open(source_path, "r") as f:
                 content = f.read()
             
-            # Replace relative paths for web server
-            content = content.replace("../data/market_data/BTC_USD_latest.json", "data/market_data/BTC_USD_latest.json")
-            content = content.replace("../data/market_data/ETH_USD_latest.json", "data/market_data/ETH_USD_latest.json")
-            content = content.replace("../data/market_data/SOL_USD_latest.json", "data/market_data/SOL_USD_latest.json")
-            content = content.replace("../data/portfolio/portfolio_data.json", "data/portfolio/portfolio_data.json")
-            content = content.replace("../data/trades/trade_history.json", "data/trades/trade_history.json")
-            content = content.replace("../data/cache/", "data/cache/")
-            content = content.replace("../images/", "images/")
+            # Replace relative paths for web server (use ./ to make them relative to current directory)
+            content = content.replace("../data/market_data/BTC_USD_latest.json", "./data/market_data/BTC_USD_latest.json")
+            content = content.replace("../data/market_data/ETH_USD_latest.json", "./data/market_data/ETH_USD_latest.json")
+            content = content.replace("../data/market_data/SOL_USD_latest.json", "./data/market_data/SOL_USD_latest.json")
+            content = content.replace("../data/portfolio/portfolio.json", "./data/portfolio/portfolio.json")
+            content = content.replace("../data/trades/trade_history.json", "./data/trades/trade_history.json")
+            content = content.replace("../data/cache/", "./data/cache/")
+            content = content.replace("../images/", "./images/")
             
             # Write the modified content
             with open(dest_path, "w") as f:
@@ -374,7 +374,7 @@ DirectoryIndex index.html
             import subprocess
             
             data_files = {
-                "data/portfolio/portfolio_data.json": "data/portfolio/portfolio_data.json",
+                "data/portfolio/portfolio.json": "data/portfolio/portfolio.json",
                 "data/config/config.json": "data/config/config.json", 
                 "data/cache/latest_decisions.json": "data/cache/latest_decisions.json",
                 "data/cache/trading_data.json": "data/cache/trading_data.json",

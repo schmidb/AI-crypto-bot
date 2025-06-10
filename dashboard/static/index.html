@@ -4,37 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Crypto Trading Bot Dashboard</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 CSS with Bootswatch Yeti Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/yeti/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Custom styles to enhance Yeti theme */
         :root {
-            --bs-primary-rgb: 30, 60, 114;
-            --bs-secondary-rgb: 42, 82, 152;
+            --yeti-primary: #008cba;
+            --yeti-secondary: #6c757d;
+            --yeti-success: #28a745;
+            --yeti-danger: #dc3545;
+            --yeti-warning: #ffc107;
+            --yeti-info: #17a2b8;
+            --yeti-light: #f8f9fa;
+            --yeti-dark: #343a40;
         }
         
         body {
-            background: linear-gradient(135deg, rgb(var(--bs-primary-rgb)) 0%, rgb(var(--bs-secondary-rgb)) 100%);
-            min-height: 100vh;
-            color: #fff;
+            background-color: #f8f9fa;
+            font-family: 'Open Sans', sans-serif;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
 
         .card-header {
-            background: rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffd700;
+            background-color: var(--yeti-primary);
+            color: white;
+            font-weight: 600;
+            border-bottom: none;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--yeti-primary) !important;
         }
 
         .status-indicator {
@@ -44,18 +56,74 @@
             border-radius: 50%;
         }
 
-        .status-online { background-color: var(--bs-success); }
-        .status-offline { background-color: var(--bs-danger); }
-        .status-warning { background-color: var(--bs-warning); }
+        .status-online { background-color: var(--yeti-success); }
+        .status-offline { background-color: var(--yeti-danger); }
+        .status-warning { background-color: var(--yeti-warning); }
 
         .portfolio-value {
             font-size: 2em;
             font-weight: bold;
-            color: var(--bs-success);
+            color: var(--yeti-success);
         }
 
         .nav-link {
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--yeti-dark) !important;
+            font-weight: 500;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--yeti-primary) !important;
+            background-color: rgba(0, 140, 186, 0.1);
+            border-radius: 8px;
+        }
+
+        .navbar-brand {
+            color: var(--accent-gold) !important;
+            font-weight: 700;
+        }
+
+        .table {
+            color: var(--text-secondary);
+        }
+
+        .table th {
+            color: var(--text-primary);
+            font-weight: 600;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .table td {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .form-select {
+            background-color: white !important;
+            border: 1px solid #ced4da !important;
+            color: var(--yeti-dark) !important;
+        }
+
+        .form-select:focus {
+            background-color: white !important;
+            border-color: var(--yeti-primary) !important;
+            box-shadow: 0 0 0 0.2rem rgba(0, 140, 186, 0.25) !important;
+        }
+
+        .form-label {
+            color: var(--yeti-dark);
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: var(--yeti-primary);
+            border-color: var(--yeti-primary);
+        }
+
+        .btn-link {
+            color: var(--yeti-primary) !important;
+        }
+
+        .btn-link:hover {
+            color: #006a8a !important;
         }
 
         .nav-link:hover {
@@ -114,6 +182,13 @@
             max-height: 3.6em;
             overflow: hidden;
             transition: max-height 0.3s ease-out;
+            color: var(--yeti-dark);
+            background-color: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            border: 1px solid #e9ecef;
         }
 
         .decision-reason.expanded {
@@ -122,13 +197,194 @@
 
         .expand-button {
             cursor: pointer;
-            color: #ffd700;
-            font-size: 0.9em;
+            color: var(--accent-gold) !important;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none !important;
+            transition: color 0.2s ease;
+        }
+
+        .badge {
+            font-weight: 500;
+            font-size: 0.8rem;
+        }
+
+        .badge.bg-success {
+            background-color: #28a745 !important;
+            color: #ffffff !important;
+        }
+
+        .badge.bg-danger {
+            background-color: #dc3545 !important;
+            color: #ffffff !important;
+        }
+
+        .badge.bg-warning {
+            background-color: #ffc107 !important;
+            color: #000000 !important;
+        }
+
+        .text-success {
+            color: #4caf50 !important;
+        }
+
+        .text-danger {
+            color: #f44336 !important;
+        }
+
+        .text-warning {
+            color: #ff9800 !important;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .lead {
+            color: var(--text-secondary);
+        }
+
+        .small, small {
+            color: var(--text-muted);
         }
 
         .allocation-comparison {
             height: 200px;
         }
+
+        .market-asset-card {
+            background-color: white;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            height: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .market-asset-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .market-asset-card .current-price {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        .changes-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+        }
+
+        .change-item {
+            text-align: center;
+        }
+
+        .change-label {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 0.25rem;
+        }
+
+        .change-value {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .decision-badge .badge {
+            font-size: 0.8rem;
+            padding: 0.35rem 0.65rem;
+        }
+
+        .confidence-value {
+            font-weight: 600;
+            color: #ffd700;
+        }
+
+        .time-value {
+            font-size: 0.85rem;
+        }
+
+        .coinbase-link {
+            color: #fff;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .coinbase-link:hover {
+            opacity: 1;
+            color: #ffd700;
+        }
+
+        .reasoning-section {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .reasoning-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--yeti-dark);
+            max-height: 3.6em;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            background-color: #f8f9fa;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            border-left: 3px solid var(--yeti-primary);
+            border: 1px solid #e9ecef;
+        }
+
+        .reasoning-text.expanded {
+            max-height: none;
+        }
+
+        .expand-button {
+            color: var(--yeti-primary) !important;
+            font-size: 0.8rem;
+            text-decoration: none !important;
+            margin-top: 0.25rem;
+        }
+
+        .expand-button:hover {
+            color: #006a8a !important;
+        }
+
+        .expand-button:hover {
+            color: #fff !important;
+        }
+
+        .simulation-badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .simulation-badge.simulation {
+            background-color: #ffc107 !important;
+            color: #000 !important;
+        }
+
+        .simulation-badge.live {
+            background-color: #dc3545 !important;
+            color: #fff !important;
+        }
+
+        #risk-level {
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .risk-low { color: #28a745; }
+        .risk-medium { color: #ffc107; }
+        .risk-high { color: #dc3545; }
     </style>
 </head>
 <body>
@@ -156,9 +412,10 @@
     </nav>
 
     <div class="container-fluid py-4">
-        <div class="row g-4">
+        <!-- First Row - Bot Status and Portfolio Overview (Full Width) -->
+        <div class="row g-4 mb-4">
             <!-- Bot Status Card -->
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6">
                 <div class="card h-100">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Bot Status</h5>
@@ -167,6 +424,7 @@
                         <div class="d-flex align-items-center mb-3">
                             <span class="status-indicator status-online me-2"></span>
                             <span id="bot-status">Online</span>
+                            <span class="ms-2 badge simulation-badge">SIMULATION</span>
                         </div>
                         <div class="mb-3">
                             <small class="text-muted">Next Decision:</small>
@@ -176,12 +434,16 @@
                             <small class="text-muted">Last Update:</small>
                             <div id="last-update">Loading...</div>
                         </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Risk Level:</small>
+                            <div id="risk-level">Loading...</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Portfolio Overview Card -->
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6">
                 <div class="card h-100">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Portfolio Overview</h5>
@@ -194,100 +456,168 @@
                             </span>
                             (24h)
                         </div>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-warning" style="width: 40%" title="BTC">40%</div>
-                            <div class="progress-bar bg-info" style="width: 40%" title="ETH">40%</div>
-                            <div class="progress-bar bg-success" style="width: 20%" title="USD">20%</div>
-                        </div>
-                        <small class="text-muted">Current Asset Allocation</small>
-                        <div class="allocation-comparison mt-3">
+                        
+                        <div class="allocation-comparison mt-4">
                             <canvas id="allocationComparisonChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Market Overview Card -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100">
+        <!-- Market Overview & Recent Decisions Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Market Overview</h5>
+                        <h5 class="card-title mb-0">Market Overview & Recent Decisions</h5>
                     </div>
                     <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Asset</th>
-                                        <th>Price</th>
-                                        <th>1h</th>
-                                        <th>4h</th>
-                                        <th>24h</th>
-                                        <th>5d</th>
-                                        <th>Trade</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="market-data">
-                                    <tr>
-                                        <td>BTC</td>
-                                        <td>$0.00</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td>
-                                            <a href="https://pro.coinbase.com/trade/BTC-USD" target="_blank" class="coinbase-link">
+                        <div class="row g-3" id="market-decisions-data">
+                            <!-- BTC Card -->
+                            <div class="col-md-4" data-asset="BTC">
+                                <div class="market-asset-card">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h4 class="mb-0">
+                                            <strong>BTC</strong>
+                                            <a href="https://www.coinbase.com/advanced-trade/spot/BTC-EUR" target="_blank" class="ms-2 coinbase-link">
                                                 <i class="fas fa-external-link-alt"></i>
                                             </a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>ETH</td>
-                                        <td>$0.00</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td>
-                                            <a href="https://pro.coinbase.com/trade/ETH-USD" target="_blank" class="coinbase-link">
+                                        </h4>
+                                        <span class="decision-badge">
+                                            <span class="badge bg-warning">HOLD</span>
+                                        </span>
+                                    </div>
+                                    <div class="price-section mb-3">
+                                        <div class="current-price">$0.00</div>
+                                    </div>
+                                    <div class="changes-grid mb-3">
+                                        <div class="change-item">
+                                            <div class="change-label">1h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">4h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">24h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">5d</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                    </div>
+                                    <div class="decision-info">
+                                        <div class="confidence mb-1">Confidence: <span class="confidence-value">0%</span></div>
+                                        <div class="decision-time text-muted mb-2">Last Update: <span class="time-value">--</span></div>
+                                        <div class="reasoning-section">
+                                            <div class="reasoning-text">No reasoning available</div>
+                                            <button class="btn btn-link btn-sm p-0 expand-button">Show more</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ETH Card -->
+                            <div class="col-md-4" data-asset="ETH">
+                                <div class="market-asset-card">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h4 class="mb-0">
+                                            <strong>ETH</strong>
+                                            <a href="https://www.coinbase.com/advanced-trade/spot/ETH-EUR" target="_blank" class="ms-2 coinbase-link">
                                                 <i class="fas fa-external-link-alt"></i>
                                             </a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>SOL</td>
-                                        <td>$0.00</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td class="text-success">+0.00%</td>
-                                        <td>
-                                            <a href="https://pro.coinbase.com/trade/SOL-USD" target="_blank" class="coinbase-link">
+                                        </h4>
+                                        <span class="decision-badge">
+                                            <span class="badge bg-warning">HOLD</span>
+                                        </span>
+                                    </div>
+                                    <div class="price-section mb-3">
+                                        <div class="current-price">$0.00</div>
+                                    </div>
+                                    <div class="changes-grid mb-3">
+                                        <div class="change-item">
+                                            <div class="change-label">1h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">4h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">24h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">5d</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                    </div>
+                                    <div class="decision-info">
+                                        <div class="confidence mb-1">Confidence: <span class="confidence-value">0%</span></div>
+                                        <div class="decision-time text-muted mb-2">Last Update: <span class="time-value">--</span></div>
+                                        <div class="reasoning-section">
+                                            <div class="reasoning-text">No reasoning available</div>
+                                            <button class="btn btn-link btn-sm p-0 expand-button">Show more</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SOL Card -->
+                            <div class="col-md-4" data-asset="SOL">
+                                <div class="market-asset-card">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h4 class="mb-0">
+                                            <strong>SOL</strong>
+                                            <a href="https://www.coinbase.com/advanced-trade/spot/SOL-EUR" target="_blank" class="ms-2 coinbase-link">
                                                 <i class="fas fa-external-link-alt"></i>
                                             </a>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                        </h4>
+                                        <span class="decision-badge">
+                                            <span class="badge bg-warning">HOLD</span>
+                                        </span>
+                                    </div>
+                                    <div class="price-section mb-3">
+                                        <div class="current-price">$0.00</div>
+                                    </div>
+                                    <div class="changes-grid mb-3">
+                                        <div class="change-item">
+                                            <div class="change-label">1h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">4h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">24h</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                        <div class="change-item">
+                                            <div class="change-label">5d</div>
+                                            <div class="change-value text-success">+0.00%</div>
+                                        </div>
+                                    </div>
+                                    <div class="decision-info">
+                                        <div class="confidence mb-1">Confidence: <span class="confidence-value">0%</span></div>
+                                        <div class="decision-time text-muted mb-2">Last Update: <span class="time-value">--</span></div>
+                                        <div class="reasoning-section">
+                                            <div class="reasoning-text">No reasoning available</div>
+                                            <button class="btn btn-link btn-sm p-0 expand-button">Show more</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+        </div>
 
-            <!-- Recent Decisions Card -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Recent Decisions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="recent-decisions" class="list-group list-group-flush bg-transparent">
-                            <!-- Decisions will be populated here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <!-- Trading History Row -->
+        <div class="row g-4">
             <!-- Trading History Card -->
             <div class="col-12">
                 <div class="card">
@@ -398,6 +728,12 @@
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Network response was not ok');
+                
+                // Handle text files (like last_updated.txt)
+                if (url.endsWith('.txt')) {
+                    return await response.text();
+                }
+                
                 return await response.json();
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -405,11 +741,16 @@
             }
         }
 
+        // Global variable to store countdown interval
+        let countdownInterval = null;
+
         // Function to update bot status
         async function updateBotStatus() {
-            const data = await loadData('../data/cache/bot_startup.json');
+            const data = await loadData('/crypto-bot/data/cache/bot_startup.json');
+            const lastUpdated = await loadData('/crypto-bot/data/cache/last_updated.txt');
+            
             if (data) {
-                const startTime = new Date(data.startup_time);
+                const startTime = new Date(data.startup_time + 'Z'); // Ensure UTC
                 const uptime = Math.floor((new Date() - startTime) / 1000);
                 document.getElementById('bot-uptime').innerHTML = 
                     '<i class="fas fa-history me-1"></i>Uptime: ' + 
@@ -417,19 +758,100 @@
 
                 // Update next decision countdown
                 if (data.next_decision_time) {
-                    updateCountdown(new Date(data.next_decision_time));
+                    const nextDecision = new Date(data.next_decision_time + 'Z'); // Ensure UTC
+                    console.log('Next decision time (UTC):', nextDecision.toISOString());
+                    console.log('Current time (UTC):', new Date().toISOString());
+                    
+                    if (nextDecision > new Date()) {
+                        updateCountdown(nextDecision);
+                    } else {
+                        // Calculate next interval from last decision time
+                        const lastDecision = new Date(data.last_decision_time + 'Z');
+                        const intervalMs = (data.decision_interval_minutes || 60) * 60 * 1000;
+                        const nextDecision = new Date(lastDecision.getTime() + intervalMs);
+                        
+                        if (nextDecision > new Date()) {
+                            updateCountdown(nextDecision);
+                        } else {
+                            document.getElementById('next-decision-timer').textContent = 'Due now';
+                        }
+                    }
+                } else {
+                    // Fallback: calculate next decision based on startup time and interval
+                    const startTime = new Date(data.startup_time + 'Z');
+                    const intervalMs = (data.decision_interval_minutes || 60) * 60 * 1000;
+                    const nextDecision = new Date(startTime.getTime() + intervalMs);
+                    console.log('Calculated next decision time (UTC):', nextDecision.toISOString());
+                    updateCountdown(nextDecision);
                 }
+                
+                // Update last update time
+                if (data.last_decision_time) {
+                    const lastDecision = new Date(data.last_decision_time + 'Z');
+                    document.getElementById('last-update').innerHTML = 
+                        `<i class="far fa-clock me-1"></i>${lastDecision.toLocaleString()} UTC`;
+                } else if (lastUpdated) {
+                    document.getElementById('last-update').innerHTML = 
+                        `<i class="far fa-clock me-1"></i>${lastUpdated.trim()} UTC`;
+                } else {
+                    document.getElementById('last-update').innerHTML = 
+                        `<i class="far fa-clock me-1"></i>No recent updates`;
+                }
+                
+                // Update simulation mode badge
+                const simulationBadge = document.querySelector('.simulation-badge');
+                if (data.simulation_mode !== undefined) {
+                    if (data.simulation_mode) {
+                        simulationBadge.textContent = 'SIMULATION';
+                        simulationBadge.className = 'ms-2 badge simulation-badge simulation';
+                    } else {
+                        simulationBadge.textContent = 'LIVE TRADING';
+                        simulationBadge.className = 'ms-2 badge simulation-badge live';
+                    }
+                } else {
+                    simulationBadge.textContent = 'UNKNOWN';
+                    simulationBadge.className = 'ms-2 badge simulation-badge bg-secondary';
+                }
+                
+                // Update risk level
+                const riskLevel = document.getElementById('risk-level');
+                if (data.risk_level) {
+                    riskLevel.textContent = data.risk_level.toUpperCase();
+                    riskLevel.className = `risk-${data.risk_level.toLowerCase()}`;
+                } else {
+                    riskLevel.textContent = 'UNKNOWN';
+                    riskLevel.className = '';
+                }
+            } else {
+                // If no data available, show fallback
+                document.getElementById('next-decision-timer').textContent = 'Data unavailable';
+                document.getElementById('last-update').innerHTML = 
+                    `<i class="far fa-clock me-1"></i>Data unavailable`;
             }
         }
 
         // Function to update countdown timer
         function updateCountdown(nextDecisionTime) {
+            // Clear any existing interval
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
             function updateTimer() {
                 const now = new Date();
                 const diff = nextDecisionTime - now;
                 
+                console.log('Countdown diff (ms):', diff);
+                console.log('Next decision:', nextDecisionTime.toISOString());
+                console.log('Current time:', now.toISOString());
+                
                 if (diff <= 0) {
                     document.getElementById('next-decision-timer').textContent = 'Due now';
+                    if (countdownInterval) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+                    }
                     return;
                 }
 
@@ -439,8 +861,11 @@
                     `${minutes}m ${seconds}s`;
             }
 
+            // Update immediately
             updateTimer();
-            setInterval(updateTimer, 1000);
+            
+            // Set up interval to update every second
+            countdownInterval = setInterval(updateTimer, 1000);
         }
 
         // Function to format uptime
@@ -453,34 +878,61 @@
             return `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`;
         }
 
-        // Function to update market data
+        // Function to update market data and recent decisions
         async function updateMarketData() {
             const assets = ['BTC', 'ETH', 'SOL'];
-            const timeframes = ['1h', '4h', '24h', '5d'];
+            const decisions = await loadData('/crypto-bot/data/cache/latest_decisions.json');
             
             for (const asset of assets) {
-                const data = await loadData(`../data/market_data/${asset}_USD_latest.json`);
-                if (data) {
-                    // Find the row by looking for the asset in the first cell
-                    const rows = document.querySelectorAll('#market-data tr');
-                    let targetRow = null;
+                const marketData = await loadData(`/crypto-bot/data/market_data/${asset}_USD_latest.json`);
+                const card = document.querySelector(`#market-decisions-data [data-asset="${asset}"]`);
+                
+                if (card && marketData) {
+                    // Update price
+                    card.querySelector('.current-price').textContent = `$${parseFloat(marketData.price).toLocaleString()}`;
                     
-                    for (const row of rows) {
-                        if (row.cells[0] && row.cells[0].textContent.trim() === asset) {
-                            targetRow = row;
-                            break;
-                        }
-                    }
+                    // Update percentage changes
+                    const timeframes = ['1h', '4h', '24h', '5d'];
+                    const dataKeys = ['1h', '4h', '1d', '5d']; // Map 24h to 1d in data
                     
-                    if (targetRow) {
-                        targetRow.cells[1].textContent = `$${parseFloat(data.price).toLocaleString()}`;
+                    timeframes.forEach((timeframe, index) => {
+                        const dataKey = dataKeys[index];
+                        const change = marketData.price_changes?.[dataKey] || 0;
+                        const changeItems = card.querySelectorAll('.change-item');
                         
-                        timeframes.forEach((timeframe, index) => {
-                            const change = data.price_changes?.[timeframe] || 0;
-                            const cell = targetRow.cells[index + 2];
-                            cell.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-                            cell.className = change >= 0 ? 'text-success' : 'text-danger';
-                        });
+                        if (changeItems[index]) {
+                            const valueElement = changeItems[index].querySelector('.change-value');
+                            valueElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                            valueElement.className = `change-value ${change >= 0 ? 'text-success' : 'text-danger'}`;
+                        }
+                    });
+                }
+                
+                // Update decision data
+                if (decisions && Array.isArray(decisions)) {
+                    // Find the most recent decision for this asset
+                    const latestDecision = decisions
+                        .filter(d => d.asset === asset)
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+                    
+                    if (latestDecision) {
+                        const action = latestDecision.action.toUpperCase();
+                        const badge = card.querySelector('.decision-badge .badge');
+                        badge.textContent = action;
+                        badge.className = `badge ${
+                            action === 'BUY' ? 'bg-success' : 
+                            action === 'SELL' ? 'bg-danger' : 
+                            'bg-warning'
+                        }`;
+                        
+                        card.querySelector('.confidence-value').textContent = 
+                            `${(latestDecision.confidence || 0)}%`;
+                        card.querySelector('.time-value').textContent = 
+                            new Date(latestDecision.timestamp).toLocaleTimeString();
+                        
+                        // Update reasoning
+                        const reasoningText = card.querySelector('.reasoning-text');
+                        reasoningText.textContent = latestDecision.reasoning || 'No reasoning available';
                     }
                 }
             }
@@ -488,7 +940,7 @@
 
         // Function to update portfolio data
         async function updatePortfolio() {
-            const data = await loadData('../data/portfolio/portfolio.json');
+            const data = await loadData('/crypto-bot/data/portfolio/portfolio.json');
             if (data) {
                 document.getElementById('total-value').textContent = 
                     '$' + parseFloat(data.portfolio_value_usd).toLocaleString();
@@ -514,58 +966,100 @@
                     USD: (data.USD?.amount / totalValue) * 100 || 0
                 };
 
-                // Use target allocations for comparison
-                const previous = {
-                    BTC: 40,  // Target allocation
-                    ETH: 40,  // Target allocation
-                    SOL: 0,   // Target allocation
-                    USD: 20   // Target allocation
+                // Use target allocations based on your .env settings
+                // TARGET_CRYPTO_ALLOCATION=90, TARGET_USD_ALLOCATION=10
+                // Split crypto 90% equally among BTC, ETH, SOL = 30% each
+                const target = {
+                    BTC: 30,  // 30% of total portfolio
+                    ETH: 30,  // 30% of total portfolio  
+                    SOL: 30,  // 30% of total portfolio
+                    USD: 10   // 10% of total portfolio
                 };
 
                 // Update allocation chart
-                updateAllocationComparison(current, previous);
+                updateAllocationComparison(current, target);
             }
         }
 
         // Function to update allocation comparison chart
-        function updateAllocationComparison(current, previous) {
+        function updateAllocationComparison(current, target) {
             const ctx = document.getElementById('allocationComparisonChart').getContext('2d');
-            new Chart(ctx, {
+            
+            // Destroy existing chart if it exists
+            if (window.allocationChart) {
+                window.allocationChart.destroy();
+            }
+            
+            window.allocationChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['BTC', 'ETH', 'SOL', 'USD'],
                     datasets: [
                         {
-                            label: 'Current',
+                            label: 'Current %',
                             data: [
-                                current.BTC || current.btc || 0,
-                                current.ETH || current.eth || 0,
-                                current.SOL || current.sol || 0,
-                                current.USD || current.usd || 0
+                                current.BTC || 0,
+                                current.ETH || 0,
+                                current.SOL || 0,
+                                current.USD || 0
                             ],
-                            backgroundColor: 'rgba(255, 215, 0, 0.5)'
+                            backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#95a5a6'],  // More vibrant colors for light theme
+                            borderColor: ['#e67e22', '#2980b9', '#27ae60', '#7f8c8d'],      // Darker borders for better contrast
+                            borderWidth: 1
                         },
                         {
-                            label: 'Previous',
+                            label: 'Target %',
                             data: [
-                                previous.BTC || previous.btc || 0,
-                                previous.ETH || previous.eth || 0,
-                                previous.SOL || previous.sol || 0,
-                                previous.USD || previous.usd || 0
+                                target.BTC || 0,
+                                target.ETH || 0,
+                                target.SOL || 0,
+                                target.USD || 0
                             ],
-                            ],
-                            backgroundColor: 'rgba(255, 255, 255, 0.2)'
+                            backgroundColor: ['rgba(243, 156, 18, 0.3)', 'rgba(52, 152, 219, 0.3)', 'rgba(46, 204, 113, 0.3)', 'rgba(149, 165, 166, 0.3)'],
+                            borderColor: ['#e67e22', '#2980b9', '#27ae60', '#7f8c8d'],
+                            borderWidth: 2,
+                            borderDash: [5, 5]
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#343a40',  // Dark text for light theme
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
+                            max: 50,
                             ticks: {
+                                color: '#495057',  // Dark gray text
                                 callback: value => value + '%'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'  // Light gray grid lines
+                            },
+                            title: {
+                                display: true,
+                                text: 'Allocation %',
+                                color: '#495057'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#495057'  // Dark gray text for asset labels
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'  // Very light grid lines
                             }
                         }
                     }
@@ -575,9 +1069,9 @@
 
         // Function to update trade history with filtering
         async function updateTradeHistory() {
-            const data = await loadData('../data/trades/trade_history.json');
-            if (data && data.trades) {
-                let filteredTrades = data.trades;
+            const data = await loadData('/crypto-bot/data/trades/trade_history.json');
+            if (data && Array.isArray(data)) {
+                let filteredTrades = data;
                 
                 // Apply filters
                 const assetFilter = document.getElementById('asset-filter').value;
@@ -586,11 +1080,11 @@
                 const sortFilter = document.getElementById('sort-filter').value;
 
                 if (assetFilter) {
-                    filteredTrades = filteredTrades.filter(trade => trade.asset === assetFilter);
+                    filteredTrades = filteredTrades.filter(trade => trade.product_id.split('-')[0] === assetFilter);
                 }
 
                 if (actionFilter) {
-                    filteredTrades = filteredTrades.filter(trade => trade.action === actionFilter);
+                    filteredTrades = filteredTrades.filter(trade => trade.action.toUpperCase() === actionFilter);
                 }
 
                 if (timeFilter !== 'all') {
@@ -614,9 +1108,9 @@
                         case 'time-asc':
                             return new Date(a.timestamp) - new Date(b.timestamp);
                         case 'amount-desc':
-                            return b.amount - a.amount;
+                            return (b.crypto_amount || 0) - (a.crypto_amount || 0);
                         case 'amount-asc':
-                            return a.amount - b.amount;
+                            return (a.crypto_amount || 0) - (b.crypto_amount || 0);
                         default:
                             return 0;
                     }
@@ -626,17 +1120,17 @@
                     .map(trade => `
                         <tr>
                             <td>${new Date(trade.timestamp).toLocaleString()}</td>
-                            <td class="${trade.action === 'BUY' ? 'text-success' : 'text-danger'}">
-                                ${trade.action}
+                            <td class="${trade.action.toUpperCase() === 'BUY' ? 'text-success' : trade.action.toUpperCase() === 'SELL' ? 'text-danger' : 'text-warning'}">
+                                ${trade.action.toUpperCase()}
                             </td>
-                            <td>${trade.asset}</td>
-                            <td>${parseFloat(trade.amount).toFixed(8)}</td>
+                            <td>${trade.product_id.split('-')[0]}</td>
+                            <td>${parseFloat(trade.crypto_amount || 0).toFixed(8)}</td>
                             <td>$${parseFloat(trade.price).toLocaleString()}</td>
-                            <td>$${parseFloat(trade.total).toLocaleString()}</td>
-                            <td>${(trade.confidence * 100).toFixed(1)}%</td>
+                            <td>$${parseFloat(trade.trade_amount_usd || 0).toLocaleString()}</td>
+                            <td>${(trade.confidence || 0)}%</td>
                             <td>
                                 <div class="decision-reason">
-                                    ${trade.reasoning || 'No reasoning provided'}
+                                    ${trade.reason || 'No reasoning provided'}
                                 </div>
                                 <span class="expand-button">Show more</span>
                             </td>
@@ -644,59 +1138,6 @@
                     `)
                     .join('');
                 document.getElementById('trade-history-data').innerHTML = tradeHistoryHtml;
-
-                // Add click handlers for expand buttons
-                document.querySelectorAll('.expand-button').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const reason = this.previousElementSibling;
-                        reason.classList.toggle('expanded');
-                        this.textContent = reason.classList.contains('expanded') ? 
-                            'Show less' : 'Show more';
-                    });
-                });
-            }
-        }
-
-        // Function to update recent decisions
-        async function updateRecentDecisions() {
-            const data = await loadData('../data/cache/latest_decisions.json');
-            if (data && data.decisions) {
-                const decisionsHtml = data.decisions
-                    .slice(0, 5)
-                    .map(decision => `
-                        <div class="list-group-item bg-transparent border-light">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <strong>${decision.asset}</strong>
-                                <span class="badge ${decision.action === 'BUY' ? 'bg-success' : 
-                                                    decision.action === 'SELL' ? 'bg-danger' : 
-                                                    'bg-warning'}">
-                                    ${decision.action}
-                                </span>
-                            </div>
-                            <small class="text-muted">
-                                ${new Date(decision.timestamp).toLocaleString()}
-                            </small>
-                            <div class="mt-1">
-                                Confidence: ${(decision.confidence * 100).toFixed(1)}%
-                            </div>
-                            <div class="decision-reason mt-2">
-                                ${decision.reasoning || 'No reasoning provided'}
-                            </div>
-                            <span class="expand-button">Show more</span>
-                        </div>
-                    `)
-                    .join('');
-                document.getElementById('recent-decisions').innerHTML = decisionsHtml;
-
-                // Add click handlers for expand buttons
-                document.querySelectorAll('.expand-button').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const reason = this.previousElementSibling;
-                        reason.classList.toggle('expanded');
-                        this.textContent = reason.classList.contains('expanded') ? 
-                            'Show less' : 'Show more';
-                    });
-                });
             }
         }
 
@@ -708,11 +1149,32 @@
         // Update all data initially and every 60 seconds
         function updateAllData() {
             updateBotStatus();
-            updateMarketData();
+            updateMarketData(); // This now includes recent decisions
             updatePortfolio();
             updateTradeHistory();
-            updateRecentDecisions();
         }
+
+        // Global event delegation for expand buttons
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('expand-button')) {
+                let reasoningText;
+                
+                // Handle market overview expand buttons
+                const reasoningSection = e.target.closest('.reasoning-section');
+                if (reasoningSection) {
+                    reasoningText = reasoningSection.querySelector('.reasoning-text');
+                } else {
+                    // Handle trade history expand buttons
+                    reasoningText = e.target.previousElementSibling;
+                }
+                
+                if (reasoningText) {
+                    reasoningText.classList.toggle('expanded');
+                    e.target.textContent = reasoningText.classList.contains('expanded') ? 
+                        'Show less' : 'Show more';
+                }
+            }
+        });
 
         updateAllData();
         setInterval(updateAllData, 60000);

@@ -371,7 +371,7 @@
 
         // Function to update performance metrics
         async function updateMetrics() {
-            const portfolioData = await loadData('../data/portfolio/portfolio_data.json');
+            const portfolioData = await loadData('/crypto-bot/data/portfolio/portfolio.json');
             const tradeData = await loadData('../data/trades/trade_history.json');
             
             if (portfolioData) {
@@ -402,7 +402,7 @@
 
         // Function to update portfolio chart
         async function updatePortfolioChart() {
-            const data = await loadData('../data/portfolio/portfolio_history.csv');
+            const data = await loadData('/crypto-bot/data/portfolio/portfolio_history.csv');
             if (data) {
                 // Parse CSV data and update chart
                 // This would need to be implemented based on your CSV structure
@@ -425,7 +425,7 @@
 
         // Function to load strategy analysis
         async function loadStrategyAnalysis() {
-            const data = await loadData('../data/reports/strategy_performance.json');
+            const data = await loadData('/crypto-bot/data/reports/strategy_performance.json');
             if (data) {
                 const analysisHtml = `
                     <div class="row">

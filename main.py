@@ -2,7 +2,7 @@ import logging
 import time
 import json
 import schedule
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 from typing import Dict, List
 
@@ -15,7 +15,7 @@ from utils.webserver_sync import WebServerSync
 from utils.tax_report import TaxReportGenerator
 from utils.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
-from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED
+from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED, SIMULATION_MODE, RISK_LEVEL
 
 # Configure logging with daily rotation
 logger = get_supervisor_logger()
@@ -79,21 +79,47 @@ class TradingBot:
         except Exception as e:
             logger.error(f"Error syncing to web server: {e}")
         
+    def update_next_decision_time(self):
+        """Update the next decision time in bot_startup.json"""
+        try:
+            # Read current startup data
+            with open("data/cache/bot_startup.json", "r") as f:
+                startup_data = json.load(f)
+            
+            # Update next decision time
+            next_decision_time = datetime.utcnow() + timedelta(minutes=DECISION_INTERVAL_MINUTES)
+            startup_data["next_decision_time"] = next_decision_time.isoformat()
+            startup_data["last_decision_time"] = datetime.utcnow().isoformat()
+            
+            # Write back to file
+            with open("data/cache/bot_startup.json", "w") as f:
+                json.dump(startup_data, f, indent=2)
+                
+        except Exception as e:
+            logger.error(f"Error updating next decision time: {e}")
+    
     def record_startup_time(self):
         """Record the bot startup time for uptime tracking"""
         try:
+            startup_time = datetime.utcnow()
+            next_decision_time = startup_time + timedelta(minutes=DECISION_INTERVAL_MINUTES)
+            
             startup_data = {
-                "startup_time": datetime.utcnow().isoformat(),
+                "startup_time": startup_time.isoformat(),
+                "next_decision_time": next_decision_time.isoformat(),
                 "pid": os.getpid(),
                 "trading_pairs": TRADING_PAIRS,
-                "decision_interval_minutes": DECISION_INTERVAL_MINUTES
+                "decision_interval_minutes": DECISION_INTERVAL_MINUTES,
+                "simulation_mode": SIMULATION_MODE,
+                "risk_level": RISK_LEVEL
             }
             
             os.makedirs("data/cache", exist_ok=True)
             with open("data/cache/bot_startup.json", "w") as f:
                 json.dump(startup_data, f, indent=2)
             
-            logger.info(f"Bot startup time recorded: {startup_data['startup_time']}")
+            mode_text = "SIMULATION" if SIMULATION_MODE else "LIVE TRADING"
+            logger.info(f"Bot startup time recorded: {startup_data['startup_time']} - Mode: {mode_text}")
             
         except Exception as e:
             logger.error(f"Error recording startup time: {e}")
@@ -247,6 +273,9 @@ class TradingBot:
             # Update local dashboard data
             self.dashboard_updater.update_dashboard(dashboard_data, portfolio)
             logger.info("Local dashboard updated successfully")
+            
+            # Update next decision time
+            self.update_next_decision_time()
             
             # Sync to web server (centralized sync point)
             self.sync_to_webserver()

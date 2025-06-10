@@ -55,8 +55,8 @@ class DashboardUpdater:
             # Add timestamp
             portfolio_copy["last_updated"] = datetime.datetime.now().isoformat()
             
-            # Save to portfolio data file
-            with open("data/portfolio/portfolio_data.json", "w") as f:
+            # Save to portfolio data file (standardized to portfolio.json)
+            with open("data/portfolio/portfolio.json", "w") as f:
                 json.dump(portfolio_copy, f, indent=2, default=str)
             
             logger.debug("Updated portfolio data")
@@ -137,18 +137,28 @@ class DashboardUpdater:
         """Update latest trading decisions cache"""
         try:
             latest_decisions = []
+            assets = ["BTC", "ETH", "SOL"]
             
-            # Extract recent trades if available
-            if "recent_trades" in trading_data and trading_data["recent_trades"]:
-                for trade in trading_data["recent_trades"][-3:]:  # Last 3 trades
+            # Get latest market data for each asset
+            for asset in assets:
+                try:
+                    # Read the latest market data file
+                    with open(f"data/market_data/{asset}_USD_latest.json", "r") as f:
+                        market_data = json.load(f)
+                        
                     decision = {
-                        "timestamp": trade.get("timestamp", ""),
-                        "asset": trade.get("product_id", "").split("-")[0] if trade.get("product_id") else "Unknown",
-                        "action": trade.get("action", "unknown"),
-                        "confidence": trade.get("confidence", 0),
-                        "reasoning": trade.get("reason", trade.get("reasoning", "No reasoning provided"))
+                        "timestamp": market_data.get("timestamp", ""),
+                        "asset": asset,
+                        "action": market_data.get("action", "unknown"),
+                        "confidence": market_data.get("confidence", 0),
+                        "reasoning": market_data.get("reason", market_data.get("reasoning", "No reasoning provided"))
                     }
                     latest_decisions.append(decision)
+                except Exception as e:
+                    logger.error(f"Error reading latest market data for {asset}: {e}")
+            
+            # Sort by timestamp, newest first
+            latest_decisions.sort(key=lambda x: x["timestamp"], reverse=True)
             
             with open("data/cache/latest_decisions.json", "w") as f:
                 json.dump(latest_decisions, f, indent=2, default=str)

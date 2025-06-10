@@ -146,7 +146,7 @@ AI-crypto-bot/
 ├── data/                   # All persistent data (single source of truth)
 │   ├── portfolio/          # Portfolio data and history
 │   │   ├── portfolio.json  # Current portfolio state
-│   │   ├── portfolio_data.json # Dashboard portfolio data
+│   │   ├── portfolio.json  # Current portfolio state
 │   │   └── portfolio_history.csv # Historical portfolio values
 │   ├── trades/             # Trade history and logs
 │   │   └── trade_history.json # Complete trade history
