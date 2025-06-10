@@ -236,12 +236,13 @@ class TradingStrategy:
                 # In a real implementation, this would call the actual order placement
                 # order = self.client.place_market_order(product_id, "buy", trade_amount_usd)
                 
-                # Execute trade through portfolio manager
+                # Execute trade through portfolio manager (disable duplicate logging)
                 trade_result = self.portfolio_manager.execute_trade(
                     asset=base_currency,
                     action="buy",
                     amount=crypto_amount,
-                    price=current_price
+                    price=current_price,
+                    log_trade=False  # Disable duplicate logging since we log in trading strategy
                 )
                 
                 if not trade_result.get("success", False):
@@ -294,12 +295,13 @@ class TradingStrategy:
                 # In a real implementation, this would call the actual order placement
                 # order = self.client.place_market_order(product_id, "sell", crypto_amount)
                 
-                # Execute trade through portfolio manager
+                # Execute trade through portfolio manager (disable duplicate logging)
                 trade_result = self.portfolio_manager.execute_trade(
                     asset=base_currency,
                     action="sell",
                     amount=crypto_amount,
-                    price=current_price
+                    price=current_price,
+                    log_trade=False  # Disable duplicate logging since we log in trading strategy
                 )
                 
                 if not trade_result.get("success", False):
@@ -373,7 +375,7 @@ class TradingStrategy:
                 # Get current price
                 price = float(self.client.get_product_price(f"{asset}-USD").get("price", 0))
                 
-                # Execute trade
+                # Execute trade (keep portfolio logging for rebalancing trades)
                 trade_result = self.portfolio_manager.execute_trade(
                     asset=asset,
                     action=trade_action,

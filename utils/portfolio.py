@@ -338,7 +338,7 @@ class Portfolio:
             
         return ((current_value - initial_value) / initial_value) * 100
     
-    def execute_trade(self, asset: str, action: str, amount: float, price: float) -> Dict[str, Any]:
+    def execute_trade(self, asset: str, action: str, amount: float, price: float, log_trade: bool = True) -> Dict[str, Any]:
         """
         Execute a trade and update portfolio.
         
@@ -401,8 +401,9 @@ class Portfolio:
         # Save changes
         self.save()
         
-        # Log the trade to trade history
-        self._log_trade_to_history(asset, action, amount, price, usd_value)
+        # Log the trade to trade history (only if requested)
+        if log_trade:
+            self._log_trade_to_history(asset, action, amount, price, usd_value)
         
         return {
             "success": True,
