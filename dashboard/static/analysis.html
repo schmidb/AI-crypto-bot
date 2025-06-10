@@ -255,12 +255,53 @@
             <!-- Portfolio Value Chart -->
             <div class="col-lg-8">
                 <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Portfolio Value Over Time</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            Portfolio Value Over Time
+                            <i class="fas fa-question-circle ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               data-bs-html="true"
+                               title="<strong>Interactive Portfolio Chart:</strong><br/>
+                                      • Click time periods to filter data<br/>
+                                      • Shows portfolio value changes<br/>
+                                      • Includes all assets combined<br/>
+                                      • Updates every 5 minutes<br/>
+                                      <em>Use buttons to focus on specific timeframes</em>"
+                               style="font-size: 0.8rem; opacity: 0.7; cursor: help;">
+                            </i>
+                        </h5>
+                        <div class="btn-group btn-group-sm" role="group" id="chart-time-filters">
+                            <button type="button" class="btn btn-outline-primary" data-period="6h">6H</button>
+                            <button type="button" class="btn btn-outline-primary active" data-period="24h">Today</button>
+                            <button type="button" class="btn btn-outline-primary" data-period="7d">Week</button>
+                            <button type="button" class="btn btn-outline-primary" data-period="30d">Month</button>
+                            <button type="button" class="btn btn-outline-primary" data-period="all">All</button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
                             <canvas id="portfolioChart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <small class="text-muted">Period Change</small>
+                                    <div id="period-change" class="fw-bold">+$0.00</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Period %</small>
+                                    <div id="period-percent" class="fw-bold">+0.00%</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Highest</small>
+                                    <div id="period-high" class="fw-bold">$0.00</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Lowest</small>
+                                    <div id="period-low" class="fw-bold">$0.00</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -985,7 +1026,7 @@
         }
 
         // Function to update portfolio chart
-        async function updatePortfolioChart() {
+        async function updatePortfolioChart(period = '24h') {
             try {
                 const response = await fetch('/crypto-bot/data/portfolio/portfolio_history.csv');
                 const csvText = await response.text();
@@ -996,28 +1037,79 @@
                     const labels = [];
                     const values = [];
                     
+                    // Get current time for filtering
+                    const now = new Date();
+                    const periodMs = {
+                        '6h': 6 * 60 * 60 * 1000,
+                        '24h': 24 * 60 * 60 * 1000,
+                        '7d': 7 * 24 * 60 * 60 * 1000,
+                        '30d': 30 * 24 * 60 * 60 * 1000,
+                        'all': Infinity
+                    }[period];
+                    
+                    const cutoffTime = new Date(now.getTime() - periodMs);
+                    
+                    // Track period statistics
+                    let highestValue = 0;
+                    let lowestValue = Infinity;
+                    let startValue = null;
+                    let endValue = null;
+                    
                     // Skip header line and parse data
                     for (let i = 1; i < lines.length; i++) {
                         const columns = lines[i].split(',');
                         if (columns.length >= 2) {
-                            // Assuming format: timestamp,portfolio_value,...
-                            const timestamp = new Date(columns[0]).toLocaleDateString();
+                            const timestamp = new Date(columns[0]);
                             const value = parseFloat(columns[1]);
                             
-                            if (!isNaN(value)) {
-                                labels.push(timestamp);
+                            if (!isNaN(value) && timestamp >= cutoffTime) {
+                                // Format label based on period
+                                let label;
+                                if (period === '6h' || period === '24h') {
+                                    label = timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                } else {
+                                    label = timestamp.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                                }
+                                
+                                labels.push(label);
                                 values.push(value);
+                                
+                                // Track statistics
+                                highestValue = Math.max(highestValue, value);
+                                lowestValue = Math.min(lowestValue, value);
+                                if (startValue === null) startValue = value;
+                                endValue = value;
                             }
                         }
                     }
                     
-                    // Update chart with last 30 data points
-                    const maxPoints = 30;
-                    const startIndex = Math.max(0, labels.length - maxPoints);
-                    
-                    portfolioChart.data.labels = labels.slice(startIndex);
-                    portfolioChart.data.datasets[0].data = values.slice(startIndex);
-                    portfolioChart.update();
+                    // Update chart
+                    if (window.portfolioChart) {
+                        portfolioChart.data.labels = labels;
+                        portfolioChart.data.datasets[0].data = values;
+                        portfolioChart.update();
+                        
+                        // Update period statistics
+                        if (startValue !== null && endValue !== null) {
+                            const change = endValue - startValue;
+                            const changePercent = ((endValue - startValue) / startValue) * 100;
+                            
+                            document.getElementById('period-change').textContent = 
+                                (change >= 0 ? '+$' : '-$') + Math.abs(change).toFixed(2);
+                            document.getElementById('period-change').className = 
+                                'fw-bold ' + (change >= 0 ? 'text-success' : 'text-danger');
+                            
+                            document.getElementById('period-percent').textContent = 
+                                (changePercent >= 0 ? '+' : '') + changePercent.toFixed(2) + '%';
+                            document.getElementById('period-percent').className = 
+                                'fw-bold ' + (changePercent >= 0 ? 'text-success' : 'text-danger');
+                            
+                            document.getElementById('period-high').textContent = 
+                                '$' + highestValue.toFixed(2);
+                            document.getElementById('period-low').textContent = 
+                                '$' + lowestValue.toFixed(2);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error updating portfolio chart:', error);
@@ -1123,10 +1215,26 @@
             initializeCharts();
             updateMetrics();
             updateAdvancedAnalytics();
-            updatePortfolioChart();
+            updatePortfolioChart('24h'); // Default to today
             updateActivityChart();
             updateAssetPerformance();
             loadStrategyAnalysis();
+            
+            // Add event listeners for chart time filters
+            document.querySelectorAll('#chart-time-filters button').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('#chart-time-filters button').forEach(btn => 
+                        btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Update chart with selected period
+                    const period = this.getAttribute('data-period');
+                    updatePortfolioChart(period);
+                });
+            });
         }
 
         // Run initialization when page loads
@@ -1142,7 +1250,12 @@
         setInterval(() => {
             updateMetrics();
             updateAdvancedAnalytics();
-            updatePortfolioChart();
+            
+            // Get current active period for chart update
+            const activeButton = document.querySelector('#chart-time-filters button.active');
+            const currentPeriod = activeButton ? activeButton.getAttribute('data-period') : '24h';
+            updatePortfolioChart(currentPeriod);
+            
             updateActivityChart();
             updateAssetPerformance();
             loadStrategyAnalysis();
