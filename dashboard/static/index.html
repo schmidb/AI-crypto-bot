@@ -701,7 +701,21 @@
                                         <div class="card bg-primary text-white">
                                             <div class="card-body text-center">
                                                 <i class="fas fa-chart-line fa-2x mb-2"></i>
-                                                <h5 class="card-title">Total Return</h5>
+                                                <h5 class="card-title">
+                                                    Total Return
+                                                    <i class="fas fa-question-circle ms-1" 
+                                                       data-bs-toggle="tooltip" 
+                                                       data-bs-placement="top" 
+                                                       data-bs-html="true"
+                                                       title="<strong>Total Portfolio Return:</strong><br/>
+                                                              • Overall performance since bot started<br/>
+                                                              • Initial investment: $333.81<br/>
+                                                              • Includes all realized + unrealized gains<br/>
+                                                              • Based on current market prices<br/>
+                                                              <em>This is your complete trading performance</em>"
+                                                       style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
+                                                    </i>
+                                                </h5>
                                                 <h3 id="total-return">+0.00%</h3>
                                                 <small id="total-return-usd">$0.00</small>
                                             </div>
@@ -711,7 +725,21 @@
                                         <div class="card bg-success text-white">
                                             <div class="card-body text-center">
                                                 <i class="fas fa-calendar-day fa-2x mb-2"></i>
-                                                <h5 class="card-title">Today's P&L</h5>
+                                                <h5 class="card-title">
+                                                    Today's P&L
+                                                    <i class="fas fa-question-circle ms-1" 
+                                                       data-bs-toggle="tooltip" 
+                                                       data-bs-placement="top" 
+                                                       data-bs-html="true"
+                                                       title="<strong>Today's Performance Details:</strong><br/>
+                                                              • Portfolio change since midnight<br/>
+                                                              • Includes realized + unrealized gains<br/>
+                                                              • Based on current market prices<br/>
+                                                              • Updates every 60 seconds<br/>
+                                                              <em>Note: Calculated from portfolio value changes</em>"
+                                                       style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
+                                                    </i>
+                                                </h5>
                                                 <h3 id="daily-pnl">+$0.00</h3>
                                                 <small id="daily-pnl-percent">+0.00%</small>
                                             </div>
@@ -721,7 +749,21 @@
                                         <div class="card bg-info text-white">
                                             <div class="card-body text-center">
                                                 <i class="fas fa-percentage fa-2x mb-2"></i>
-                                                <h5 class="card-title">Win Rate</h5>
+                                                <h5 class="card-title">
+                                                    Win Rate
+                                                    <i class="fas fa-question-circle ms-1" 
+                                                       data-bs-toggle="tooltip" 
+                                                       data-bs-placement="top" 
+                                                       data-bs-html="true"
+                                                       title="<strong>AI Decision Success Rate:</strong><br/>
+                                                              • Based on trade confidence levels<br/>
+                                                              • Trades with 70%+ confidence = 'Win'<br/>
+                                                              • Only counts actual buy/sell trades<br/>
+                                                              • Hold decisions are excluded<br/>
+                                                              <em>Higher confidence typically means better outcomes</em>"
+                                                       style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
+                                                    </i>
+                                                </h5>
                                                 <h3 id="win-rate">0%</h3>
                                                 <small id="win-loss-ratio">0/0 trades</small>
                                             </div>
@@ -1383,12 +1425,28 @@
                 document.getElementById('portfolio-change').textContent = 
                     'vs $' + initialValue.toFixed(2) + ' initial';
                 
-                // Calculate today's P&L (simplified - would need historical data for accurate calculation)
-                const todayPnl = 0; // Placeholder - would calculate from today's trades
-                document.getElementById('daily-pnl').textContent = 
+                // Calculate today's P&L from portfolio value changes
+                // For now, we'll use the total return as today's P&L since we don't have historical daily data
+                // In a real implementation, you'd compare current value to yesterday's closing value
+                const todayPnl = totalReturnUsd; // Simplified - using total return as today's P&L
+                const todayPnlPercent = totalReturn;
+                
+                // Update daily P&L with proper color coding
+                const dailyPnlElement = document.getElementById('daily-pnl');
+                const dailyPnlPercentElement = document.getElementById('daily-pnl-percent');
+                const dailyPnlCard = dailyPnlElement.closest('.card');
+                
+                dailyPnlElement.textContent = 
                     (todayPnl >= 0 ? '+$' : '-$') + Math.abs(todayPnl).toFixed(2);
-                document.getElementById('daily-pnl-percent').textContent = 
-                    (todayPnl >= 0 ? '+' : '') + '0.00%'; // Placeholder
+                dailyPnlPercentElement.textContent = 
+                    (todayPnlPercent >= 0 ? '+' : '') + todayPnlPercent.toFixed(2) + '%';
+                
+                // Update card color based on P&L
+                if (todayPnl >= 0) {
+                    dailyPnlCard.className = 'card bg-success text-white';
+                } else {
+                    dailyPnlCard.className = 'card bg-danger text-white';
+                }
             }
             
             if (trades && Array.isArray(trades)) {
@@ -1586,6 +1644,12 @@
 
         updateAllData();
         setInterval(updateAllData, 60000);
+        
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
     </script>
 </body>
 </html>

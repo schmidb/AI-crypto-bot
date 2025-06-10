@@ -67,3 +67,4 @@ tmp/
 
 # Debug scripts
 debug_*.py
+test_dashboard.py
