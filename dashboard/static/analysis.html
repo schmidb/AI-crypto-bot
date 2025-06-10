@@ -167,7 +167,21 @@
                 <div class="card metric-card h-100">
                     <div class="card-body">
                         <div class="metric-value performance-positive" id="total-return">+0.00%</div>
-                        <div class="metric-label">Total Return</div>
+                        <div class="metric-label">
+                            Total Return
+                            <i class="fas fa-question-circle ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               data-bs-html="true"
+                               title="<strong>Total Portfolio Return:</strong><br/>
+                                      • Overall performance since bot started<br/>
+                                      • Includes all assets (BTC/ETH/SOL/USD)<br/>
+                                      • Calculated from initial investment<br/>
+                                      • Updates with current market prices<br/>
+                                      <em>Shows if the bot is profitable overall</em>"
+                               style="font-size: 0.8rem; opacity: 0.7; cursor: help;">
+                            </i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -175,7 +189,21 @@
                 <div class="card metric-card h-100">
                     <div class="card-body">
                         <div class="metric-value" id="win-rate">0%</div>
-                        <div class="metric-label">Win Rate</div>
+                        <div class="metric-label">
+                            Win Rate
+                            <i class="fas fa-question-circle ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               data-bs-html="true"
+                               title="<strong>AI Decision Success Rate:</strong><br/>
+                                      • Percentage of successful trades<br/>
+                                      • Based on confidence levels<br/>
+                                      • High confidence (70%+) = Success<br/>
+                                      • Only counts executed trades<br/>
+                                      <em>Higher win rate = Better AI decisions</em>"
+                               style="font-size: 0.8rem; opacity: 0.7; cursor: help;">
+                            </i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -183,7 +211,21 @@
                 <div class="card metric-card h-100">
                     <div class="card-body">
                         <div class="metric-value" id="total-trades">0</div>
-                        <div class="metric-label">Total Trades</div>
+                        <div class="metric-label">
+                            Total Trades
+                            <i class="fas fa-question-circle ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               data-bs-html="true"
+                               title="<strong>Number of Executed Trades:</strong><br/>
+                                      • Only counts actual buy/sell trades<br/>
+                                      • Excludes 'hold' decisions<br/>
+                                      • Requires trade_amount_usd > 0<br/>
+                                      • All assets combined (BTC/ETH/SOL)<br/>
+                                      <em>Shows how active the bot is trading</em>"
+                               style="font-size: 0.8rem; opacity: 0.7; cursor: help;">
+                            </i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -191,7 +233,21 @@
                 <div class="card metric-card h-100">
                     <div class="card-body">
                         <div class="metric-value performance-positive" id="avg-confidence">0%</div>
-                        <div class="metric-label">Avg Confidence</div>
+                        <div class="metric-label">
+                            Avg Confidence
+                            <i class="fas fa-question-circle ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               data-bs-html="true"
+                               title="<strong>Average AI Confidence Level:</strong><br/>
+                                      • Mean confidence of executed trades<br/>
+                                      • Range: 0-100% confidence<br/>
+                                      • Higher = More certain decisions<br/>
+                                      • Based on technical analysis<br/>
+                                      <em>Shows how confident the AI is in its trades</em>"
+                               style="font-size: 0.8rem; opacity: 0.7; cursor: help;">
+                            </i>
+                        </div>
                     </div>
                 </div>
             </div>
