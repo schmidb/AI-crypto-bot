@@ -786,7 +786,20 @@
                                     <div class="col-md-6">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Trade Performance</h6>
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-history me-2"></i>Recent Trade Performance
+                                                    <i class="fas fa-question-circle ms-1" 
+                                                       data-bs-toggle="tooltip" 
+                                                       data-bs-placement="top" 
+                                                       data-bs-html="true"
+                                                       title="<strong>Recent Trade Details:</strong><br/>
+                                                              • <strong>Confidence:</strong> AI's confidence in the decision (0-100%)<br/>
+                                                              • <strong>Amount:</strong> USD value traded (or 'Hold' if no trade)<br/>
+                                                              • <strong>Status:</strong> Executed = trade completed, Hold = no action taken<br/>
+                                                              <em>Note: P&L tracking requires time to assess trade outcomes</em>"
+                                                       style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
+                                                    </i>
+                                                </h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="table-responsive">
@@ -796,7 +809,7 @@
                                                                 <th>Asset</th>
                                                                 <th>Action</th>
                                                                 <th>Confidence</th>
-                                                                <th>P&L</th>
+                                                                <th>Amount</th>
                                                                 <th>Status</th>
                                                             </tr>
                                                         </thead>
@@ -1486,18 +1499,30 @@
                 const asset = trade.product_id ? trade.product_id.split('-')[0] : 'Unknown';
                 const action = trade.action ? trade.action.toUpperCase() : 'UNKNOWN';
                 const confidence = trade.confidence || 0;
+                const tradeAmount = trade.trade_amount_usd || 0;
                 
-                // Simplified P&L calculation (placeholder)
-                const pnl = confidence >= 70 ? '+$5.00' : '-$2.00'; // Placeholder logic
-                const statusClass = confidence >= 70 ? 'text-success' : 'text-warning';
-                const status = confidence >= 70 ? 'Good' : 'Pending';
+                // Show actual trade amount instead of fake P&L
+                const amountDisplay = tradeAmount > 0 ? `$${tradeAmount.toFixed(2)}` : 'Hold';
+                
+                // Show realistic status based on trade execution
+                let status, statusClass;
+                if (tradeAmount > 0) {
+                    status = 'Executed';
+                    statusClass = 'text-success';
+                } else if (action === 'HOLD') {
+                    status = 'Hold';
+                    statusClass = 'text-secondary';
+                } else {
+                    status = 'Not Executed';
+                    statusClass = 'text-warning';
+                }
                 
                 return `
                     <tr>
                         <td><strong>${asset}</strong></td>
                         <td><span class="badge bg-${action === 'BUY' ? 'success' : action === 'SELL' ? 'danger' : 'secondary'}">${action}</span></td>
                         <td>${confidence}%</td>
-                        <td class="${statusClass}">${pnl}</td>
+                        <td>${amountDisplay}</td>
                         <td><span class="${statusClass}">${status}</span></td>
                     </tr>
                 `;
