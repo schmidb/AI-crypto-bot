@@ -580,7 +580,7 @@
         };
 
         // Initialize charts
-        let portfolioChart, allocationChart, activityChart, assetPerformanceChart;
+        let portfolioChart, allocationChart, activityChart;
 
         function initializeCharts() {
             // Portfolio Value Chart
@@ -655,31 +655,6 @@
                             '#1e7e34',
                             '#c82333',
                             '#e0a800'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: chartOptions
-            });
-
-            // Asset Performance Chart
-            const assetPerfCtx = document.getElementById('assetPerformanceChart').getContext('2d');
-            assetPerformanceChart = new Chart(assetPerfCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['BTC', 'ETH', 'SOL'],
-                    datasets: [{
-                        label: 'Performance (%)',
-                        data: [0, 0, 0],
-                        backgroundColor: [
-                            '#f39c12',  // Bitcoin - Orange
-                            '#3498db',  // Ethereum - Blue
-                            '#9b59b6'   // Solana - Purple
-                        ],
-                        borderColor: [
-                            '#e67e22',
-                            '#2980b9',
-                            '#8e44ad'
                         ],
                         borderWidth: 1
                     }]
