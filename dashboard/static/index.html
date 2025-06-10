@@ -674,6 +674,7 @@
                                         <div class="col-md-3">
                                             <label class="form-label">Time Period</label>
                                             <select class="form-select bg-dark text-light" id="time-filter">
+                                                <option value="6h" selected>Last 6 Hours</option>
                                                 <option value="24h">Last 24 Hours</option>
                                                 <option value="7d">Last 7 Days</option>
                                                 <option value="30d">Last 30 Days</option>
@@ -1388,6 +1389,7 @@
                 if (timeFilter !== 'all') {
                     const now = new Date();
                     const timeLimit = {
+                        '6h': 6 * 60 * 60 * 1000,
                         '24h': 24 * 60 * 60 * 1000,
                         '7d': 7 * 24 * 60 * 60 * 1000,
                         '30d': 30 * 24 * 60 * 60 * 1000
