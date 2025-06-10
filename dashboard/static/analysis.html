@@ -4,91 +4,144 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Crypto Bot - Analysis Dashboard</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 CSS with Bootswatch Yeti Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/yeti/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Custom styles to enhance Yeti theme */
         :root {
-            --bs-primary-rgb: 30, 60, 114;
-            --bs-secondary-rgb: 42, 82, 152;
+            --yeti-primary: #008cba;
+            --yeti-secondary: #6c757d;
+            --yeti-success: #28a745;
+            --yeti-danger: #dc3545;
+            --yeti-warning: #ffc107;
+            --yeti-info: #17a2b8;
+            --yeti-light: #f8f9fa;
+            --yeti-dark: #343a40;
         }
         
         body {
-            background: linear-gradient(135deg, rgb(var(--bs-primary-rgb)) 0%, rgb(var(--bs-secondary-rgb)) 100%);
-            min-height: 100vh;
-            color: #fff;
+            background-color: #f8f9fa;
+            font-family: 'Open Sans', sans-serif;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
 
         .card-header {
-            background: rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            color: #ffd700;
+            background-color: var(--yeti-primary);
+            color: white;
+            font-weight: 600;
+            border-bottom: none;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--yeti-primary) !important;
         }
 
         .nav-link {
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--yeti-dark) !important;
+            font-weight: 500;
         }
 
-        .nav-link:hover {
-            color: #fff;
+        .nav-link:hover, .nav-link.active {
+            color: var(--yeti-primary) !important;
+            background-color: rgba(0, 140, 186, 0.1);
+            border-radius: 8px;
         }
 
         .nav-link.active {
-            color: #ffd700 !important;
-            border-color: #ffd700 !important;
+            border-color: var(--yeti-primary) !important;
         }
 
         .chart-container {
             position: relative;
             height: 400px;
             width: 100%;
+            background-color: white;
+            border-radius: 0.375rem;
+            padding: 1rem;
         }
 
         .metric-card {
             text-align: center;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
         }
 
         .metric-value {
             font-size: 2rem;
             font-weight: bold;
+            color: var(--yeti-dark);
         }
 
         .metric-label {
             font-size: 0.9rem;
-            opacity: 0.8;
+            color: var(--yeti-secondary);
         }
 
         .performance-positive {
-            color: var(--bs-success);
+            color: var(--yeti-success);
         }
 
         .performance-negative {
-            color: var(--bs-danger);
+            color: var(--yeti-danger);
         }
 
         .performance-neutral {
-            color: var(--bs-warning);
+            color: var(--yeti-warning);
+        }
+
+        .table {
+            background-color: white;
+        }
+
+        .table th {
+            background-color: var(--yeti-light);
+            color: var(--yeti-dark);
+            font-weight: 600;
+            border-color: #dee2e6;
+        }
+
+        .table td {
+            border-color: #dee2e6;
+            color: var(--yeti-dark);
+        }
+
+        .table-striped > tbody > tr:nth-of-type(odd) > td {
+            background-color: rgba(0, 140, 186, 0.05);
+        }
+
+        .btn-primary {
+            background-color: var(--yeti-primary);
+            border-color: var(--yeti-primary);
+        }
+
+        .btn-primary:hover {
+            background-color: #006a8a;
+            border-color: #006a8a;
         }
 
         #live-clock {
-            color: #a0c4ff;
+            color: var(--yeti-primary);
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+    <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="index.html">
                 <i class="fas fa-robot me-2"></i>
@@ -249,32 +302,32 @@
             }
         }
 
-        // Chart configurations
+        // Chart configurations for light theme
         const chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: {
                     labels: {
-                        color: '#fff'
+                        color: '#343a40'  // Dark text for light theme
                     }
                 }
             },
             scales: {
                 x: {
                     ticks: {
-                        color: '#fff'
+                        color: '#495057'  // Dark gray text
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(0, 0, 0, 0.1)'  // Light gray grid lines
                     }
                 },
                 y: {
                     ticks: {
-                        color: '#fff'
+                        color: '#495057'  // Dark gray text
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(0, 0, 0, 0.1)'  // Light gray grid lines
                     }
                 }
             }
@@ -293,9 +346,10 @@
                     datasets: [{
                         label: 'Portfolio Value',
                         data: [],
-                        borderColor: '#ffd700',
-                        backgroundColor: 'rgba(255, 215, 0, 0.1)',
-                        tension: 0.4
+                        borderColor: '#008cba',  // Yeti primary color
+                        backgroundColor: 'rgba(0, 140, 186, 0.1)',  // Light blue background
+                        tension: 0.4,
+                        borderWidth: 2
                     }]
                 },
                 options: chartOptions
@@ -310,11 +364,18 @@
                     datasets: [{
                         data: [40, 40, 10, 10],
                         backgroundColor: [
-                            '#f7931a',
-                            '#627eea',
-                            '#9945ff',
-                            '#4caf50'
-                        ]
+                            '#f39c12',  // Bitcoin - Orange
+                            '#3498db',  // Ethereum - Blue  
+                            '#9b59b6',  // Solana - Purple
+                            '#95a5a6'   // USD - Gray
+                        ],
+                        borderColor: [
+                            '#e67e22',
+                            '#2980b9', 
+                            '#8e44ad',
+                            '#7f8c8d'
+                        ],
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -323,7 +384,7 @@
                     plugins: {
                         legend: {
                             labels: {
-                                color: '#fff'
+                                color: '#343a40'  // Dark text for light theme
                             }
                         }
                     }
@@ -340,10 +401,16 @@
                         label: 'Actions',
                         data: [0, 0, 0],
                         backgroundColor: [
-                            '#4caf50',
-                            '#f44336',
-                            '#ff9800'
-                        ]
+                            '#28a745',  // Green for BUY
+                            '#dc3545',  // Red for SELL
+                            '#ffc107'   // Yellow for HOLD
+                        ],
+                        borderColor: [
+                            '#1e7e34',
+                            '#c82333',
+                            '#e0a800'
+                        ],
+                        borderWidth: 1
                     }]
                 },
                 options: chartOptions
@@ -359,10 +426,16 @@
                         label: 'Performance (%)',
                         data: [0, 0, 0],
                         backgroundColor: [
-                            '#f7931a',
-                            '#627eea',
-                            '#9945ff'
-                        ]
+                            '#f39c12',  // Bitcoin - Orange
+                            '#3498db',  // Ethereum - Blue
+                            '#9b59b6'   // Solana - Purple
+                        ],
+                        borderColor: [
+                            '#e67e22',
+                            '#2980b9',
+                            '#8e44ad'
+                        ],
+                        borderWidth: 1
                     }]
                 },
                 options: chartOptions
@@ -372,7 +445,7 @@
         // Function to update performance metrics
         async function updateMetrics() {
             const portfolioData = await loadData('/crypto-bot/data/portfolio/portfolio.json');
-            const tradeData = await loadData('../data/trades/trade_history.json');
+            const tradeData = await loadData('/crypto-bot/data/trades/trade_history.json');
             
             if (portfolioData) {
                 // Update total return
@@ -402,16 +475,47 @@
 
         // Function to update portfolio chart
         async function updatePortfolioChart() {
-            const data = await loadData('/crypto-bot/data/portfolio/portfolio_history.csv');
-            if (data) {
-                // Parse CSV data and update chart
-                // This would need to be implemented based on your CSV structure
+            try {
+                const response = await fetch('/crypto-bot/data/portfolio/portfolio_history.csv');
+                const csvText = await response.text();
+                
+                if (csvText) {
+                    // Parse CSV data
+                    const lines = csvText.trim().split('\n');
+                    const labels = [];
+                    const values = [];
+                    
+                    // Skip header line and parse data
+                    for (let i = 1; i < lines.length; i++) {
+                        const columns = lines[i].split(',');
+                        if (columns.length >= 2) {
+                            // Assuming format: timestamp,portfolio_value,...
+                            const timestamp = new Date(columns[0]).toLocaleDateString();
+                            const value = parseFloat(columns[1]);
+                            
+                            if (!isNaN(value)) {
+                                labels.push(timestamp);
+                                values.push(value);
+                            }
+                        }
+                    }
+                    
+                    // Update chart with last 30 data points
+                    const maxPoints = 30;
+                    const startIndex = Math.max(0, labels.length - maxPoints);
+                    
+                    portfolioChart.data.labels = labels.slice(startIndex);
+                    portfolioChart.data.datasets[0].data = values.slice(startIndex);
+                    portfolioChart.update();
+                }
+            } catch (error) {
+                console.error('Error updating portfolio chart:', error);
             }
         }
 
         // Function to update trading activity chart
         async function updateActivityChart() {
-            const data = await loadData('../data/trades/trade_history.json');
+            const data = await loadData('/crypto-bot/data/trades/trade_history.json');
             if (data && data.trades) {
                 const trades = data.trades;
                 const buyCount = trades.filter(t => t.action === 'BUY').length;
@@ -465,6 +569,7 @@
         // Update data every 5 minutes
         setInterval(() => {
             updateMetrics();
+            updatePortfolioChart();
             updateActivityChart();
             loadStrategyAnalysis();
         }, 300000);

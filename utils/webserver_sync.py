@@ -215,12 +215,14 @@ DirectoryIndex index.html
         try:
             data_files = {
                 "data/portfolio/portfolio.json": "data/portfolio/portfolio.json",
+                "data/portfolio/portfolio_history.csv": "data/portfolio/portfolio_history.csv",
                 "data/config/config.json": "data/config/config.json", 
                 "data/cache/latest_decisions.json": "data/cache/latest_decisions.json",
                 "data/cache/trading_data.json": "data/cache/trading_data.json",
                 "data/cache/last_updated.txt": "data/cache/last_updated.txt",
                 "data/cache/bot_startup.json": "data/cache/bot_startup.json",
-                "data/trades/trade_history.json": "data/trades/trade_history.json"
+                "data/trades/trade_history.json": "data/trades/trade_history.json",
+                "data/reports/strategy_performance.json": "data/reports/strategy_performance.json"
             }
             
             for source_rel_path, dest_rel_path in data_files.items():
@@ -375,12 +377,14 @@ DirectoryIndex index.html
             
             data_files = {
                 "data/portfolio/portfolio.json": "data/portfolio/portfolio.json",
+                "data/portfolio/portfolio_history.csv": "data/portfolio/portfolio_history.csv",
                 "data/config/config.json": "data/config/config.json", 
                 "data/cache/latest_decisions.json": "data/cache/latest_decisions.json",
                 "data/cache/trading_data.json": "data/cache/trading_data.json",
                 "data/cache/last_updated.txt": "data/cache/last_updated.txt",
                 "data/cache/bot_startup.json": "data/cache/bot_startup.json",
-                "data/trades/trade_history.json": "data/trades/trade_history.json"
+                "data/trades/trade_history.json": "data/trades/trade_history.json",
+                "data/reports/strategy_performance.json": "data/reports/strategy_performance.json"
             }
             
             for source_rel_path, dest_rel_path in data_files.items():
