@@ -228,11 +228,27 @@
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Trading Activity</h5>
+                        <h5 class="card-title mb-0">
+                            Trading Activity
+                            <i class="fas fa-question-circle ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               data-bs-html="true"
+                               title="<strong>Trading Activity Details:</strong><br/>
+                                      • Buy/Sell/Hold decisions made by AI<br/>
+                                      • Actual trades executed with real amounts<br/>
+                                      • Execution rate shows decisions → trades<br/>
+                                      <em>Higher execution rate = more actionable signals</em>"
+                               style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
+                            </i>
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
+                        <div class="chart-container mb-3">
                             <canvas id="activityChart"></canvas>
+                        </div>
+                        <div id="activity-summary">
+                            <!-- Activity summary will be populated here -->
                         </div>
                     </div>
                 </div>
@@ -242,11 +258,37 @@
             <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="card-title mb-0">Performance by Asset</h5>
+                        <h5 class="card-title mb-0">
+                            Performance by Asset
+                            <i class="fas fa-question-circle ms-1" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               data-bs-html="true"
+                               title="<strong>Asset Performance Details:</strong><br/>
+                                      • Individual asset returns since start<br/>
+                                      • Trade success rate per asset<br/>
+                                      • Average confidence per asset<br/>
+                                      <em>Helps identify strongest performing pairs</em>"
+                               style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
+                            </i>
+                        </h5>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="assetPerformanceChart"></canvas>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Return</th>
+                                        <th>Trades</th>
+                                        <th>Success</th>
+                                        <th>Avg Conf.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="asset-performance">
+                                    <!-- Asset performance will be populated here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -646,6 +688,56 @@
             });
         }
 
+        // Function to update asset performance table
+        async function updateAssetPerformance() {
+            const portfolio = await loadData('/crypto-bot/data/portfolio/portfolio.json');
+            const trades = await loadData('/crypto-bot/data/trades/trade_history.json');
+            
+            if (portfolio && trades && Array.isArray(trades)) {
+                const assets = ['BTC', 'ETH', 'SOL'];
+                const tbody = document.getElementById('asset-performance');
+                
+                const assetRows = assets.map(asset => {
+                    // Calculate return for this asset
+                    const assetData = portfolio[asset];
+                    const currentValue = (assetData?.amount || 0) * (assetData?.last_price_usd || 0);
+                    const initialValue = (assetData?.initial_amount || 0) * (assetData?.last_price_usd || 0);
+                    const assetReturn = initialValue > 0 ? ((currentValue - initialValue) / initialValue * 100) : 0;
+                    
+                    // Get trades for this asset
+                    const assetTrades = trades.filter(t => 
+                        t.product_id && t.product_id.split('-')[0] === asset &&
+                        t.trade_amount_usd > 0
+                    );
+                    
+                    // Calculate success rate (using confidence as proxy)
+                    const successfulTrades = assetTrades.filter(t => t.confidence >= 70);
+                    const successRate = assetTrades.length > 0 ? 
+                        (successfulTrades.length / assetTrades.length * 100) : 0;
+                    
+                    // Calculate average confidence
+                    const avgConfidence = assetTrades.length > 0 ?
+                        assetTrades.reduce((sum, t) => sum + (t.confidence || 0), 0) / assetTrades.length : 0;
+                    
+                    return `
+                        <tr>
+                            <td><strong>${asset}</strong></td>
+                            <td class="${assetReturn >= 0 ? 'text-success' : 'text-danger'}">
+                                ${assetReturn >= 0 ? '+' : ''}${assetReturn.toFixed(2)}%
+                            </td>
+                            <td>${assetTrades.length}</td>
+                            <td class="${successRate >= 70 ? 'text-success' : 'text-warning'}">
+                                ${successRate.toFixed(0)}%
+                            </td>
+                            <td>${avgConfidence.toFixed(0)}%</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                tbody.innerHTML = assetRows;
+            }
+        }
+
         // Function to update advanced analytics
         async function updateAdvancedAnalytics() {
             const portfolioData = await loadData('/crypto-bot/data/portfolio/portfolio.json');
@@ -904,14 +996,67 @@
         // Function to update trading activity chart
         async function updateActivityChart() {
             const data = await loadData('/crypto-bot/data/trades/trade_history.json');
-            if (data && data.trades) {
-                const trades = data.trades;
-                const buyCount = trades.filter(t => t.action === 'BUY').length;
-                const sellCount = trades.filter(t => t.action === 'SELL').length;
-                const holdCount = trades.filter(t => t.action === 'HOLD').length;
+            if (data && Array.isArray(data)) {
+                // Count all decisions (including holds)
+                const allDecisions = data;
+                const buyCount = allDecisions.filter(t => t.action && t.action.toLowerCase() === 'buy').length;
+                const sellCount = allDecisions.filter(t => t.action && t.action.toLowerCase() === 'sell').length;
+                const holdCount = allDecisions.filter(t => t.action && t.action.toLowerCase() === 'hold').length;
                 
-                activityChart.data.datasets[0].data = [buyCount, sellCount, holdCount];
-                activityChart.update();
+                // Count actual executed trades (with trade_amount_usd > 0)
+                const executedTrades = data.filter(t => t.trade_amount_usd > 0);
+                const executedBuys = executedTrades.filter(t => t.action && t.action.toLowerCase() === 'buy').length;
+                const executedSells = executedTrades.filter(t => t.action && t.action.toLowerCase() === 'sell').length;
+                
+                console.log('Trading Activity Data:', {
+                    totalDecisions: allDecisions.length,
+                    buyDecisions: buyCount,
+                    sellDecisions: sellCount,
+                    holdDecisions: holdCount,
+                    executedTrades: executedTrades.length,
+                    executedBuys,
+                    executedSells
+                });
+                
+                // Update activity chart with decision counts
+                if (window.activityChart) {
+                    activityChart.data.datasets[0].data = [buyCount, sellCount, holdCount];
+                    activityChart.update();
+                }
+                
+                // Update any activity summary elements if they exist
+                const activitySummary = document.getElementById('activity-summary');
+                if (activitySummary) {
+                    activitySummary.innerHTML = `
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <h6 class="text-success">${buyCount}</h6>
+                                <small>Buy Decisions</small>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-danger">${sellCount}</h6>
+                                <small>Sell Decisions</small>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-secondary">${holdCount}</h6>
+                                <small>Hold Decisions</small>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <h6 class="text-primary">${executedTrades.length}</h6>
+                                <small>Executed Trades</small>
+                            </div>
+                            <div class="col-6">
+                                <h6 class="text-info">${((executedTrades.length / allDecisions.length) * 100).toFixed(1)}%</h6>
+                                <small>Execution Rate</small>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                console.error('No trading activity data found or invalid format');
             }
         }
 
@@ -949,11 +1094,18 @@
             updateAdvancedAnalytics();
             updatePortfolioChart();
             updateActivityChart();
+            updateAssetPerformance();
             loadStrategyAnalysis();
         }
 
         // Run initialization when page loads
         document.addEventListener('DOMContentLoaded', initializeAnalysis);
+
+        // Initialize Bootstrap tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
 
         // Update data every 5 minutes
         setInterval(() => {
@@ -961,6 +1113,7 @@
             updateAdvancedAnalytics();
             updatePortfolioChart();
             updateActivityChart();
+            updateAssetPerformance();
             loadStrategyAnalysis();
         }, 300000);
     </script>
