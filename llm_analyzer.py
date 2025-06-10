@@ -659,22 +659,30 @@ Respond with ONLY a JSON object in this format:
         }
 
         try:
-            # Extract action
-            if "ACTION: buy" in response.lower():
+            # Extract action - check for all possible actions including HOLD
+            response_lower = response.lower()
+            if "action: buy" in response_lower:
                 decision["action"] = "buy"
-            elif "ACTION: sell" in response.lower():
+            elif "action: sell" in response_lower:
                 decision["action"] = "sell"
+            elif "action: hold" in response_lower:
+                decision["action"] = "hold"
 
             # Extract confidence
-            confidence_match = re.search(r"CONFIDENCE: (\d+)", response)
+            confidence_match = re.search(r"CONFIDENCE:\s*(\d+)", response, re.IGNORECASE)
             if confidence_match:
                 confidence = int(confidence_match.group(1))
                 decision["confidence"] = min(max(confidence, 0), 100)  # Ensure between 0-100
 
-            # Extract reason
-            reason_match = re.search(r"REASON: (.*?)($|\n)", response, re.DOTALL)
+            # Extract reason - improved regex to capture multi-line reasons
+            reason_match = re.search(r"REASON:\s*(.*?)(?=\n\s*$|\Z)", response, re.DOTALL | re.IGNORECASE)
             if reason_match:
-                decision["reason"] = reason_match.group(1).strip()
+                reason_text = reason_match.group(1).strip()
+                # Clean up the reason text - remove extra whitespace, line breaks, and formatting
+                reason_text = re.sub(r'\s+', ' ', reason_text)
+                reason_text = re.sub(r'^\*+\s*', '', reason_text)  # Remove leading asterisks
+                reason_text = re.sub(r'\s*\*+$', '', reason_text)  # Remove trailing asterisks
+                decision["reason"] = reason_text
 
             return decision
 
