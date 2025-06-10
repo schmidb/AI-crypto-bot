@@ -435,7 +435,24 @@
                             <div id="last-update">Loading...</div>
                         </div>
                         <div class="mb-3">
-                            <small class="text-muted">Risk Level:</small>
+                            <small class="text-muted">
+                                Risk Level:
+                                <i class="fas fa-question-circle ms-1" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   data-bs-html="true"
+                                   title="<strong>Risk Level Explanation:</strong><br/>
+                                          <strong>HIGH</strong> indicates:<br/>
+                                          • High market volatility detected<br/>
+                                          • Conflicting technical indicators<br/>
+                                          • Recent price movements above normal ranges<br/>
+                                          • Position sizes reduced to 50% for safety<br/>
+                                          <br/>
+                                          <em>Risk levels: LOW (100% position) → MEDIUM (75%) → HIGH (50%)</em><br/>
+                                          <em>Based on RSI extremes, MACD divergence, and Bollinger Band breakouts</em>"
+                                   style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
+                                </i>
+                            </small>
                             <div id="risk-level">Loading...</div>
                         </div>
                     </div>
@@ -836,8 +853,23 @@
                                                     </div>
                                                     <div class="col-6">
                                                         <div class="d-flex justify-content-between">
-                                                            <span>Risk Level:</span>
-                                                            <strong id="current-risk-level">Medium</strong>
+                                                            <span>
+                                                                Risk Level
+                                                                <i class="fas fa-question-circle ms-1" 
+                                                                   data-bs-toggle="tooltip" 
+                                                                   data-bs-placement="top" 
+                                                                   data-bs-html="true"
+                                                                   title="<strong>Current Risk Level: HIGH</strong><br/>
+                                                                          • Affects position sizing:<br/>
+                                                                          &nbsp;&nbsp;HIGH = 50% position size<br/>
+                                                                          &nbsp;&nbsp;MEDIUM = 75% position size<br/>
+                                                                          &nbsp;&nbsp;LOW = 100% position size<br/>
+                                                                          <br/>
+                                                                          <em>Determined by volatility, indicator conflicts, and price movements</em>"
+                                                                   style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
+                                                                </i>
+                                                            </span>
+                                                            <strong id="current-risk-level">High</strong>
                                                         </div>
                                                     </div>
                                                     <div class="col-6">
