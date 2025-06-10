@@ -64,3 +64,6 @@ tmp/
 *.backup
 *.orig
 *~
+
+# Debug scripts
+debug_*.py
