@@ -968,7 +968,7 @@
                                                                     <span id="usd-percent">0%</span>
                                                                 </div>
                                                             </div>
-                                                            <small class="text-muted">Target: <span id="usd-target">20%</span></small>
+                                                            <small class="text-muted">Target: <span id="usd-target">20.0%</span></small>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1265,14 +1265,13 @@
                     USD: (data.USD?.amount / totalValue) * 100 || 0
                 };
 
-                // Use target allocations based on your .env settings
-                // TARGET_CRYPTO_ALLOCATION=90, TARGET_USD_ALLOCATION=10
-                // Split crypto 90% equally among BTC, ETH, SOL = 30% each
+                // Use correct target allocations based on enhanced trading strategy
+                // TARGET: 80% crypto (26.7% each) + 20% USD for optimal trading flexibility
                 const target = {
-                    BTC: 30,  // 30% of total portfolio
-                    ETH: 30,  // 30% of total portfolio  
-                    SOL: 30,  // 30% of total portfolio
-                    USD: 10   // 10% of total portfolio
+                    BTC: 26.7,  // 26.7% of total portfolio
+                    ETH: 26.7,  // 26.7% of total portfolio  
+                    SOL: 26.7,  // 26.7% of total portfolio
+                    USD: 20.0   // 20% of total portfolio for liquidity
                 };
 
                 // Update allocation chart
@@ -1586,15 +1585,23 @@
             // Update progress bars
             document.getElementById('btc-progress').style.width = btcPercent + '%';
             document.getElementById('btc-percent').textContent = btcPercent.toFixed(1) + '%';
+            document.getElementById('btc-percent').style.color = '#000';
+            document.getElementById('btc-percent').style.textShadow = '0 0 2px rgba(255,255,255,0.8)';
             
             document.getElementById('eth-progress').style.width = ethPercent + '%';
             document.getElementById('eth-percent').textContent = ethPercent.toFixed(1) + '%';
+            document.getElementById('eth-percent').style.color = '#fff';
+            document.getElementById('eth-percent').style.textShadow = '0 0 2px rgba(0,0,0,0.8)';
             
             document.getElementById('sol-progress').style.width = solPercent + '%';
             document.getElementById('sol-percent').textContent = solPercent.toFixed(1) + '%';
+            document.getElementById('sol-percent').style.color = '#fff';
+            document.getElementById('sol-percent').style.textShadow = '0 0 2px rgba(0,0,0,0.8)';
             
             document.getElementById('usd-progress').style.width = usdPercent + '%';
             document.getElementById('usd-percent').textContent = usdPercent.toFixed(1) + '%';
+            document.getElementById('usd-percent').style.color = '#fff';
+            document.getElementById('usd-percent').style.textShadow = '0 0 2px rgba(0,0,0,0.8)';
             
             // Check if rebalancing is needed (simplified logic)
             const targetBtc = 26.7, targetEth = 26.7, targetSol = 26.7, targetUsd = 20;
@@ -1610,11 +1617,17 @@
             if (needsRebalance) {
                 alert.style.display = 'block';
                 alert.className = 'alert alert-warning';
+                alert.style.color = '#000';
+                alert.style.backgroundColor = '#fff3cd';
+                alert.style.borderColor = '#ffeaa7';
                 document.getElementById('rebalance-message').textContent = 
                     'Portfolio allocation deviates from targets. Consider rebalancing.';
             } else {
                 alert.style.display = 'block';
                 alert.className = 'alert alert-success';
+                alert.style.color = '#000';
+                alert.style.backgroundColor = '#d1edff';
+                alert.style.borderColor = '#bee5eb';
                 document.getElementById('rebalance-message').textContent = 
                     'Portfolio allocation is within target ranges.';
             }
