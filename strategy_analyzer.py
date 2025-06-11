@@ -43,11 +43,7 @@ class StrategyAnalyzer:
         self.coinbase_client = CoinbaseClient()
         self.llm_analyzer = LLMAnalyzer()
         self.data_collector = DataCollector(self.coinbase_client)
-        self.trading_strategy = TradingStrategy(
-            coinbase_client=self.coinbase_client,
-            llm_analyzer=self.llm_analyzer,
-            data_collector=self.data_collector
-        )
+        self.trading_strategy = TradingStrategy(config)
         self.strategy_evaluator = StrategyEvaluator()
         self.trade_logger = TradeLogger()
         

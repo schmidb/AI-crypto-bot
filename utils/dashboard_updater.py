@@ -52,8 +52,13 @@ class DashboardUpdater:
             import copy
             portfolio_copy = copy.deepcopy(portfolio)
             
-            # Add timestamp
-            portfolio_copy["last_updated"] = datetime.datetime.now().isoformat()
+            # Get the most recent timestamp from trades or decisions
+            latest_trade_time = self._get_latest_trade_timestamp()
+            latest_decision_time = self._get_latest_decision_timestamp()
+            latest_time = max(latest_trade_time, latest_decision_time)
+            
+            # Use the most recent timestamp for last_updated
+            portfolio_copy["last_updated"] = latest_time
             
             # Save to portfolio data file (standardized to portfolio.json)
             with open("data/portfolio/portfolio.json", "w") as f:
@@ -139,23 +144,33 @@ class DashboardUpdater:
             latest_decisions = []
             assets = ["BTC", "ETH", "SOL"]
             
-            # Get latest market data for each asset
+            # Get latest decision data for each asset
             for asset in assets:
                 try:
-                    # Read the latest market data file
-                    with open(f"data/market_data/{asset}_USD_latest.json", "r") as f:
-                        market_data = json.load(f)
+                    # Read the latest decision file directly
+                    import glob
+                    pattern = f"data/{asset}_USD_*.json"
+                    files = glob.glob(pattern)
+                    
+                    if files:
+                        # Get the latest file
+                        latest_file = sorted(files)[-1]
+                        with open(latest_file, "r") as f:
+                            decision_data = json.load(f)
+                            
+                        decision = {
+                            "timestamp": decision_data.get("timestamp", ""),
+                            "asset": asset,
+                            "action": decision_data.get("action", "unknown"),
+                            "confidence": decision_data.get("confidence", 0),
+                            "reasoning": decision_data.get("reason", decision_data.get("reasoning", "No reasoning provided"))
+                        }
+                        latest_decisions.append(decision)
+                    else:
+                        logger.warning(f"No decision files found for {asset}")
                         
-                    decision = {
-                        "timestamp": market_data.get("timestamp", ""),
-                        "asset": asset,
-                        "action": market_data.get("action", "unknown"),
-                        "confidence": market_data.get("confidence", 0),
-                        "reasoning": market_data.get("reason", market_data.get("reasoning", "No reasoning provided"))
-                    }
-                    latest_decisions.append(decision)
                 except Exception as e:
-                    logger.error(f"Error reading latest market data for {asset}: {e}")
+                    logger.error(f"Error reading latest decision data for {asset}: {e}")
             
             # Sort by timestamp, newest first
             latest_decisions.sort(key=lambda x: x["timestamp"], reverse=True)
@@ -294,10 +309,45 @@ class DashboardUpdater:
             logger.error(f"Error generating allocation comparison chart: {e}")
     
     def _update_timestamp(self) -> None:
-        """Update the last updated timestamp"""
+        """Update the last updated timestamp using most recent activity"""
         try:
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Get the most recent timestamp from trades or decisions
+            latest_trade_time = self._get_latest_trade_timestamp()
+            latest_decision_time = self._get_latest_decision_timestamp()
+            latest_time = max(latest_trade_time, latest_decision_time)
+            
+            # Convert to datetime for formatting
+            timestamp = datetime.datetime.fromisoformat(latest_time.replace('Z', '+00:00')).strftime("%Y-%m-%d %H:%M:%S")
+            
             with open("data/cache/last_updated.txt", "w") as f:
                 f.write(timestamp)
         except Exception as e:
             logger.error(f"Error updating timestamp: {e}")
+    
+    def _get_latest_trade_timestamp(self) -> str:
+        """Get the most recent trade timestamp from trade history file"""
+        try:
+            trade_history_file = "data/trades/trade_history.json"
+            if os.path.exists(trade_history_file):
+                with open(trade_history_file, "r") as f:
+                    trade_history = json.load(f)
+                if trade_history and isinstance(trade_history, list):
+                    return max([trade.get('timestamp', '2000-01-01T00:00:00') 
+                              for trade in trade_history], default='2000-01-01T00:00:00')
+        except Exception as e:
+            logger.error(f"Error reading trade history: {e}")
+        return '2000-01-01T00:00:00'
+    
+    def _get_latest_decision_timestamp(self) -> str:
+        """Get the most recent decision timestamp from latest decisions file"""
+        try:
+            decisions_file = "data/cache/latest_decisions.json"
+            if os.path.exists(decisions_file):
+                with open(decisions_file, "r") as f:
+                    latest_decisions = json.load(f)
+                if latest_decisions and isinstance(latest_decisions, list):
+                    return max([decision.get('timestamp', '2000-01-01T00:00:00') 
+                              for decision in latest_decisions], default='2000-01-01T00:00:00')
+        except Exception as e:
+            logger.error(f"Error reading latest decisions: {e}")
+        return '2000-01-01T00:00:00'

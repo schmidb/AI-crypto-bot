@@ -9,9 +9,6 @@ import google.auth
 import google.auth.transport.requests
 
 from google.cloud import aiplatform
-from google.cloud.aiplatform.gapic.schema import predict
-from google.protobuf import json_format
-from google.protobuf.struct_pb2 import Value
 from google.oauth2 import service_account
 
 from config import (
@@ -142,8 +139,31 @@ class LLMAnalyzer:
             {{
               "decision": "BUY|SELL|HOLD",
               "confidence": <number between 0-100>,
-              "reasoning": ["reason1", "reason2", "reason3"],
-              "risk_assessment": "low|medium|high"
+              "reasoning": ["detailed reason 1", "detailed reason 2", "detailed reason 3"],
+              "risk_assessment": "low|medium|high",
+              "technical_indicators": {{
+                "rsi": {{
+                  "value": <rsi_value>,
+                  "signal": "oversold|neutral|overbought",
+                  "weight": 0.3
+                }},
+                "macd": {{
+                  "macd_line": <macd_value>,
+                  "signal_line": <signal_value>,
+                  "histogram": <histogram_value>,
+                  "signal": "bullish|bearish|neutral",
+                  "weight": 0.4
+                }},
+                "bollinger_bands": {{
+                  "signal": "breakout_upper|breakout_lower|squeeze|normal",
+                  "weight": 0.3
+                }}
+              }},
+              "market_conditions": {{
+                "trend": "bullish|bearish|sideways",
+                "volatility": "low|moderate|high",
+                "volume": "below_average|average|above_average"
+              }}
             }}
 
             Do not include any text outside of the JSON structure.
@@ -476,15 +496,38 @@ MACD: {macd}
 Signal: {signal}
 BB Width: {bb_width}"""
 
-        # Add request for JSON response
+        # Add request for enhanced JSON response
         base_prompt += """
 
 Respond with ONLY a JSON object in this format:
 {
   "decision": "BUY|SELL|HOLD",
   "confidence": <0-100>,
-  "reasoning": ["reason1", "reason2"],
-  "risk_assessment": "low|medium|high"
+  "reasoning": ["detailed reason 1", "detailed reason 2", "detailed reason 3"],
+  "risk_assessment": "low|medium|high",
+  "technical_indicators": {
+    "rsi": {
+      "value": <rsi_value>,
+      "signal": "oversold|neutral|overbought",
+      "weight": 0.3
+    },
+    "macd": {
+      "macd_line": <macd_value>,
+      "signal_line": <signal_value>,
+      "histogram": <histogram_value>,
+      "signal": "bullish|bearish|neutral",
+      "weight": 0.4
+    },
+    "bollinger_bands": {
+      "signal": "breakout_upper|breakout_lower|squeeze|normal",
+      "weight": 0.3
+    }
+  },
+  "market_conditions": {
+    "trend": "bullish|bearish|sideways",
+    "volatility": "low|moderate|high",
+    "volume": "below_average|average|above_average"
+  }
 }"""
         return base_prompt
     def analyze_market(self, data: Dict) -> Dict:

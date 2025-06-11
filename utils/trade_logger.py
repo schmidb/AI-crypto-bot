@@ -19,6 +19,49 @@ class TradeLogger:
             with open(log_file, 'w') as f:
                 json.dump([], f)
     
+    def log_rebalance_trade(self, product_id: str, action: str, amount: float, usd_value: float, reason: str = "portfolio_rebalancing") -> None:
+        """
+        Log a rebalancing trade to the trade history file
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-USD')
+            action: BUY or SELL
+            amount: Amount of crypto traded
+            usd_value: USD value of the trade
+            reason: Reason for the trade (default: portfolio_rebalancing)
+        """
+        try:
+            # Create rebalancing trade record
+            trade_record = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "product_id": product_id,
+                "action": action,
+                "amount": amount,
+                "usd_value": usd_value,
+                "reason": f"Portfolio rebalancing: {action} {amount:.6f} {product_id.split('-')[0]} for ${usd_value:.2f}",
+                "status": "executed",
+                "trade_type": "rebalancing",
+                "ai_recommendation": "REBALANCE",
+                "confidence": 100,  # Rebalancing is always 100% confidence
+                "execution_status": "executed",
+                "trade_executed": True
+            }
+            
+            # Load existing trades
+            trades = self.get_all_trades()
+            
+            # Add new trade
+            trades.append(trade_record)
+            
+            # Save updated trades
+            with open(self.log_file, 'w') as f:
+                json.dump(trades, f, indent=2)
+            
+            logger.info(f"Rebalancing trade logged: {action} {amount:.6f} {product_id} for ${usd_value:.2f}")
+            
+        except Exception as e:
+            logger.error(f"Error logging rebalancing trade: {e}")
+
     def log_trade(self, product_id: str, decision: Dict[str, Any], result: Dict[str, Any]) -> None:
         """
         Log a trade to the trade history file
@@ -50,7 +93,7 @@ class TradeLogger:
                 except Exception as e:
                     logger.error(f"Failed to fetch current price for {product_id}: {e}")
             
-            # Create trade record
+            # Create trade record with enhanced reasoning
             trade = {
                 "timestamp": datetime.utcnow().isoformat(),  # Use UTC time for consistency
                 "product_id": product_id,
@@ -59,8 +102,13 @@ class TradeLogger:
                 "crypto_amount": result.get("crypto_amount", 0),
                 "trade_amount_usd": result.get("trade_amount_usd", 0),
                 "confidence": decision.get("confidence", 0),
-                "reason": decision.get("reason", "No reason provided"),
-                "status": result.get("status", "unknown")
+                "reason": result.get("reason", decision.get("reason", "No reason provided")),  # Use result reason first
+                "status": result.get("status", "unknown"),
+                # Enhanced fields for better understanding
+                "intended_action": result.get("intended_action", result.get("action", "unknown")),
+                "skip_reason": result.get("skip_reason", None),
+                "ai_recommendation": decision.get("action", "unknown"),
+                "execution_message": result.get("execution_message", result.get("message", ""))
             }
             
             # Add trade to history

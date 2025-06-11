@@ -69,12 +69,10 @@ class TestTradingStrategy(unittest.TestCase):
         }
         self.mock_llm_analyzer.analyze_market.return_value = llm_decision
         
-        # Create the strategy with mock dependencies
-        self.strategy = TradingStrategy(
-            coinbase_client=self.mock_coinbase,
-            llm_analyzer=self.mock_llm_analyzer,
-            data_collector=self.mock_data_collector
-        )
+        # Create the strategy with config
+        from config import Config
+        config = Config()
+        self.strategy = TradingStrategy(config)
     
     def test_initialization(self):
         """Test strategy initialization"""
