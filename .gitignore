@@ -94,3 +94,18 @@ data/old_*
 # Large logs
 logs/*.log.*
 logs/*_old.log
+
+# Analysis and cleanup files
+analyze_*.py
+cleanup_*.py
+*_analysis.py
+*_cleanup.py
+
+# Temporary documentation
+*_COMPLETE.md
+*_ANALYSIS.md
+PROJECT_*.md
+
+# Credentials (should be in secure location)
+google.json
+*.json.backup

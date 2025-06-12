@@ -32,7 +32,7 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
 
 ### 📱 **Professional Dashboard**
 - **Real-time Portfolio Tracking**: Live EUR values and allocations
-- **AI Decision Analysis**: Detailed reasoning for each trade decision
+- **Comprehensive AI Analysis**: Detailed reasoning for each trade decision with 4 analysis sections
 - **Performance Metrics**: P&L tracking, win rates, portfolio growth
 - **Market Overview**: Current prices, trends, and technical indicators
 
@@ -53,10 +53,10 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
 
 2. **Create virtual environment**
    ```bash
-   python3 -m venv crypto-bot-env
-   source crypto-bot-env/bin/activate  # Linux/Mac
+   python3 -m venv venv
+   source venv/bin/activate  # Linux/Mac
    # or
-   crypto-bot-env\Scripts\activate     # Windows
+   venv\Scripts\activate     # Windows
    ```
 
 3. **Install dependencies**
@@ -70,9 +70,14 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
    # Edit .env with your API keys and settings
    ```
 
-5. **Run the bot**
+5. **Deploy dashboard** (optional)
    ```bash
-   python main.py
+   python3 deploy_dashboard.py
+   ```
+
+6. **Run the bot**
+   ```bash
+   python3 main.py
    ```
 
 ## ⚙️ **Configuration**
@@ -139,19 +144,47 @@ Market Data → AI Analysis → Confidence Score → Safety Check → Position S
 ### **Portfolio Overview**
 - **Total Value**: Real-time EUR portfolio value
 - **Asset Allocation**: Current vs target percentages
-- **Trading Balance**: EUR available for trades with smart warnings
+- **AI-First Strategy Status**: Smart safety limits and trading capability
 - **Performance Metrics**: P&L, returns, win rates
 
-### **AI Decision Analysis**
+### **Enhanced AI Analysis**
+- **Comprehensive Trade Details**: 4-section analysis for each trade
+  - **AI Reasoning**: Detailed bullet-point market analysis
+  - **Technical Analysis**: RSI, MACD, Bollinger Bands with color coding
+  - **Bot Decision Process**: Confidence checks and risk management
+  - **Market Context**: Price trends, conditions, and analysis quality
 - **Recent Decisions**: Latest BUY/SELL/HOLD recommendations
 - **Confidence Levels**: AI confidence scores (0-100%)
-- **Technical Analysis**: RSI, MACD, Bollinger Bands details
-- **Reasoning**: Detailed explanation of each decision
 
 ### **Market Data**
 - **Live Prices**: Real-time cryptocurrency prices
 - **Price Changes**: 1h, 4h, 24h, 5d percentage changes
 - **Trading Status**: Current bot status and next decision time
+
+## 🏗️ **Project Structure**
+
+```
+AI-crypto-bot/
+├── main.py                 # Main bot entry point
+├── config.py              # Configuration management
+├── coinbase_client.py     # Coinbase API client
+├── llm_analyzer.py        # AI analysis engine
+├── trading_strategy.py    # Trading strategy implementation
+├── data_collector.py      # Market data collection
+├── utils/                 # Utility modules
+│   ├── dashboard_updater.py
+│   ├── webserver_sync.py
+│   ├── logger.py
+│   ├── portfolio.py
+│   └── ...
+├── dashboard/             # Web dashboard
+│   ├── static/
+│   └── images/
+├── data/                  # Runtime data
+├── logs/                  # Application logs
+├── .env                   # Environment variables
+└── requirements.txt       # Dependencies
+```
 
 ## 🔧 **Advanced Configuration**
 
@@ -225,6 +258,23 @@ SIMULATION_MODE=True
 - **Maximum Cash**: Limits EUR allocation to 35%
 - **Trade Size Limits**: €30 minimum, €1000 maximum per trade
 
+## 🔄 **Deployment**
+
+### **Systemd Service**
+```bash
+# Copy service file
+sudo cp crypto-bot.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable crypto-bot
+sudo systemctl start crypto-bot
+```
+
+### **Dashboard Deployment**
+```bash
+# Deploy dashboard to web server
+python3 deploy_dashboard.py
+```
+
 ## 📞 **Support & Troubleshooting**
 
 ### **Common Issues**
@@ -242,7 +292,7 @@ SIMULATION_MODE=True
 **Low performance:**
 - Review confidence thresholds
 - Check market conditions
-- Analyze recent AI decisions
+- Analyze recent AI decisions in dashboard
 
 ### **Getting Help**
 1. Check log files for error messages

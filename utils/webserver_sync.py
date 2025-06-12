@@ -3,7 +3,7 @@ import os
 from config import config
 import shutil
 import glob
-from typing import Dict, Any
+from typing import Any
 from config import WEBSERVER_SYNC_ENABLED, WEBSERVER_SYNC_PATH
 
 logger = logging.getLogger(__name__)
