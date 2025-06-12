@@ -1,5 +1,6 @@
 import json
 import logging
+from config import config
 import os
 from typing import Dict, Any, Tuple, List
 from datetime import datetime
@@ -162,8 +163,8 @@ class TradingStrategy:
             position_size = base_size * risk_multiplier
             
             # Apply min/max constraints
-            min_trade = float(self.config.MIN_TRADE_USD)
-            max_position = float(self.config.MAX_POSITION_SIZE_USD)
+            min_trade = float(self.config.MIN_TRADE_AMOUNT)
+            max_position = float(self.config.MAX_POSITION_SIZE)
             
             if position_size < min_trade:
                 return 0  # Don't trade if below minimum
@@ -210,7 +211,7 @@ class TradingStrategy:
                 'BTC': 26.7,  # 26.7% of total portfolio
                 'ETH': 26.7,  # 26.7% of total portfolio  
                 'SOL': 26.7,  # 26.7% of total portfolio
-                'USD': 20.0   # 20% of total portfolio for liquidity
+                'EUR': 20.0   # 20% of total portfolio for liquidity
             }
             
             # Check if rebalancing is needed
@@ -319,9 +320,9 @@ class TradingStrategy:
                 else:
                     allocation[asset] = 0
             
-            # USD allocation
-            usd_amount = self.portfolio.get("USD", {}).get("amount", 0)
-            allocation["USD"] = (usd_amount / total_value) * 100
+            # EUR allocation
+            base_amount = self.portfolio.get("EUR", {}).get("amount", 0)
+            allocation["EUR"] = (base_amount / total_value) * 100
             
             return allocation
             
@@ -357,7 +358,7 @@ class TradingStrategy:
             action_type = action["action"].upper()
             
             # Create product ID for trading
-            product_id = f"{asset}-USD"
+            product_id = f"{asset}-EUR"
             
             # Prepare trade parameters
             if action_type == "SELL":
@@ -369,10 +370,10 @@ class TradingStrategy:
                 )
             elif action_type == "BUY":
                 # Execute buy order  
-                usd_amount = action["usd_value"]
+                base_amount = action["usd_value"]
                 result = self.coinbase_client.place_buy_order(
                     product_id=product_id,
-                    usd_amount=usd_amount,
+                    base_amount=base_amount,
                     order_type="market"
                 )
             else:
@@ -424,7 +425,7 @@ class TradingStrategy:
             
             # Define target allocation
             target_allocation = {
-                'BTC': 26.7, 'ETH': 26.7, 'SOL': 26.7, 'USD': 20.0
+                'BTC': 26.7, 'ETH': 26.7, 'SOL': 26.7, 'EUR': 20.0
             }
             
             # Get current allocation and check if rebalancing is needed
@@ -520,7 +521,7 @@ class TradingStrategy:
             assets_analysis = {}
             for asset in ['BTC', 'ETH', 'SOL']:
                 try:
-                    product_id = f"{asset}-USD"
+                    product_id = f"{asset}-EUR"
                     market_data = self.data_collector.get_market_data(product_id) if self.data_collector else {}
                     
                     # Get recent price volatility
@@ -589,12 +590,12 @@ class TradingStrategy:
                     "priority": "critical"
                 }
             
-            # USD shortage is critical for trading - prioritize getting USD
-            usd_deviation = rebalance_analysis.get("deviations", {}).get("USD", {}).get("deviation", 0)
-            if usd_deviation > 15:  # Less than 5% USD when target is 20%
+            # EUR shortage is critical for trading - prioritize getting USD
+            base_deviation = rebalance_analysis.get("deviations", {}).get("EUR", {}).get("deviation", 0)
+            if base_deviation > 15:  # Less than 5% USD when target is 20%
                 return {
                     "should_rebalance": True,
-                    "reason": f"Critical USD shortage for trading (deviation: {usd_deviation:.1f}%)",
+                    "reason": f"Critical EUR shortage for trading (deviation: {base_deviation:.1f}%)",
                     "priority": "high"
                 }
             
@@ -770,7 +771,7 @@ class TradingStrategy:
         Execute trading strategy for a specific product
         
         Args:
-            product_id: Trading pair (e.g., 'BTC-USD')
+            product_id: Trading pair (e.g., 'BTC-EUR')
             
         Returns:
             Dict with trading decision and details
@@ -926,43 +927,67 @@ class TradingStrategy:
             # Check available balances BEFORE finalizing BUY/SELL decisions
             if decision == "BUY":
                 try:
-                    # Check USD balance for BUY orders
+                    # Check EUR balance for BUY orders
                     accounts = self.coinbase_client.get_accounts()
-                    usd_account = next((acc for acc in accounts if acc.get('currency') == 'USD'), None)
+                    usd_account = next((acc for acc in accounts if acc.get('currency') == 'EUR'), None)
                     usd_available = float(usd_account.get('available_balance', {}).get('value', 0)) if usd_account else 0.0
                     
-                    if usd_available <= 10.0:  # Minimum $10 for any trade
+                    if usd_available <= config.MIN_TRADE_AMOUNT:  # Use configured minimum trade amount
                         decision = "HOLD"
-                        risk_adjustment = f"insufficient_usd_balance (${usd_available:.2f} available, minimum $10 required)"
-                        logger.info(f"Risk management: Changed BUY to HOLD for {product_id} - insufficient USD balance")
+                        risk_adjustment = f"insufficient_usd_balance ({config.format_currency(usd_available)} available, minimum {config.format_currency(config.MIN_TRADE_AMOUNT)} required)"
+                        logger.info(f"Risk management: Changed BUY to HOLD for {product_id} - insufficient EUR balance")
                 except Exception as e:
-                    logger.warning(f"Could not check USD balance for {product_id}: {e}")
+                    logger.warning(f"Could not check EUR balance for {product_id}: {e}")
                     decision = "HOLD"
                     risk_adjustment = "balance_check_failed"
                     
             elif decision == "SELL":
                 try:
                     # Check crypto balance for SELL orders
-                    asset = product_id.split('-')[0]  # Extract BTC from BTC-USD
+                    asset = product_id.split('-')[0]  # Extract BTC from BTC-EUR
                     accounts = self.coinbase_client.get_accounts()
                     asset_account = next((acc for acc in accounts if acc.get('currency') == asset), None)
                     asset_available = float(asset_account.get('available_balance', {}).get('value', 0)) if asset_account else 0.0
                     
-                    # Get current price to calculate minimum crypto amount for $10 trade
+                    # Get current price to calculate minimum crypto amount for minimum trade
                     current_market_data = self.data_collector.get_market_data(product_id) if self.data_collector else {}
                     current_price = current_market_data.get("price", 1)
-                    min_crypto_amount = 10.0 / current_price if current_price > 0 else 0.01
+                    min_crypto_amount = config.MIN_TRADE_AMOUNT / current_price if current_price > 0 else 0.01
                     
                     if asset_available <= min_crypto_amount:
                         decision = "HOLD"
-                        risk_adjustment = f"insufficient_{asset.lower()}_balance ({asset_available:.8f} available, minimum {min_crypto_amount:.8f} required for $10 trade)"
+                        risk_adjustment = f"insufficient_{asset.lower()}_balance ({asset_available:.8f} available, minimum {min_crypto_amount:.8f} required for {config.format_currency(config.MIN_TRADE_AMOUNT)} trade)"
                         logger.info(f"Risk management: Changed SELL to HOLD for {product_id} - insufficient {asset} balance")
                 except Exception as e:
                     logger.warning(f"Could not check {asset} balance for {product_id}: {e}")
                     decision = "HOLD"
                     risk_adjustment = "balance_check_failed"
             
-            # Apply position sizing based on risk level (only if still BUY/SELL after balance checks)
+            # Apply smart trading limits (replaces rigid rebalancing)
+            limited_decision, limit_reason = self._apply_smart_trading_limits(product_id, decision, confidence)
+            if limited_decision != decision:
+                original_decision = decision
+                decision = limited_decision
+                risk_adjustment += f", smart_limits ({limit_reason})"
+                logger.info(f"Smart limits: Changed {original_decision} to {decision} for {product_id} - {limit_reason}")
+            
+            # Calculate dynamic position sizing
+            if decision in ["BUY", "SELL"]:
+                dynamic_multiplier = self._calculate_dynamic_position_size(decision, confidence, product_id)
+                risk_multiplier = self._get_risk_multiplier()
+                
+                # Combine dynamic sizing with risk multiplier
+                final_multiplier = dynamic_multiplier * risk_multiplier
+                
+                if final_multiplier != 1.0:
+                    size_change = int((final_multiplier - 1.0) * 100)
+                    if size_change > 0:
+                        risk_adjustment += f", position_size_increased_by_{size_change}%"
+                    else:
+                        risk_adjustment += f", position_size_reduced_by_{abs(size_change)}%"
+                    logger.info(f"Dynamic sizing: {final_multiplier:.2f}x position for {product_id} (confidence: {confidence}%)")
+            
+            # Apply position sizing based on risk level (only if still BUY/SELL after safety checks)
             if decision in ["BUY", "SELL"]:
                 risk_multiplier = self._get_risk_multiplier()
                 if risk_multiplier < 1.0:
@@ -1090,6 +1115,133 @@ class TradingStrategy:
             logger.warning(f"Error applying confidence adjustments: {e}")
             adjustments_log.append(f"error: {str(e)}")
             return confidence
+    
+    def _apply_smart_trading_limits(self, product_id: str, decision: str, confidence: int) -> tuple[str, str]:
+        """
+        Apply smart trading limits that prioritize AI decisions while maintaining safety
+        
+        Returns:
+            tuple: (final_decision, limit_reason)
+        """
+        try:
+            asset = product_id.split('-')[0]
+            
+            # Safety check 1: Minimum EUR balance for BUY orders
+            if decision == "BUY":
+                eur_balance = self.portfolio.get(self.config.BASE_CURRENCY, {}).get('amount', 0)
+                min_eur_required = 50.0  # Minimum EUR for meaningful trading
+                
+                if eur_balance < min_eur_required:
+                    return "HOLD", f"insufficient_eur_balance ({self.config.format_currency(eur_balance)} < {self.config.format_currency(min_eur_required)})"
+            
+            # Safety check 2: Minimum crypto holding for SELL orders
+            elif decision == "SELL":
+                portfolio_value = self._calculate_portfolio_value()
+                if portfolio_value > 0:
+                    asset_amount = self.portfolio.get(asset, {}).get('amount', 0)
+                    asset_price = self.portfolio.get(asset, {}).get(f'last_price_{self.config.BASE_CURRENCY.lower()}', 0)
+                    asset_value = asset_amount * asset_price
+                    asset_allocation = (asset_value / portfolio_value) * 100
+                    
+                    min_allocation = 3.0  # Minimum 3% allocation to maintain diversification
+                    
+                    if asset_allocation < min_allocation:
+                        return "HOLD", f"minimum_allocation_protection ({asset_allocation:.1f}% < {min_allocation}%)"
+            
+            # Safety check 3: Maximum EUR allocation (don't hold too much cash)
+            if decision == "SELL":
+                portfolio_value = self._calculate_portfolio_value()
+                if portfolio_value > 0:
+                    eur_balance = self.portfolio.get(self.config.BASE_CURRENCY, {}).get('amount', 0)
+                    eur_allocation = (eur_balance / portfolio_value) * 100
+                    max_eur_allocation = 35.0  # Maximum 35% EUR in bear markets
+                    
+                    if eur_allocation > max_eur_allocation:
+                        return "HOLD", f"max_eur_allocation_reached ({eur_allocation:.1f}% > {max_eur_allocation}%)"
+            
+            return decision, "ai_decision_approved"
+            
+        except Exception as e:
+            logger.error(f"Error in smart trading limits check: {e}")
+            return decision, f"limits_check_error: {e}"
+    
+    def _calculate_dynamic_position_size(self, decision: str, confidence: int, product_id: str) -> float:
+        """
+        Calculate dynamic position size based on confidence and current allocation
+        
+        Returns:
+            float: Position size multiplier (0.5 to 1.5)
+        """
+        try:
+            base_multiplier = 1.0
+            asset = product_id.split('-')[0]
+            
+            # Get current allocation
+            portfolio_value = self._calculate_portfolio_value()
+            if portfolio_value <= 0:
+                return base_multiplier
+            
+            if decision == "BUY":
+                # For BUY: Larger positions when EUR allocation is high
+                eur_balance = self.portfolio.get(self.config.BASE_CURRENCY, {}).get('amount', 0)
+                eur_allocation = (eur_balance / portfolio_value) * 100
+                
+                if eur_allocation > 20:  # High EUR allocation
+                    base_multiplier = 1.3  # Larger BUY positions
+                elif eur_allocation > 15:
+                    base_multiplier = 1.1
+                elif eur_allocation < 5:  # Very low EUR
+                    base_multiplier = 0.7  # Smaller BUY positions
+                    
+            elif decision == "SELL":
+                # For SELL: Larger positions when crypto allocation is very high
+                asset_amount = self.portfolio.get(asset, {}).get('amount', 0)
+                asset_price = self.portfolio.get(asset, {}).get(f'last_price_{self.config.BASE_CURRENCY.lower()}', 0)
+                asset_value = asset_amount * asset_price
+                asset_allocation = (asset_value / portfolio_value) * 100
+                
+                target_allocation = self.config.TARGET_ALLOCATION.get(asset, 30.0)
+                
+                if asset_allocation > target_allocation * 1.5:  # 50% over target
+                    base_multiplier = 1.4  # Larger SELL positions
+                elif asset_allocation > target_allocation * 1.2:  # 20% over target
+                    base_multiplier = 1.2
+                elif asset_allocation < target_allocation * 0.8:  # 20% under target
+                    base_multiplier = 0.8  # Smaller SELL positions
+            
+            # Confidence-based adjustment
+            confidence_multiplier = 0.7 + (confidence / 100.0 * 0.6)  # 0.7 to 1.3 based on confidence
+            
+            # Combine multipliers
+            final_multiplier = base_multiplier * confidence_multiplier
+            
+            # Keep within reasonable bounds
+            return max(0.5, min(1.5, final_multiplier))
+            
+        except Exception as e:
+            logger.error(f"Error calculating dynamic position size: {e}")
+            return 1.0
+    
+    def _calculate_portfolio_value(self) -> float:
+        """Calculate total portfolio value in base currency"""
+        try:
+            total_value = 0.0
+            
+            # Add base currency value
+            base_amount = self.portfolio.get(self.config.BASE_CURRENCY, {}).get('amount', 0)
+            total_value += base_amount
+            
+            # Add crypto asset values
+            for asset in self.config.CRYPTO_ASSETS:
+                asset_amount = self.portfolio.get(asset, {}).get('amount', 0)
+                asset_price = self.portfolio.get(asset, {}).get(f'last_price_{self.config.BASE_CURRENCY.lower()}', 0)
+                total_value += asset_amount * asset_price
+            
+            return total_value
+            
+        except Exception as e:
+            logger.error(f"Error calculating portfolio value: {e}")
+            return 0.0
     
     def _get_risk_multiplier(self) -> float:
         """Get position size multiplier based on risk level"""

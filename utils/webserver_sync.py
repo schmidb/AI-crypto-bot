@@ -1,5 +1,6 @@
 import logging
 import os
+from config import config
 import shutil
 import glob
 from typing import Dict, Any
@@ -88,7 +89,8 @@ class WebServerSync:
             data_files = {
                 "data/portfolio/portfolio.json": "data/portfolio/portfolio.json",
                 "data/portfolio/portfolio_history.csv": "data/portfolio/portfolio_history.csv",
-                "data/config/config.json": "data/config/config.json", 
+                "data/config/config.json": "data/config/config.json",
+                "data/config/detailed_config.json": "data/config/detailed_config.json",
                 "data/cache/latest_decisions.json": "data/cache/latest_decisions.json",
                 "data/cache/trading_data.json": "data/cache/trading_data.json",
                 "data/cache/last_updated.txt": "data/cache/last_updated.txt",
@@ -121,13 +123,13 @@ class WebServerSync:
             
             for asset in assets:
                 # Find the latest decision file for this asset
-                pattern = f"{data_dir}/{asset}_USD_*.json"
+                pattern = f"{data_dir}/{asset}_{config.BASE_CURRENCY}_*.json"
                 files = glob.glob(pattern)
                 
                 if files:
                     # Sort by filename (which includes timestamp) and get the latest
                     latest_file = sorted(files)[-1]
-                    dest_file = f"{web_data_dir}/{asset}_USD_latest.json"
+                    dest_file = f"{web_data_dir}/{asset}_{config.BASE_CURRENCY}_latest.json"
                     self._ensure_hard_link(latest_file, dest_file)
                 else:
                     logger.warning(f"No decision files found for {asset}")
@@ -167,6 +169,16 @@ class WebServerSync:
                 content = f.read()
             
             # Replace relative paths for web server
+            content = content.replace("/crypto-bot/data/BTC_USD_latest.json", "./data/BTC_USD_latest.json")
+            content = content.replace("/crypto-bot/data/ETH_USD_latest.json", "./data/ETH_USD_latest.json")
+            content = content.replace("/crypto-bot/data/SOL_USD_latest.json", "./data/SOL_USD_latest.json")
+            content = content.replace("/crypto-bot/data/portfolio/portfolio.json", "./data/portfolio/portfolio.json")
+            content = content.replace("/crypto-bot/data/trades/trade_history.json", "./data/trades/trade_history.json")
+            content = content.replace("/crypto-bot/data/config/config.json", "./data/config/config.json")
+            content = content.replace("/crypto-bot/data/config/detailed_config.json", "./data/config/detailed_config.json")
+            content = content.replace("/crypto-bot/data/cache/", "./data/cache/")
+            content = content.replace("/crypto-bot/images/", "./images/")
+            # Legacy path replacements for backward compatibility
             content = content.replace("../data/BTC_USD_latest.json", "./data/BTC_USD_latest.json")
             content = content.replace("../data/ETH_USD_latest.json", "./data/ETH_USD_latest.json")
             content = content.replace("../data/SOL_USD_latest.json", "./data/SOL_USD_latest.json")

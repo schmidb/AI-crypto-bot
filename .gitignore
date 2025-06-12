@@ -68,3 +68,29 @@ tmp/
 # Debug scripts
 debug_*.py
 test_dashboard.py
+
+# Temporary and test files
+test_*.py
+debug_*.py
+check_*.py
+fix_*.py
+*_temp.py
+*_backup.py
+
+# Documentation drafts
+*_SUMMARY.md
+*_FIX.md
+*_IMPLEMENTATION.md
+TEMP_*.md
+
+# Support files
+*support_ticket*
+*troubleshooting*
+
+# Old data files
+data/*_USD_*.json
+data/old_*
+
+# Large logs
+logs/*.log.*
+logs/*_old.log

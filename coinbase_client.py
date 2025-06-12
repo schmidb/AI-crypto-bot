@@ -161,9 +161,39 @@ class CoinbaseClient:
             logger.error(f"Error getting product price for {product_id}: {e}")
             return {"price": "0"}
     
+    def _get_precision_limits(self) -> Dict[str, int]:
+        """Get precision limits for different trading pairs"""
+        return {
+            'BTC-EUR': 8, 'BTC-USD': 8,
+            'ETH-EUR': 6, 'ETH-USD': 6,
+            'SOL-EUR': 3, 'SOL-USD': 3,  # SOL requires only 3 decimal places
+            'ADA-EUR': 6, 'ADA-USD': 6,
+            'DOT-EUR': 6, 'DOT-USD': 6,
+            'LINK-EUR': 6, 'LINK-USD': 6
+        }
+    
+    def _round_to_precision(self, amount: float, precision: int) -> float:
+        """Round amount to specified decimal precision using ROUND_DOWN"""
+        if amount == 0:
+            return 0.0
+        
+        from decimal import Decimal, ROUND_DOWN
+        
+        # Convert to Decimal for precise rounding
+        decimal_amount = Decimal(str(amount))
+        
+        # Create the precision string (e.g., '0.000001' for 6 decimal places)
+        precision_str = '0.' + '0' * (precision - 1) + '1'
+        precision_decimal = Decimal(precision_str)
+        
+        # Round down to avoid exceeding available balance
+        rounded = decimal_amount.quantize(precision_decimal, rounding=ROUND_DOWN)
+        
+        return float(rounded)
+
     def place_market_order(self, product_id: str, side: str, size: float) -> Dict:
         """
-        Place a market order
+        Place a market order with proper precision handling
         
         Args:
             product_id: Trading pair (e.g., 'BTC-USD')
@@ -176,19 +206,35 @@ class CoinbaseClient:
         try:
             client_order_id = f"bot-order-{int(time.time())}"
             
+            # Get precision limits
+            precision_limits = self._get_precision_limits()
+            
             if side.upper() == "BUY":
-                # For buy orders, specify quote size (USD amount)
+                # For buy orders, specify quote size (fiat amount) - round to 2 decimal places
+                rounded_size = round(size, 2)
                 response = self.client.market_order_buy(
                     client_order_id=client_order_id,
                     product_id=product_id,
-                    quote_size=str(size)
+                    quote_size=str(rounded_size)
                 )
             else:
-                # For sell orders, specify base size (crypto amount)
+                # For sell orders, specify base size (crypto amount) with proper precision
+                precision = precision_limits.get(product_id, 8)  # Default to 8 decimals
+                rounded_size = self._round_to_precision(size, precision)
+                
+                # Ensure we have a valid amount to sell
+                if rounded_size <= 0:
+                    return {
+                        "success": False, 
+                        "error": f"Rounded sell amount is too small: {rounded_size} (original: {size})"
+                    }
+                
+                logger.info(f"SELL order: {product_id} - Original: {size:.12f}, Rounded: {rounded_size:.12f} ({precision} decimals)")
+                
                 response = self.client.market_order_sell(
                     client_order_id=client_order_id,
                     product_id=product_id,
-                    base_size=str(size)
+                    base_size=str(rounded_size)
                 )
                 
             return response

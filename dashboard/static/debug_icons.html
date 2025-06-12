@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Debug Test</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .icon-test {
+            font-size: 1.5rem;
+            margin: 10px;
+            color: #007bff;
+        }
+        .fallback-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            border-radius: 50%;
+            line-height: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Icon Debug Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Font Awesome Icons Test</h3>
+        <p>Question Circle: <i class="fas fa-question-circle icon-test"></i></p>
+        <p>Info Circle: <i class="fas fa-info-circle icon-test"></i></p>
+        <p>Help: <i class="fas fa-question icon-test"></i></p>
+        <p>Exclamation: <i class="fas fa-exclamation-circle icon-test"></i></p>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Alternative Font Awesome CDN</h3>
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.4.0/css/all.css">
+        <p>Question Circle (Alt CDN): <i class="fa-solid fa-circle-question icon-test"></i></p>
+        <p>Info Circle (Alt CDN): <i class="fa-solid fa-circle-info icon-test"></i></p>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Unicode Symbols (Fallback)</h3>
+        <p>Unicode Question: <span class="icon-test">❓</span></p>
+        <p>Unicode Info: <span class="icon-test">ℹ️</span></p>
+        <p>Unicode Help: <span class="icon-test">❔</span></p>
+    </div>
+
+    <div class="test-section">
+        <h3>4. CSS-Only Fallback Icons</h3>
+        <p>CSS Question Mark: <span class="fallback-icon">?</span></p>
+        <p>CSS Info: <span class="fallback-icon">i</span></p>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Font Loading Check</h3>
+        <p id="font-status">Checking font loading...</p>
+    </div>
+
+    <script>
+        // Check if Font Awesome is loaded
+        function checkFontAwesome() {
+            const testElement = document.createElement('i');
+            testElement.className = 'fas fa-question-circle';
+            testElement.style.position = 'absolute';
+            testElement.style.left = '-9999px';
+            document.body.appendChild(testElement);
+            
+            const computedStyle = window.getComputedStyle(testElement);
+            const fontFamily = computedStyle.getPropertyValue('font-family');
+            
+            document.body.removeChild(testElement);
+            
+            const statusElement = document.getElementById('font-status');
+            if (fontFamily.includes('Font Awesome') || fontFamily.includes('FontAwesome')) {
+                statusElement.innerHTML = '✅ Font Awesome is loaded successfully!<br>Font Family: ' + fontFamily;
+                statusElement.style.color = 'green';
+            } else {
+                statusElement.innerHTML = '❌ Font Awesome is NOT loaded properly.<br>Font Family: ' + fontFamily + '<br><strong>This is likely why your icons are not showing!</strong>';
+                statusElement.style.color = 'red';
+            }
+        }
+
+        // Check when page loads
+        window.addEventListener('load', function() {
+            setTimeout(checkFontAwesome, 500);
+        });
+
+        // Also check immediately
+        document.addEventListener('DOMContentLoaded', checkFontAwesome);
+    </script>
+</body>
+</html>

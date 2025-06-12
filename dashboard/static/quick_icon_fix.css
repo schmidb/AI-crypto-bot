@@ -1,0 +1,23 @@
+/* Quick fix for missing Font Awesome icons */
+.fas.fa-question-circle:before {
+    content: "❓" !important;
+    font-family: Arial, sans-serif !important;
+    font-style: normal !important;
+}
+
+/* Alternative: Use a simple question mark */
+.fas.fa-question-circle.help-icon:before {
+    content: "?" !important;
+    font-family: Arial, sans-serif !important;
+    font-weight: bold !important;
+    font-style: normal !important;
+    background-color: #17a2b8 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    display: inline-block !important;
+    width: 18px !important;
+    height: 18px !important;
+    text-align: center !important;
+    line-height: 18px !important;
+    font-size: 12px !important;
+}

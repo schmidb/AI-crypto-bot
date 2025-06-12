@@ -28,6 +28,7 @@ class Config:
 
         # Trading settings
         self.TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")
+        self.BASE_CURRENCY = os.getenv("BASE_CURRENCY", "USD")  # Base currency for trading pairs
         self.DECISION_INTERVAL_MINUTES = int(os.getenv("DECISION_INTERVAL_MINUTES", "60"))
         self.RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")
         self.SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
@@ -38,7 +39,7 @@ class Config:
 
         # Target allocation settings
         self.TARGET_CRYPTO_ALLOCATION = float(os.getenv("TARGET_CRYPTO_ALLOCATION", "80"))
-        self.TARGET_USD_ALLOCATION = float(os.getenv("TARGET_USD_ALLOCATION", "20"))
+        self.TARGET_BASE_ALLOCATION = float(os.getenv("TARGET_BASE_ALLOCATION", os.getenv("TARGET_USD_ALLOCATION", "20")))  # Backward compatibility
 
         # Calculate individual crypto allocations based on trading pairs
         self.CRYPTO_ASSETS = [pair.split("-")[0] for pair in self.TRADING_PAIRS]
@@ -47,7 +48,7 @@ class Config:
 
         # Create target allocation dictionary
         self.TARGET_ALLOCATION = {asset: self.INDIVIDUAL_CRYPTO_ALLOCATION for asset in self.CRYPTO_ASSETS}
-        self.TARGET_ALLOCATION["USD"] = self.TARGET_USD_ALLOCATION
+        self.TARGET_ALLOCATION[self.BASE_CURRENCY] = self.TARGET_BASE_ALLOCATION
 
         # Dashboard settings
         self.DASHBOARD_TRADE_HISTORY_LIMIT = int(os.getenv("DASHBOARD_TRADE_HISTORY_LIMIT", "10"))
@@ -79,8 +80,8 @@ class Config:
         self.RISK_LOW_POSITION_MULTIPLIER = float(os.getenv("RISK_LOW_POSITION_MULTIPLIER", "1.0"))
         
         # Trade Size Limits
-        self.MIN_TRADE_USD = float(os.getenv("MIN_TRADE_USD", "10.0"))
-        self.MAX_POSITION_SIZE_USD = float(os.getenv("MAX_POSITION_SIZE_USD", "1000.0"))
+        self.MIN_TRADE_AMOUNT = float(os.getenv("MIN_TRADE_AMOUNT", os.getenv("MIN_TRADE_USD", "10.0")))  # Backward compatibility
+        self.MAX_POSITION_SIZE = float(os.getenv("MAX_POSITION_SIZE", os.getenv("MAX_POSITION_SIZE_USD", "1000.0")))  # Backward compatibility
         
         # Portfolio Rebalancing
         self.REBALANCE_THRESHOLD_PERCENT = float(os.getenv("REBALANCE_THRESHOLD_PERCENT", "5"))
@@ -94,6 +95,27 @@ class Config:
         """Get list of crypto assets from trading pairs"""
         return self.CRYPTO_ASSETS
     
+    def get_base_currency(self) -> str:
+        """Get base currency"""
+        return self.BASE_CURRENCY
+    
+    def get_base_currency_symbol(self) -> str:
+        """Get base currency symbol for display"""
+        symbols = {
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'JPY': '¥',
+            'CAD': 'C$',
+            'AUD': 'A$'
+        }
+        return symbols.get(self.BASE_CURRENCY, self.BASE_CURRENCY)
+    
+    def format_currency(self, amount: float) -> str:
+        """Format currency amount with appropriate symbol"""
+        symbol = self.get_base_currency_symbol()
+        return f"{symbol}{amount:.2f}"
+
     def get_target_allocation(self) -> dict:
         """Get target allocation dictionary"""
         return self.TARGET_ALLOCATION
@@ -116,6 +138,7 @@ LLM_LOCATION = config.LLM_LOCATION
 
 # Trading settings
 TRADING_PAIRS = config.TRADING_PAIRS
+BASE_CURRENCY = config.BASE_CURRENCY
 DECISION_INTERVAL_MINUTES = config.DECISION_INTERVAL_MINUTES
 RISK_LEVEL = config.RISK_LEVEL
 SIMULATION_MODE = config.SIMULATION_MODE
@@ -126,7 +149,8 @@ MAX_TRADE_PERCENTAGE = config.MAX_TRADE_PERCENTAGE
 
 # Target allocation settings
 TARGET_CRYPTO_ALLOCATION = config.TARGET_CRYPTO_ALLOCATION
-TARGET_USD_ALLOCATION = config.TARGET_USD_ALLOCATION
+TARGET_BASE_ALLOCATION = config.TARGET_BASE_ALLOCATION
+TARGET_USD_ALLOCATION = config.TARGET_BASE_ALLOCATION  # Backward compatibility
 CRYPTO_ASSETS = config.CRYPTO_ASSETS
 INDIVIDUAL_CRYPTO_ALLOCATION = config.INDIVIDUAL_CRYPTO_ALLOCATION
 TARGET_ALLOCATION = config.TARGET_ALLOCATION
@@ -141,3 +165,7 @@ WEBSERVER_SYNC_PATH = config.WEBSERVER_SYNC_PATH
 # Logging settings
 LOG_LEVEL = config.LOG_LEVEL
 LOG_FILE = config.LOG_FILE
+
+# Trade Size Limits (backward compatibility)
+MIN_TRADE_USD = config.MIN_TRADE_AMOUNT
+MAX_POSITION_SIZE_USD = config.MAX_POSITION_SIZE

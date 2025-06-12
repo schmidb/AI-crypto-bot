@@ -1,4 +1,5 @@
 import logging
+from config import config
 import time
 import json
 import schedule
@@ -46,11 +47,11 @@ class TradingBot:
         os.makedirs("reports", exist_ok=True)
         
         # Initialize components
-        config = Config()
+        self.config = Config()
         self.coinbase_client = CoinbaseClient()
         self.llm_analyzer = LLMAnalyzer()
         self.data_collector = DataCollector(self.coinbase_client)
-        self.trading_strategy = TradingStrategy(config, self.llm_analyzer, self.data_collector)
+        self.trading_strategy = TradingStrategy(self.config, self.llm_analyzer, self.data_collector)
         
         # Initialize dashboard updater (local data only)
         self.dashboard_updater = DashboardUpdater()
@@ -229,7 +230,7 @@ class TradingBot:
                             "action": "hold",
                             "price": data.get("price", 0),
                             "crypto_amount": 0,
-                            "trade_amount_usd": 0,
+                            "trade_amount_base": 0,
                             "confidence": 0,
                             "reason": "Initial state after restart",
                             "status": "success"
@@ -280,21 +281,21 @@ class TradingBot:
                 discrepancies_found = False
                 total_discrepancy_value = 0.0
                 
-                for asset in ['USD', 'BTC', 'ETH', 'SOL']:
+                for asset in [config.BASE_CURRENCY, 'BTC', 'ETH', 'SOL']:
                     if asset in current_portfolio and asset in updated_portfolio:
                         if isinstance(current_portfolio[asset], dict) and isinstance(updated_portfolio[asset], dict):
                             old_amount = current_portfolio[asset].get('amount', 0)
                             new_amount = updated_portfolio[asset].get('amount', 0)
                             
-                            # Check for significant differences (more than 0.00001 for crypto, $0.01 for USD)
-                            threshold = 0.01 if asset == 'USD' else 0.00001
+                            # Check for significant differences (more than 0.00001 for crypto, €0.01 for base currency)
+                            threshold = 0.01 if asset == config.BASE_CURRENCY else 0.00001
                             if abs(old_amount - new_amount) > threshold:
                                 discrepancies_found = True
                                 difference = new_amount - old_amount
                                 
-                                # Calculate USD value of discrepancy for crypto assets
-                                if asset != 'USD':
-                                    last_price = updated_portfolio[asset].get('last_price_usd', 0)
+                                # Calculate base currency value of discrepancy for crypto assets
+                                if asset != config.BASE_CURRENCY:
+                                    last_price = updated_portfolio[asset].get(f'last_price_{config.BASE_CURRENCY.lower()}', 0)
                                     discrepancy_value = difference * last_price
                                     total_discrepancy_value += abs(discrepancy_value)
                                     logger.warning(f"Portfolio discrepancy detected for {asset}: "
@@ -310,7 +311,7 @@ class TradingBot:
                     logger.info(f"Portfolio discrepancies found and corrected (total value: ${total_discrepancy_value:.2f})")
                     
                     # If discrepancies are very large, log a warning
-                    if total_discrepancy_value > 50.0:  # More than $50 difference
+                    if total_discrepancy_value > 50.0:  # More than €50 difference
                         logger.warning(f"Large portfolio discrepancy detected: ${total_discrepancy_value:.2f}")
                         logger.warning("This could indicate manual trades or failed order executions")
                 else:
@@ -410,11 +411,11 @@ class TradingBot:
                     portfolio = json.loads(portfolio)
                 except json.JSONDecodeError:
                     portfolio = {
-                        "portfolio_value_usd": 0,
-                        "initial_value_usd": 0,
-                        "BTC": {"amount": 0, "last_price_usd": 0},
-                        "ETH": {"amount": 0, "last_price_usd": 0},
-                        "USD": {"amount": 0},
+                        f"portfolio_value_{config.BASE_CURRENCY.lower()}": 0,
+                        f"initial_value_{config.BASE_CURRENCY.lower()}": 0,
+                        "BTC": {"amount": 0, f"last_price_{config.BASE_CURRENCY.lower()}": 0},
+                        "ETH": {"amount": 0, f"last_price_{config.BASE_CURRENCY.lower()}": 0},
+                        config.BASE_CURRENCY: {"amount": 0},
                         "trades_executed": 0
                     }
             
@@ -491,9 +492,9 @@ class TradingBot:
                 
                 # Build comprehensive reasoning for failed attempts
                 if not trade_result.get('trade_executed'):
-                    if execution_status == 'insufficient_usd':
-                        usd_available = trade_result.get('available_usd', 0)
-                        log_reason = f"AI recommended {action} but insufficient USD balance (${usd_available:.2f} available, minimum $10 required)"
+                    if execution_status == 'insufficient_base':
+                        base_available = trade_result.get('available_base', 0)
+                        log_reason = f"AI recommended {action} but insufficient EUR balance (${base_available:.2f} available, minimum €10 required)"
                     elif execution_status == 'insufficient_crypto':
                         crypto_available = trade_result.get('available_crypto', 0)
                         asset = product_id.split('-')[0]
@@ -564,7 +565,7 @@ class TradingBot:
                 'execution_message': 'No execution needed',
                 'trade_executed': False,
                 'crypto_amount': 0,
-                'trade_amount_usd': 0,
+                'trade_amount_base': 0,
                 'execution_price': 0
             }
             
@@ -611,71 +612,80 @@ class TradingBot:
                 'execution_message': f'Execution error: {e}',
                 'trade_executed': False,
                 'crypto_amount': 0,
-                'trade_amount_usd': 0,
+                'trade_amount_base': 0,
                 'execution_price': 0
             }
     
     def _execute_buy_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict) -> Dict[str, Any]:
-        """Execute BUY order with USD balance validation"""
+        f"""Execute BUY order with {config.BASE_CURRENCY} balance validation"""
         try:
-            # Check USD balance
-            usd_available = portfolio.get('USD', {}).get('amount', 0)
+            # Check base currency balance
+            base_available = portfolio.get(config.BASE_CURRENCY, {}).get('amount', 0)
             
-            if usd_available <= 10.0:  # Minimum $10 for any trade
+            if base_available <= config.MIN_TRADE_AMOUNT:  # Minimum amount for any trade
                 execution_result.update({
-                    'execution_status': 'insufficient_usd',
-                    'execution_message': f'Insufficient USD balance: ${usd_available:.2f} (minimum $10 required)',
-                    'available_usd': usd_available
+                    'execution_status': 'insufficient_base',
+                    'execution_message': f'Insufficient {config.BASE_CURRENCY} balance: {config.format_currency(base_available)} (minimum {config.format_currency(config.MIN_TRADE_AMOUNT)} required)',
+                    'available_base': base_available
                 })
-                logger.warning(f"BUY order skipped for {product_id}: Insufficient USD (${usd_available:.2f})")
+                logger.warning(f"BUY order skipped for {product_id}: Insufficient {config.BASE_CURRENCY} ({config.format_currency(base_available)})")
                 return execution_result
             
-            # Calculate trade size based on confidence and risk management
-            max_trade_usd = min(usd_available * 0.3, 1000.0)  # Max 30% of USD or $1000
-            confidence_multiplier = confidence / 100.0
+            # Calculate trade size with dynamic position sizing
+            # Base trade percentage: 10-25% based on confidence
+            base_trade_percentage = 0.10 + (confidence / 100.0 * 0.15)  # 10% to 25%
+            
+            # Get dynamic position multiplier from strategy
+            dynamic_multiplier = 1.0
+            if hasattr(self.trading_strategy, '_calculate_dynamic_position_size'):
+                dynamic_multiplier = self.trading_strategy._calculate_dynamic_position_size("BUY", confidence, product_id)
+            
+            # Apply dynamic sizing
+            adjusted_percentage = base_trade_percentage * dynamic_multiplier
+            max_trade_amount = min(base_available * adjusted_percentage, config.MAX_POSITION_SIZE)
+            
             risk_multiplier = self.trading_strategy._get_risk_multiplier()
+            trade_amount_base = max_trade_amount * risk_multiplier
+            trade_amount_base = max(config.MIN_TRADE_AMOUNT, min(trade_amount_base, base_available - 5.0))  # Keep €5 buffer
             
-            trade_amount_usd = max_trade_usd * confidence_multiplier * risk_multiplier
-            trade_amount_usd = max(10.0, min(trade_amount_usd, usd_available - 1.0))  # Keep $1 buffer
-            
-            crypto_amount = trade_amount_usd / current_price
+            crypto_amount = trade_amount_base / current_price
             
             if SIMULATION_MODE:
                 # Simulate the trade
                 execution_result.update({
                     'execution_status': 'simulated',
-                    'execution_message': f'SIMULATED BUY: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}',
+                    'execution_message': f'SIMULATED BUY: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}',
                     'trade_executed': True,
                     'crypto_amount': crypto_amount,
-                    'trade_amount_usd': trade_amount_usd
+                    'trade_amount_base': trade_amount_base
                 })
-                logger.info(f"SIMULATED BUY: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}")
+                logger.info(f"SIMULATED BUY: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
             else:
                 # Execute real trade
                 try:
                     order_result = self.coinbase_client.place_market_order(
                         product_id=product_id,
                         side='BUY',
-                        size=trade_amount_usd
+                        size=trade_amount_base
                     )
                     
                     if order_result.get('success'):
                         execution_result.update({
                             'execution_status': 'executed',
-                            'execution_message': f'BUY order executed: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}',
+                            'execution_message': f'BUY order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}',
                             'trade_executed': True,
                             'crypto_amount': crypto_amount,
-                            'trade_amount_usd': trade_amount_usd,
+                            'trade_amount_base': trade_amount_base,
                             'order_id': order_result.get('order_id')
                         })
-                        logger.info(f"BUY order executed: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}")
+                        logger.info(f"BUY order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
                         
                         # Update portfolio
-                        self.trading_strategy.portfolio['USD']['amount'] -= trade_amount_usd
+                        self.trading_strategy.portfolio['EUR']['amount'] -= trade_amount_base
                         if asset not in self.trading_strategy.portfolio:
-                            self.trading_strategy.portfolio[asset] = {'amount': 0, 'last_price_usd': current_price}
+                            self.trading_strategy.portfolio[asset] = {'amount': 0, 'last_price_eur': current_price}
                         self.trading_strategy.portfolio[asset]['amount'] += crypto_amount
-                        self.trading_strategy.portfolio[asset]['last_price_usd'] = current_price
+                        self.trading_strategy.portfolio[asset]['last_price_eur'] = current_price
                         
                         # Save updated portfolio
                         self.trading_strategy._save_portfolio()
@@ -709,38 +719,47 @@ class TradingBot:
         try:
             # Check asset balance
             asset_available = portfolio.get(asset, {}).get('amount', 0)
-            min_trade_value = 10.0  # Minimum $10 trade value
+            min_trade_value = config.MIN_TRADE_AMOUNT  # Use configured minimum trade amount (€30)
             min_crypto_amount = min_trade_value / current_price
             
             if asset_available <= min_crypto_amount:
                 execution_result.update({
                     'execution_status': 'insufficient_crypto',
-                    'execution_message': f'Insufficient {asset} balance: {asset_available:.8f} (minimum {min_crypto_amount:.8f} required for $10 trade)',
+                    'execution_message': f'Insufficient {asset} balance: {asset_available:.8f} (minimum {min_crypto_amount:.8f} required for €{min_trade_value} trade)',
                     'available_crypto': asset_available
                 })
                 logger.warning(f"SELL order skipped for {product_id}: Insufficient {asset} ({asset_available:.8f})")
                 return execution_result
             
-            # Calculate trade size based on confidence and risk management
-            max_crypto_amount = asset_available * 0.3  # Max 30% of holdings
-            confidence_multiplier = confidence / 100.0
+            # Calculate trade size with dynamic position sizing
+            # Base trade percentage: 10-25% based on confidence
+            base_trade_percentage = 0.10 + (confidence / 100.0 * 0.15)  # 10% to 25%
+            
+            # Get dynamic position multiplier from strategy
+            dynamic_multiplier = 1.0
+            if hasattr(self.trading_strategy, '_calculate_dynamic_position_size'):
+                dynamic_multiplier = self.trading_strategy._calculate_dynamic_position_size("SELL", confidence, product_id)
+            
+            # Apply dynamic sizing
+            adjusted_percentage = base_trade_percentage * dynamic_multiplier
+            max_crypto_amount = asset_available * adjusted_percentage
+            
             risk_multiplier = self.trading_strategy._get_risk_multiplier()
+            crypto_amount = max_crypto_amount * risk_multiplier
+            crypto_amount = max(min_crypto_amount, min(crypto_amount, asset_available * 0.90))  # Keep 10% buffer
             
-            crypto_amount = max_crypto_amount * confidence_multiplier * risk_multiplier
-            crypto_amount = max(min_crypto_amount, min(crypto_amount, asset_available * 0.95))  # Keep 5% buffer
-            
-            trade_amount_usd = crypto_amount * current_price
+            trade_amount_base = crypto_amount * current_price
             
             if SIMULATION_MODE:
                 # Simulate the trade
                 execution_result.update({
                     'execution_status': 'simulated',
-                    'execution_message': f'SIMULATED SELL: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}',
+                    'execution_message': f'SIMULATED SELL: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}',
                     'trade_executed': True,
                     'crypto_amount': crypto_amount,
-                    'trade_amount_usd': trade_amount_usd
+                    'trade_amount_base': trade_amount_base
                 })
-                logger.info(f"SIMULATED SELL: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}")
+                logger.info(f"SIMULATED SELL: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
             else:
                 # Execute real trade
                 try:
@@ -753,19 +772,19 @@ class TradingBot:
                     if order_result.get('success'):
                         execution_result.update({
                             'execution_status': 'executed',
-                            'execution_message': f'SELL order executed: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}',
+                            'execution_message': f'SELL order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}',
                             'trade_executed': True,
                             'crypto_amount': crypto_amount,
-                            'trade_amount_usd': trade_amount_usd,
+                            'trade_amount_base': trade_amount_base,
                             'order_id': order_result.get('order_id')
                         })
-                        logger.info(f"SELL order executed: {crypto_amount:.8f} {asset} for ${trade_amount_usd:.2f}")
+                        logger.info(f"SELL order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
                         
                         # Update portfolio
                         self.trading_strategy.portfolio[asset]['amount'] -= crypto_amount
-                        if 'USD' not in self.trading_strategy.portfolio:
-                            self.trading_strategy.portfolio['USD'] = {'amount': 0}
-                        self.trading_strategy.portfolio['USD']['amount'] += trade_amount_usd
+                        if 'EUR' not in self.trading_strategy.portfolio:
+                            self.trading_strategy.portfolio['EUR'] = {'amount': 0}
+                        self.trading_strategy.portfolio['EUR']['amount'] += trade_amount_base
                         
                         # Save updated portfolio
                         self.trading_strategy._save_portfolio()
@@ -1020,11 +1039,11 @@ class TradingBot:
                     logger.error("Failed to convert portfolio string to dictionary")
                     # Create a minimal valid portfolio
                     portfolio = {
-                        "portfolio_value_usd": 0,
-                        "initial_value_usd": 0,
-                        "BTC": {"amount": 0, "last_price_usd": 0},
-                        "ETH": {"amount": 0, "last_price_usd": 0},
-                        "USD": {"amount": 0},
+                        "portfolio_value_eur": 0,
+                        "initial_value_eur": 0,
+                        "BTC": {"amount": 0, "last_price_eur": 0},
+                        "ETH": {"amount": 0, "last_price_eur": 0},
+                        "EUR": {"amount": 0},
                         "trades_executed": 0
                     }
             
@@ -1033,37 +1052,37 @@ class TradingBot:
                 logger.error(f"Portfolio is not a dictionary: {type(portfolio)}")
                 # Create a minimal valid portfolio
                 portfolio = {
-                    "portfolio_value_usd": 0,
-                    "initial_value_usd": 0,
-                    "BTC": {"amount": 0, "last_price_usd": 0},
-                    "ETH": {"amount": 0, "last_price_usd": 0},
-                    "USD": {"amount": 0},
+                    "portfolio_value_eur": 0,
+                    "initial_value_eur": 0,
+                    "BTC": {"amount": 0, "last_price_eur": 0},
+                    "ETH": {"amount": 0, "last_price_eur": 0},
+                    "EUR": {"amount": 0},
                     "trades_executed": 0
                 }
             
             # Ensure required keys exist
-            required_keys = ["portfolio_value_usd", "initial_value_usd", "BTC", "ETH", "USD"]
+            required_keys = ["portfolio_value_eur", "initial_value_eur", "BTC", "ETH", "EUR"]
             for key in required_keys:
                 if key not in portfolio:
                     if key.endswith("_usd"):
                         portfolio[key] = 0
                     else:
                         portfolio[key] = {"amount": 0}
-                        if key != "USD":
-                            portfolio[key]["last_price_usd"] = 0
+                        if key != "EUR":
+                            portfolio[key]["last_price_eur"] = 0
             
             # Log portfolio values before updating dashboard
             asset_summary = []
             asset_keys = [key for key in portfolio.keys() 
                          if isinstance(portfolio[key], dict) and 
-                         key not in ["portfolio_value_usd", "initial_value_usd", "total_return", "last_updated"]]
+                         key not in ["portfolio_value_eur", "initial_value_eur", "total_return", "last_updated"]]
             
             for asset in sorted(asset_keys):  # Sort for consistent logging
                 if asset in portfolio and isinstance(portfolio[asset], dict):
                     amount = portfolio[asset].get("amount", 0)
                     asset_summary.append(f"{asset}: {amount}")
             
-            logger.info(f"Updating local dashboard with portfolio - {', '.join(asset_summary)}, Total: ${portfolio['portfolio_value_usd']}")
+            logger.info(f"Updating local dashboard with portfolio - {', '.join(asset_summary)}, Total: €{portfolio['portfolio_value_eur']}")
             
             # Update local dashboard only
             self.dashboard_updater.update_dashboard(trading_data, portfolio)

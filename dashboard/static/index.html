@@ -58,7 +58,30 @@
 
         .status-online { background-color: var(--yeti-success); }
         .status-offline { background-color: var(--yeti-danger); }
-        .status-warning { background-color: var(--yeti-warning); }
+        .metric-small {
+            text-align: center;
+            padding: 0.75rem;
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+            border: 2px solid #e9ecef;
+            margin: 0.25rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .metric-small .metric-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+            color: #212529;
+        }
+        
+        .metric-small .metric-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
 
         .portfolio-value {
             font-size: 2em;
@@ -208,6 +231,70 @@
             color: var(--text-primary);
             line-height: 1.4;
         }
+        
+        .ai-analysis-comprehensive {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .analysis-header h6 {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 0.5rem;
+        }
+        
+        .analysis-section {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 6px;
+            padding: 1rem;
+            border-left: 4px solid #007bff;
+            margin-bottom: 1rem;
+        }
+        
+        .analysis-title {
+            color: #343a40;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+        
+        .reasoning-point {
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: rgba(0, 123, 255, 0.05);
+            border-radius: 4px;
+            border-left: 3px solid #007bff;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        
+        .indicator-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.75rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .decision-item {
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: rgba(108, 117, 125, 0.1);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .context-item {
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: rgba(23, 162, 184, 0.1);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
 
         .execution-message {
             background-color: rgba(25, 135, 84, 0.1);
@@ -235,17 +322,29 @@
 
         /* Educational Tooltips Styling */
         .help-icon {
-            color: var(--yeti-info);
+            color: #ff6600;
             cursor: help;
-            margin-left: 6px;
-            font-size: 0.85rem;
-            opacity: 0.7;
-            transition: opacity 0.2s ease;
+            margin-left: 8px;
+            font-size: 1rem;
+            opacity: 1;
+            transition: all 0.2s ease;
+            background-color: rgba(23, 162, 184, 0.1);
+            border-radius: 50%;
+            padding: 2px;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(23, 162, 184, 0.3);
         }
 
         .help-icon:hover {
             opacity: 1;
-            color: var(--yeti-primary);
+            color: #ff4400;
+            background-color: rgba(0, 140, 186, 0.15);
+            border-color: var(--yeti-primary);
+            transform: scale(1.1);
         }
 
         .tooltip {
@@ -255,23 +354,23 @@
 
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: 300px;
+            width: 320px;
             background-color: #2c3e50;
             color: #fff;
             text-align: left;
             border-radius: 8px;
-            padding: 12px;
+            padding: 15px;
             position: absolute;
-            z-index: 1000;
-            bottom: 125%;
+            z-index: 9999;
+            bottom: 130%;
             left: 50%;
-            margin-left: -150px;
+            margin-left: -160px;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: all 0.3s ease;
             font-size: 0.85rem;
-            line-height: 1.4;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            border: 1px solid var(--yeti-info);
+            line-height: 1.5;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            border: 2px solid var(--yeti-info);
         }
 
         .tooltip .tooltiptext::after {
@@ -279,8 +378,8 @@
             position: absolute;
             top: 100%;
             left: 50%;
-            margin-left: -5px;
-            border-width: 5px;
+            margin-left: -8px;
+            border-width: 8px;
             border-style: solid;
             border-color: #2c3e50 transparent transparent transparent;
         }
@@ -288,38 +387,62 @@
         .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
+            transform: translateY(-5px);
         }
 
         .tooltip .tooltiptext h6 {
             color: var(--yeti-info);
-            margin: 0 0 8px 0;
-            font-size: 0.9rem;
+            margin: 0 0 10px 0;
+            font-size: 1rem;
             font-weight: 600;
+            border-bottom: 1px solid rgba(23, 162, 184, 0.3);
+            padding-bottom: 5px;
         }
 
         .tooltip .tooltiptext ul {
-            margin: 8px 0;
-            padding-left: 16px;
+            margin: 10px 0;
+            padding-left: 18px;
         }
 
         .tooltip .tooltiptext li {
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .tooltip .tooltiptext .example {
-            background-color: rgba(13, 202, 240, 0.1);
-            padding: 6px 8px;
-            border-radius: 4px;
-            margin-top: 8px;
+            background-color: rgba(13, 202, 240, 0.15);
+            padding: 8px 10px;
+            border-radius: 6px;
+            margin-top: 10px;
             font-style: italic;
+            border-left: 3px solid var(--yeti-info);
         }
 
         /* Responsive tooltip positioning */
         @media (max-width: 768px) {
             .tooltip .tooltiptext {
-                width: 250px;
-                margin-left: -125px;
+                width: 280px;
+                margin-left: -140px;
+                font-size: 0.8rem;
             }
+        }
+
+        /* Bootstrap tooltip override for better visibility */
+        .tooltip-inner {
+            background-color: #2c3e50 !important;
+            color: #fff !important;
+            border: 2px solid var(--yeti-info) !important;
+            font-size: 0.85rem !important;
+            max-width: 300px !important;
+            text-align: left !important;
+            padding: 10px 12px !important;
+        }
+
+        .bs-tooltip-top .tooltip-arrow::before {
+            border-top-color: #2c3e50 !important;
+        }
+
+        .bs-tooltip-bottom .tooltip-arrow::before {
+            border-bottom-color: #2c3e50 !important;
         }
 
         .nav-link {
@@ -773,6 +896,7 @@
             <div class="navbar-nav me-auto">
                 <a class="nav-link active" href="index.html">Dashboard</a>
                 <a class="nav-link" href="analysis.html">Analysis</a>
+                <a class="nav-link" href="config.html">Configuration</a>
             </div>
             <div class="ms-auto">
                 <span id="live-clock" class="me-3">
@@ -827,7 +951,24 @@
                             <div id="last-update">Loading...</div>
                         </div>
                         <div class="mb-3">
-                            <small class="text-muted">Prices Updated:</small>
+                            <small class="text-muted">
+                                Prices Updated:
+                                <span class="tooltip">
+                                    <i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i>
+                                    <span class="tooltiptext">
+                                        <h6>Market Data Freshness</h6>
+                                        Shows when the cryptocurrency prices were last updated from Coinbase.
+                                        <ul>
+                                            <li><strong>Real-time:</strong> Prices update every few minutes</li>
+                                            <li><strong>Source:</strong> Live data from Coinbase Pro API</li>
+                                            <li><strong>Accuracy:</strong> Reflects current market conditions</li>
+                                        </ul>
+                                        <div class="example">
+                                            Fresh data ensures accurate trading decisions
+                                        </div>
+                                    </span>
+                                </span>
+                            </small>
                             <div id="market-data-update">Loading...</div>
                         </div>
                         <div class="mb-3">
@@ -870,18 +1011,18 @@
                                     <h6>Your Cryptocurrency Portfolio</h6>
                                     This shows your complete cryptocurrency holdings and their current value.
                                     <ul>
-                                        <li><strong>Total Value:</strong> Combined USD value of all your crypto assets</li>
+                                        <li><strong>Total Value:</strong> Combined EUR value of all your crypto assets</li>
                                         <li><strong>Returns:</strong> Profit/loss since you started using the bot</li>
                                         <li><strong>Asset Allocation:</strong> How your portfolio is distributed across different cryptocurrencies</li>
                                         <li><strong>Target vs Current:</strong> Optimal allocation vs actual allocation</li>
                                     </ul>
-                                    <div class="example">The bot aims for 26.7% each in BTC, ETH, SOL and 20% in USD for optimal trading.</div>
+                                    <div class="example">The bot aims for 26.7% each in BTC, ETH, SOL and 20% in EUR for optimal trading.</div>
                                 </span>
                             </span>
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="portfolio-value" id="total-value">$0.00</div>
+                        <div class="portfolio-value" id="total-value">€0.00</div>
                         <div class="mb-3" id="portfolio-change">
                             <span class="text-success">
                                 <i class="fas fa-caret-up"></i> 0.00%
@@ -890,88 +1031,58 @@
                         </div>
                         
                         <!-- Balance Status Section -->
-                        <div class="balance-status mb-4">
-                            <h6 class="mb-2">
-                                Trading Balance Status
-                                <span class="tooltip">
-                                    <i class="fas fa-question-circle help-icon"></i>
-                                    <span class="tooltiptext">
-                                        <h6>Trading Liquidity Status</h6>
-                                        Shows whether you have sufficient USD balance to execute BUY orders.
-                                        <ul>
-                                            <li><strong>USD Available:</strong> Cash available for purchasing crypto</li>
-                                            <li><strong>Trading Status:</strong> Whether the bot can execute all trade types</li>
-                                            <li><strong>Minimum Required:</strong> At least $10 USD needed for trades</li>
-                                        </ul>
-                                        <div class="example">Without USD, the bot can only SELL crypto or HOLD positions - no BUY orders possible.</div>
-                                    </span>
-                                </span>
-                            </h6>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <div class="balance-item">
-                                        <small class="text-muted">USD Available</small>
-                                        <div class="balance-value" id="usd-balance">
-                                            <span class="amount">$0.00</span>
-                                            <span class="status-icon" id="usd-status">
-                                                <i class="fas fa-exclamation-triangle text-warning" title="Insufficient for trading"></i>
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="balance-item">
-                                        <small class="text-muted">Trading Status</small>
-                                        <div class="trading-status" id="trading-status">
-                                            <span class="badge bg-warning">No USD - HOLD Only</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="balance-explanation mt-2" id="balance-explanation">
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle"></i>
-                                    Add USD to your Coinbase account to enable BUY orders
-                                </small>
-                            </div>
-                        </div>
-                        
-                        <!-- Portfolio Rebalancing Section -->
+                        <!-- Smart Trading Strategy Section -->
                         <div class="rebalancing-section mb-4">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0">
-                                    Intelligent Rebalancing
+                                    AI-First Trading Strategy
                                     <span class="tooltip">
                                         <i class="fas fa-question-circle help-icon"></i>
                                         <span class="tooltiptext">
-                                            <h6>Autonomous Portfolio Rebalancing</h6>
-                                            The bot automatically maintains optimal asset allocation for maximum trading efficiency.
+                                            <h6>AI-Driven Trading with Smart Limits</h6>
+                                            The bot prioritizes AI trading decisions while maintaining safety through smart limits:
                                             <ul>
-                                                <li><strong>Target Allocation:</strong> 26.7% BTC, 26.7% ETH, 26.7% SOL, 20% USD</li>
-                                                <li><strong>Trigger Threshold:</strong> Rebalances when any asset deviates >5%</li>
-                                                <li><strong>Market Intelligence:</strong> Considers volatility and timing</li>
-                                                <li><strong>Frequency:</strong> Checks every 3 hours, executes when optimal</li>
+                                                <li><strong>AI Priority:</strong> Market analysis drives all trading decisions</li>
+                                                <li><strong>Dynamic Sizing:</strong> Position sizes adapt to confidence and allocation</li>
+                                                <li><strong>Safety Limits:</strong> Minimum €50 EUR, 3% minimum per crypto</li>
+                                                <li><strong>No Trade Blocking:</strong> Doesn't block profitable trades for rigid allocation</li>
                                             </ul>
-                                            <div class="example">Critical deviations (>15%) execute immediately regardless of market conditions.</div>
+                                            <div class="example">Higher AI confidence = larger position sizes (up to 1.5x)</div>
                                         </span>
                                     </span>
                                 </h6>
-                                <span class="badge bg-info" id="rebalance-mode-badge">
+                                <span class="badge bg-success" id="trading-strategy-badge">
                                     <i class="fas fa-brain me-1"></i>
-                                    Autonomous
+                                    AI-Driven
                                 </span>
                             </div>
-                            <div class="rebalance-status" id="rebalance-status">
+                            <div class="rebalance-status" id="trading-strategy-status">
                                 <small class="text-muted">
-                                    <i class="fas fa-info-circle"></i>
-                                    <span id="rebalance-status-text">Analyzing market conditions...</span>
+                                    <i class="fas fa-check-circle text-success"></i>
+                                    <span id="trading-strategy-text">AI decisions prioritized with smart safety limits</span>
                                 </small>
                             </div>
-                            <div class="rebalance-details mt-2" id="rebalance-details" style="display: none;">
-                                <small class="text-muted">
-                                    <div id="rebalance-timing-info"></div>
-                                    <div id="rebalance-market-info"></div>
-                                </small>
+                            <div class="rebalance-details mt-2" id="trading-strategy-details">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="metric-small">
+                                            <div class="metric-value text-info">€50</div>
+                                            <div class="metric-label">Min EUR</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="metric-small">
+                                            <div class="metric-value text-warning">35%</div>
+                                            <div class="metric-label">Max EUR</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="metric-small">
+                                            <div class="metric-value text-success">3%</div>
+                                            <div class="metric-label">Min Crypto</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -1039,7 +1150,7 @@
                                         </span>
                                     </div>
                                     <div class="price-section mb-3">
-                                        <div class="current-price">$0.00</div>
+                                        <div class="current-price">€0.00</div>
                                     </div>
                                     <div class="changes-grid mb-3">
                                         <div class="change-item">
@@ -1082,7 +1193,7 @@
                                             
                                             <!-- Technical Indicators -->
                                             <div class="technical-indicators mb-2" style="display: none;">
-                                                <small class="text-muted d-block mb-1">Technical Analysis:</small>
+                                                <small class="text-muted d-block mb-1">Technical Analysis: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Technical Analysis Indicators</h6>Key technical indicators used by the AI for decision making:<ul><li><strong>RSI:</strong> Relative Strength Index (0-100) - measures overbought/oversold conditions</li><li><strong>MACD:</strong> Moving Average Convergence Divergence - trend momentum indicator</li><li><strong>BB:</strong> Bollinger Bands - volatility and price level indicator</li></ul><div class="example">RSI > 70 = Overbought, RSI < 30 = Oversold</div></span></span></small>
                                                 <div class="indicators-row">
                                                     <span class="indicator-item">
                                                         <small>RSI:</small> <span class="rsi-value">--</span>
@@ -1098,7 +1209,7 @@
                                             
                                             <!-- Risk Management -->
                                             <div class="risk-management mb-2" style="display: none;">
-                                                <small class="text-muted">Risk Management:</small>
+                                                <small class="text-muted">Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
                                                 <span class="risk-level-badge badge bg-info">--</span>
                                                 <span class="position-size ms-1">
                                                     <small class="text-muted">Size: <span class="size-multiplier">100%</span></small>
@@ -1120,7 +1231,7 @@
                                                     </div>
                                                     
                                                     <div class="analysis-section">
-                                                        <h6>Bot Decision Logic</h6>
+                                                        <h6>Bot Decision Logic <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>AI Decision Making Process</h6>Shows how the bot processes AI recommendations:<ul><li><strong>Confidence Check:</strong> Verifies AI confidence meets minimum threshold</li><li><strong>Risk Assessment:</strong> Evaluates market conditions and portfolio risk</li><li><strong>Final Decision:</strong> Combines AI analysis with risk management rules</li></ul><div class="example">Bot may override AI recommendations if risk is too high</div></span></span></h6>
                                                         <ul class="analysis-list bot-logic-list">
                                                             <li class="threshold-info">Confidence threshold check: --</li>
                                                             <li class="risk-info">Risk management applied: --</li>
@@ -1173,7 +1284,7 @@
                                         </span>
                                     </div>
                                     <div class="price-section mb-3">
-                                        <div class="current-price">$0.00</div>
+                                        <div class="current-price">€0.00</div>
                                     </div>
                                     <div class="changes-grid mb-3">
                                         <div class="change-item">
@@ -1216,7 +1327,7 @@
                                             
                                             <!-- Technical Indicators -->
                                             <div class="technical-indicators mb-2" style="display: none;">
-                                                <small class="text-muted d-block mb-1">Technical Analysis:</small>
+                                                <small class="text-muted d-block mb-1">Technical Analysis: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Technical Analysis Indicators</h6>Key technical indicators used by the AI for decision making:<ul><li><strong>RSI:</strong> Relative Strength Index (0-100) - measures overbought/oversold conditions</li><li><strong>MACD:</strong> Moving Average Convergence Divergence - trend momentum indicator</li><li><strong>BB:</strong> Bollinger Bands - volatility and price level indicator</li></ul><div class="example">RSI > 70 = Overbought, RSI < 30 = Oversold</div></span></span></small>
                                                 <div class="indicators-row">
                                                     <span class="indicator-item">
                                                         <small>RSI:</small> <span class="rsi-value">--</span>
@@ -1232,7 +1343,7 @@
                                             
                                             <!-- Risk Management -->
                                             <div class="risk-management mb-2" style="display: none;">
-                                                <small class="text-muted">Risk Management:</small>
+                                                <small class="text-muted">Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
                                                 <span class="risk-level-badge badge bg-info">--</span>
                                                 <span class="position-size ms-1">
                                                     <small class="text-muted">Size: <span class="size-multiplier">100%</span></small>
@@ -1254,7 +1365,7 @@
                                                     </div>
                                                     
                                                     <div class="analysis-section">
-                                                        <h6>Bot Decision Logic</h6>
+                                                        <h6>Bot Decision Logic <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>AI Decision Making Process</h6>Shows how the bot processes AI recommendations:<ul><li><strong>Confidence Check:</strong> Verifies AI confidence meets minimum threshold</li><li><strong>Risk Assessment:</strong> Evaluates market conditions and portfolio risk</li><li><strong>Final Decision:</strong> Combines AI analysis with risk management rules</li></ul><div class="example">Bot may override AI recommendations if risk is too high</div></span></span></h6>
                                                         <ul class="analysis-list bot-logic-list">
                                                             <li class="threshold-info">Confidence threshold check: --</li>
                                                             <li class="risk-info">Risk management applied: --</li>
@@ -1307,7 +1418,7 @@
                                         </span>
                                     </div>
                                     <div class="price-section mb-3">
-                                        <div class="current-price">$0.00</div>
+                                        <div class="current-price">€0.00</div>
                                     </div>
                                     <div class="changes-grid mb-3">
                                         <div class="change-item">
@@ -1350,7 +1461,7 @@
                                             
                                             <!-- Technical Indicators -->
                                             <div class="technical-indicators mb-2" style="display: none;">
-                                                <small class="text-muted d-block mb-1">Technical Analysis:</small>
+                                                <small class="text-muted d-block mb-1">Technical Analysis: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Technical Analysis Indicators</h6>Key technical indicators used by the AI for decision making:<ul><li><strong>RSI:</strong> Relative Strength Index (0-100) - measures overbought/oversold conditions</li><li><strong>MACD:</strong> Moving Average Convergence Divergence - trend momentum indicator</li><li><strong>BB:</strong> Bollinger Bands - volatility and price level indicator</li></ul><div class="example">RSI > 70 = Overbought, RSI < 30 = Oversold</div></span></span></small>
                                                 <div class="indicators-row">
                                                     <span class="indicator-item">
                                                         <small>RSI:</small> <span class="rsi-value">--</span>
@@ -1366,7 +1477,7 @@
                                             
                                             <!-- Risk Management -->
                                             <div class="risk-management mb-2" style="display: none;">
-                                                <small class="text-muted">Risk Management:</small>
+                                                <small class="text-muted">Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
                                                 <span class="risk-level-badge badge bg-info">--</span>
                                                 <span class="position-size ms-1">
                                                     <small class="text-muted">Size: <span class="size-multiplier">100%</span></small>
@@ -1388,7 +1499,7 @@
                                                     </div>
                                                     
                                                     <div class="analysis-section">
-                                                        <h6>Bot Decision Logic</h6>
+                                                        <h6>Bot Decision Logic <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>AI Decision Making Process</h6>Shows how the bot processes AI recommendations:<ul><li><strong>Confidence Check:</strong> Verifies AI confidence meets minimum threshold</li><li><strong>Risk Assessment:</strong> Evaluates market conditions and portfolio risk</li><li><strong>Final Decision:</strong> Combines AI analysis with risk management rules</li></ul><div class="example">Bot may override AI recommendations if risk is too high</div></span></span></h6>
                                                         <ul class="analysis-list bot-logic-list">
                                                             <li class="threshold-info">Confidence threshold check: --</li>
                                                             <li class="risk-info">Risk management applied: --</li>
@@ -1644,9 +1755,9 @@
                                                     <span class="tooltip">
                                                         <i class="fas fa-question-circle help-icon"></i>
                                                         <span class="tooltiptext">
-                                                            <h6>Total USD Value</h6>
+                                                            <h6>Total EUR Value</h6>
                                                             Total dollar amount of the trade.
-                                                            <div class="example">Amount × Price = Total USD value. $0.00 for HOLD decisions.</div>
+                                                            <div class="example">Amount × Price = Total EUR value. €0.00 for HOLD decisions.</div>
                                                         </span>
                                                     </span>
                                                 </th>
@@ -1700,7 +1811,7 @@
                                                        data-bs-html="true"
                                                        title="<strong>Total Portfolio Return:</strong><br/>
                                                               • Overall performance since bot started<br/>
-                                                              • Initial investment: $333.81<br/>
+                                                              • Initial investment: €333.81<br/>
                                                               • Includes all realized + unrealized gains<br/>
                                                               • Based on current market prices<br/>
                                                               <em>This is your complete trading performance</em>"
@@ -1708,7 +1819,7 @@
                                                     </i>
                                                 </h5>
                                                 <h3 id="total-return">+0.00%</h3>
-                                                <small id="total-return-usd">$0.00</small>
+                                                <small id="total-return-usd">€0.00</small>
                                             </div>
                                         </div>
                                     </div>
@@ -1731,7 +1842,7 @@
                                                        style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
                                                     </i>
                                                 </h5>
-                                                <h3 id="daily-pnl">+$0.00</h3>
+                                                <h3 id="daily-pnl">+€0.00</h3>
                                                 <small id="daily-pnl-percent">+0.00%</small>
                                             </div>
                                         </div>
@@ -1764,8 +1875,20 @@
                                         <div class="card bg-warning text-white">
                                             <div class="card-body text-center">
                                                 <i class="fas fa-balance-scale fa-2x mb-2"></i>
-                                                <h5 class="card-title">Portfolio Value</h5>
-                                                <h3 id="current-portfolio-value">$0.00</h3>
+                                                <h5 class="card-title">
+                                                    Portfolio Value
+                                                    <span class="tooltip">
+                                                        <i class="fas fa-question-circle help-icon"></i>
+                                                        <span class="tooltiptext">
+                                                            <h6>Total Portfolio Value</h6>
+                                                            Shows the current total EUR value of all your cryptocurrency holdings and cash.
+                                                            <div class="example">
+                                                                Includes: BTC + ETH + SOL + EUR cash balance
+                                                            </div>
+                                                        </span>
+                                                    </span>
+                                                </h5>
+                                                <h3 id="current-portfolio-value">€0.00</h3>
                                                 <small id="portfolio-change">vs initial</small>
                                             </div>
                                         </div>
@@ -1785,7 +1908,7 @@
                                                        data-bs-html="true"
                                                        title="<strong>Recent Trade Details:</strong><br/>
                                                               • <strong>Confidence:</strong> AI's confidence in the decision (0-100%)<br/>
-                                                              • <strong>Amount:</strong> USD value traded (or 'Hold' if no trade)<br/>
+                                                              • <strong>Amount:</strong> EUR value traded (or 'Hold' if no trade)<br/>
                                                               • <strong>Status:</strong> Executed = trade completed, Hold = no action taken<br/>
                                                               <em>Note: P&L tracking requires time to assess trade outcomes</em>"
                                                        style="font-size: 0.8rem; opacity: 0.8; cursor: help;">
@@ -1911,7 +2034,7 @@
                                                                 <li><strong>Color Coding:</strong> Green = on target, Yellow/Red = needs rebalancing</li>
                                                                 <li><strong>Threshold:</strong> Rebalancing triggers when deviation exceeds 5%</li>
                                                             </ul>
-                                                            <div class="example">Target: 26.7% each for BTC/ETH/SOL, 20% USD for trading liquidity.</div>
+                                                            <div class="example">Target: 26.7% each for BTC/ETH/SOL, 20% EUR for trading liquidity.</div>
                                                         </span>
                                                     </span>
                                                 </h6>
@@ -1953,7 +2076,7 @@
                                                     </div>
                                                     <div class="col-md-3" id="usd-allocation">
                                                         <div class="text-center">
-                                                            <h6>USD</h6>
+                                                            <h6>EUR</h6>
                                                             <div class="progress mb-2" style="height: 20px;">
                                                                 <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%" id="usd-progress">
                                                                     <span id="usd-percent">0%</span>
@@ -2146,7 +2269,7 @@
                 }
                 
                 // Update market data timestamp (from latest decision files)
-                const btcMarketData = await loadData('/crypto-bot/data/BTC_USD_latest.json');
+                const btcMarketData = await loadData('/crypto-bot/data/BTC_EUR_latest.json');
                 if (btcMarketData && btcMarketData.market_data && btcMarketData.market_data.timestamp) {
                     const marketDataTime = new Date(btcMarketData.market_data.timestamp + (btcMarketData.market_data.timestamp.includes('Z') ? '' : 'Z'));
                     document.getElementById('market-data-update').innerHTML = 
@@ -2313,22 +2436,22 @@
             
             for (const asset of assets) {
                 // Read from the latest individual decision file instead of market_data folder
-                const marketData = await loadData(`/crypto-bot/data/${asset}_USD_latest.json`);
+                const marketData = await loadData(`/crypto-bot/data/${asset}_EUR_latest.json`);
                 const card = document.querySelector(`#market-decisions-data [data-asset="${asset}"]`);
                 
                 if (card) {
                     // Update price from individual decision file market_data section
                     if (marketData?.market_data?.price) {
                         const price = marketData.market_data.price;
-                        const formattedPrice = `$${parseFloat(price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                        const formattedPrice = `€${parseFloat(price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                         card.querySelector('.current-price').textContent = formattedPrice;
-                    } else if (tradingData?.market_data?.[`${asset}-USD`]?.price) {
+                    } else if (tradingData?.market_data?.[`${asset}-EUR`]?.price) {
                         // Fallback to trading_data.json
-                        const price = tradingData.market_data[`${asset}-USD`].price;
-                        const formattedPrice = `$${parseFloat(price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                        const price = tradingData.market_data[`${asset}-EUR`].price;
+                        const formattedPrice = `€${parseFloat(price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                         card.querySelector('.current-price').textContent = formattedPrice;
                     } else {
-                        card.querySelector('.current-price').textContent = '$0.00';
+                        card.querySelector('.current-price').textContent = '€0.00';
                     }
                     
                     // Update percentage changes from individual decision file
@@ -2343,8 +2466,8 @@
                         priceChanges = marketData.market_data.price_changes;
                     }
                     // 2. Fallback to trading_data.json market_data
-                    else if (tradingData?.market_data?.[`${asset}-USD`]?.price_changes) {
-                        priceChanges = tradingData.market_data[`${asset}-USD`].price_changes;
+                    else if (tradingData?.market_data?.[`${asset}-EUR`]?.price_changes) {
+                        priceChanges = tradingData.market_data[`${asset}-EUR`].price_changes;
                     }
                     // 3. Final fallback: extract from AI analysis
                     else if (marketData?.ai_analysis?.detailed_reasoning) {
@@ -2395,114 +2518,144 @@
         function updateEnhancedDecisionDisplay(card, decision) {
             const action = decision.action.toUpperCase();
             
-            // Update main decision badge
+            // Update main decision badge (if exists)
             const badge = card.querySelector('.decision-badge .badge');
-            badge.textContent = action;
-            badge.className = `badge ${
-                action === 'BUY' ? 'bg-success' : 
-                action === 'SELL' ? 'bg-danger' : 
-                'bg-warning'
-            }`;
+            if (badge) {
+                badge.textContent = action;
+                badge.className = `badge ${
+                    action === 'BUY' ? 'bg-success' : 
+                    action === 'SELL' ? 'bg-danger' : 
+                    'bg-warning'
+                }`;
+            }
             
-            // Update confidence values
+            // Update confidence values (if exists)
             const aiConfidence = decision.ai_analysis?.raw_confidence || decision.original_confidence || decision.confidence || 0;
             const finalConfidence = decision.confidence || 0;
             
-            card.querySelector('.ai-confidence-value').textContent = `${aiConfidence}%`;
-            card.querySelector('.confidence-value').textContent = `${finalConfidence}%`;
-            
-            // Update timestamp with consistent formatting and proper UTC handling
-            const decisionTime = new Date(decision.timestamp + (decision.timestamp.includes('Z') ? '' : 'Z'));
-            card.querySelector('.time-value').textContent = formatUTCTime(decisionTime);
-            
-            // Update AI recommendation
-            const aiRecommendation = decision.ai_analysis?.raw_decision || decision.action;
-            const aiRecBadge = card.querySelector('.ai-rec-badge');
-            aiRecBadge.textContent = aiRecommendation;
-            aiRecBadge.className = `badge ${
-                aiRecommendation === 'BUY' ? 'bg-success' : 
-                aiRecommendation === 'SELL' ? 'bg-danger' : 
-                'bg-secondary'
-            }`;
-            
-            // Update threshold check indicator
-            const thresholdCheck = card.querySelector('.threshold-check');
-            const checkIcon = thresholdCheck.querySelector('.fa-check-circle');
-            const timesIcon = thresholdCheck.querySelector('.fa-times-circle');
-            
-            if (decision.bot_decision_logic?.confidence_threshold_check?.passed) {
-                checkIcon.style.display = 'inline';
-                timesIcon.style.display = 'none';
-            } else if (decision.bot_decision_logic?.confidence_threshold_check?.passed === false) {
-                checkIcon.style.display = 'none';
-                timesIcon.style.display = 'inline';
-            } else {
-                checkIcon.style.display = 'none';
-                timesIcon.style.display = 'none';
+            const aiConfidenceElement = card.querySelector('.ai-confidence-value');
+            if (aiConfidenceElement) {
+                aiConfidenceElement.textContent = `${aiConfidence}%`;
             }
             
-            // Update technical indicators if available
+            const confidenceElement = card.querySelector('.confidence-value');
+            if (confidenceElement) {
+                confidenceElement.textContent = `${finalConfidence}%`;
+            }
+            
+            // Update timestamp with consistent formatting and proper UTC handling (if exists)
+            const timeElement = card.querySelector('.time-value');
+            if (timeElement) {
+                const decisionTime = new Date(decision.timestamp + (decision.timestamp.includes('Z') ? '' : 'Z'));
+                timeElement.textContent = formatUTCTime(decisionTime);
+            }
+            
+            // Update AI recommendation (if exists)
+            const aiRecommendation = decision.ai_analysis?.raw_decision || decision.action;
+            const aiRecBadge = card.querySelector('.ai-rec-badge');
+            if (aiRecBadge) {
+                aiRecBadge.textContent = aiRecommendation;
+                aiRecBadge.className = `badge ${
+                    aiRecommendation === 'BUY' ? 'bg-success' : 
+                    aiRecommendation === 'SELL' ? 'bg-danger' : 
+                    'bg-secondary'
+                }`;
+            }
+            
+            // Update threshold check indicator (if exists)
+            const thresholdCheck = card.querySelector('.threshold-check');
+            if (thresholdCheck) {
+                const checkIcon = thresholdCheck.querySelector('.fa-check-circle');
+                const timesIcon = thresholdCheck.querySelector('.fa-times-circle');
+                
+                if (checkIcon && timesIcon) {
+                    if (decision.bot_decision_logic?.confidence_threshold_check?.passed) {
+                        checkIcon.style.display = 'inline';
+                        timesIcon.style.display = 'none';
+                    } else if (decision.bot_decision_logic?.confidence_threshold_check?.passed === false) {
+                        checkIcon.style.display = 'none';
+                        timesIcon.style.display = 'inline';
+                    } else {
+                        checkIcon.style.display = 'none';
+                        timesIcon.style.display = 'none';
+                    }
+                }
+            }
+            
+            // Update technical indicators if available (if exists)
             const technicalSection = card.querySelector('.technical-indicators');
-            if (decision.ai_analysis?.technical_indicators) {
+            if (technicalSection && decision.ai_analysis?.technical_indicators) {
                 const indicators = decision.ai_analysis.technical_indicators;
                 
                 // Update RSI
                 const rsiValue = card.querySelector('.rsi-value');
-                if (indicators.rsi?.value) {
-                    rsiValue.textContent = `${indicators.rsi.value} (${indicators.rsi.signal || '--'})`;
-                } else {
-                    rsiValue.textContent = '--';
+                if (rsiValue) {
+                    if (indicators.rsi?.value) {
+                        rsiValue.textContent = `${indicators.rsi.value} (${indicators.rsi.signal || '--'})`;
+                    } else {
+                        rsiValue.textContent = '--';
+                    }
                 }
                 
                 // Update MACD
                 const macdSignal = card.querySelector('.macd-signal');
-                if (indicators.macd?.signal) {
-                    macdSignal.textContent = indicators.macd.signal;
-                } else {
-                    macdSignal.textContent = '--';
+                if (macdSignal) {
+                    if (indicators.macd?.signal) {
+                        macdSignal.textContent = indicators.macd.signal;
+                    } else {
+                        macdSignal.textContent = '--';
+                    }
                 }
                 
                 // Update Bollinger Bands
                 const bbSignal = card.querySelector('.bb-signal');
-                if (indicators.bollinger_bands?.signal) {
-                    bbSignal.textContent = indicators.bollinger_bands.signal;
-                } else {
-                    bbSignal.textContent = '--';
+                if (bbSignal) {
+                    if (indicators.bollinger_bands?.signal) {
+                        bbSignal.textContent = indicators.bollinger_bands.signal;
+                    } else {
+                        bbSignal.textContent = '--';
+                    }
                 }
                 
                 technicalSection.style.display = 'block';
-            } else {
+            } else if (technicalSection) {
                 technicalSection.style.display = 'none';
             }
             
-            // Update risk management section
+            // Update risk management section (if exists)
             const riskSection = card.querySelector('.risk-management');
-            if (decision.bot_decision_logic?.risk_management_applied) {
+            if (riskSection && decision.bot_decision_logic?.risk_management_applied) {
                 const riskMgmt = decision.bot_decision_logic.risk_management_applied;
                 
                 // Update risk level badge
                 const riskBadge = card.querySelector('.risk-level-badge');
-                const riskLevel = riskMgmt.position_sizing?.risk_level || 'medium';
-                riskBadge.textContent = riskLevel.toUpperCase();
-                riskBadge.className = `badge ${
-                    riskLevel === 'low' ? 'bg-success' : 
-                    riskLevel === 'high' ? 'bg-danger' : 
-                    'bg-info'
-                }`;
+                if (riskBadge) {
+                    const riskLevel = riskMgmt.position_sizing?.risk_level || 'medium';
+                    riskBadge.textContent = riskLevel.toUpperCase();
+                    riskBadge.className = `badge ${
+                        riskLevel === 'low' ? 'bg-success' : 
+                        riskLevel === 'high' ? 'bg-danger' : 
+                        'bg-info'
+                    }`;
+                }
                 
                 // Update position size multiplier
                 const sizeMultiplier = card.querySelector('.size-multiplier');
-                const multiplier = riskMgmt.position_sizing?.multiplier || 1.0;
-                sizeMultiplier.textContent = `${Math.round(multiplier * 100)}%`;
+                if (sizeMultiplier) {
+                    const multiplier = riskMgmt.position_sizing?.multiplier || 1.0;
+                    sizeMultiplier.textContent = `${Math.round(multiplier * 100)}%`;
+                }
                 
                 riskSection.style.display = 'block';
-            } else {
+            } else if (riskSection) {
                 riskSection.style.display = 'none';
             }
             
-            // Update basic reasoning text
+            // Update basic reasoning text (if exists)
             const reasoningText = card.querySelector('.reasoning-text');
-            reasoningText.textContent = decision.reasoning || 'No reasoning available';
+            if (reasoningText) {
+                reasoningText.textContent = decision.reasoning || 'No reasoning available';
+            }
             
             // Update detailed analysis sections
             updateDetailedAnalysis(card, decision);
@@ -2510,64 +2663,130 @@
 
         // Function to update detailed analysis sections
         function updateDetailedAnalysis(card, decision) {
-            // Update AI detailed reasoning
+            // Update AI detailed reasoning (if exists)
             const aiReasoningList = card.querySelector('.ai-reasoning-list');
-            if (decision.ai_analysis?.detailed_reasoning && Array.isArray(decision.ai_analysis.detailed_reasoning)) {
-                aiReasoningList.innerHTML = '';
-                decision.ai_analysis.detailed_reasoning.forEach(reason => {
-                    const li = document.createElement('li');
-                    li.textContent = reason;
-                    aiReasoningList.appendChild(li);
-                });
-            } else {
-                aiReasoningList.innerHTML = '<li>No detailed reasoning available</li>';
+            if (aiReasoningList) {
+                if (decision.ai_analysis?.detailed_reasoning && Array.isArray(decision.ai_analysis.detailed_reasoning)) {
+                    aiReasoningList.innerHTML = '';
+                    decision.ai_analysis.detailed_reasoning.forEach(reason => {
+                        const li = document.createElement('li');
+                        li.textContent = reason;
+                        aiReasoningList.appendChild(li);
+                    });
+                } else {
+                    aiReasoningList.innerHTML = '<li>No detailed reasoning available</li>';
+                }
             }
             
-            // Update bot decision logic
+            // Update bot decision logic (if exists)
             const botLogicList = card.querySelector('.bot-logic-list');
-            if (decision.bot_decision_logic) {
+            if (botLogicList && decision.bot_decision_logic) {
                 const logic = decision.bot_decision_logic;
                 
                 // Threshold info
                 const thresholdInfo = card.querySelector('.threshold-info');
-                if (logic.confidence_threshold_check) {
-                    const check = logic.confidence_threshold_check;
-                    thresholdInfo.textContent = `Confidence threshold: ${check.ai_confidence}% vs ${check.required_threshold}% (${check.passed ? 'PASSED' : 'FAILED'})`;
-                } else {
-                    thresholdInfo.textContent = 'Confidence threshold check: --';
+                if (thresholdInfo) {
+                    if (logic.confidence_threshold_check) {
+                        const check = logic.confidence_threshold_check;
+                        thresholdInfo.textContent = `Confidence threshold: ${check.ai_confidence}% vs ${check.required_threshold}% (${check.passed ? 'PASSED' : 'FAILED'})`;
+                    } else {
+                        thresholdInfo.textContent = 'Confidence threshold check: --';
+                    }
                 }
                 
                 // Risk info
                 const riskInfo = card.querySelector('.risk-info');
-                if (logic.risk_management_applied?.position_sizing) {
-                    const sizing = logic.risk_management_applied.position_sizing;
-                    riskInfo.textContent = `Risk management: ${sizing.reason || 'Applied'}`;
-                } else {
-                    riskInfo.textContent = 'Risk management: None applied';
+                if (riskInfo) {
+                    if (logic.risk_management_applied?.position_sizing) {
+                        const sizing = logic.risk_management_applied.position_sizing;
+                        riskInfo.textContent = `Risk management: ${sizing.reason || 'Applied'}`;
+                    } else {
+                        riskInfo.textContent = 'Risk management: None applied';
+                    }
                 }
                 
                 // Final reason
                 const finalReason = card.querySelector('.final-reason');
-                finalReason.textContent = `Final decision: ${logic.final_decision_reason || 'No specific reason provided'}`;
+                if (finalReason) {
+                    finalReason.textContent = `Final decision: ${logic.final_decision_reason || 'No specific reason provided'}`;
+                }
             }
             
-            // Update execution context
+            // Update execution context (if exists)
             const executionList = card.querySelector('.execution-context-list');
-            if (decision.execution_context) {
+            if (executionList && decision.execution_context) {
                 const context = decision.execution_context;
                 
                 // Data quality
                 const dataQuality = card.querySelector('.data-quality');
-                dataQuality.textContent = `Market data quality: ${context.market_data_quality || '--'}`;
+                if (dataQuality) {
+                    dataQuality.textContent = `Market data quality: ${context.market_data_quality || '--'}`;
+                }
                 
                 // Analysis duration
                 const analysisDuration = card.querySelector('.analysis-duration');
-                const duration = context.analysis_duration_ms ? `${context.analysis_duration_ms}ms` : '--';
-                analysisDuration.textContent = `Analysis duration: ${duration}`;
+                if (analysisDuration) {
+                    const duration = context.analysis_duration_ms ? `${context.analysis_duration_ms}ms` : '--';
+                    analysisDuration.textContent = `Analysis duration: ${duration}`;
+                }
                 
                 // Model used
                 const modelUsed = card.querySelector('.model-used');
-                modelUsed.textContent = `LLM model: ${context.llm_model_used || '--'}`;
+                if (modelUsed) {
+                    modelUsed.textContent = `LLM model: ${context.llm_model_used || '--'}`;
+                }
+            }
+        }
+
+        // Function to update trading strategy status
+        function updateTradingStrategyStatus(portfolioData) {
+            try {
+                const strategyText = document.getElementById('trading-strategy-text');
+                const strategyBadge = document.getElementById('trading-strategy-badge');
+                
+                if (!portfolioData) {
+                    if (strategyText) {
+                        strategyText.textContent = 'No portfolio data available';
+                    }
+                    return;
+                }
+                
+                const totalValue = portfolioData?.portfolio_value_eur || 0;
+                const eurBalance = portfolioData?.EUR?.amount || 0;
+                
+                // Check safety limits
+                const minEurBalance = 50.0;
+                const maxEurAllocation = 35.0;
+                
+                let statusMessage = 'AI decisions prioritized with smart safety limits';
+                let statusClass = 'text-success';
+                let badgeClass = 'bg-success';
+                
+                if (totalValue > 0) {
+                    const eurAllocation = (eurBalance / totalValue) * 100;
+                    
+                    if (eurBalance < minEurBalance) {
+                        statusMessage = `Low EUR balance (€${eurBalance.toFixed(2)} < €${minEurBalance}) - BUY orders limited`;
+                        statusClass = 'text-warning';
+                        badgeClass = 'bg-warning';
+                    } else if (eurAllocation > maxEurAllocation) {
+                        statusMessage = `High EUR allocation (${eurAllocation.toFixed(1)}% > ${maxEurAllocation}%) - SELL orders limited`;
+                        statusClass = 'text-info';
+                        badgeClass = 'bg-info';
+                    }
+                }
+                
+                if (strategyText) {
+                    strategyText.innerHTML = `<i class="fas fa-check-circle ${statusClass}"></i> ${statusMessage}`;
+                }
+                
+                if (strategyBadge) {
+                    strategyBadge.className = `badge ${badgeClass}`;
+                    strategyBadge.innerHTML = '<i class="fas fa-brain me-1"></i>AI-Driven';
+                }
+                
+            } catch (error) {
+                console.error('Error updating trading strategy status:', error);
             }
         }
 
@@ -2576,10 +2795,10 @@
             const data = await loadData('/crypto-bot/data/portfolio/portfolio.json');
             if (data) {
                 document.getElementById('total-value').textContent = 
-                    '$' + parseFloat(data.portfolio_value_usd).toLocaleString();
+                    '€' + parseFloat(data.portfolio_value_eur || 0).toLocaleString();
                 
                 // Calculate portfolio change
-                const changePercent = ((data.portfolio_value_usd - data.initial_value_usd) / data.initial_value_usd) * 100;
+                const changePercent = ((data.portfolio_value_eur - data.initial_value_eur) / data.initial_value_eur) * 100;
                 const changeClass = changePercent >= 0 ? 'text-success' : 'text-danger';
                 const changeIcon = changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down';
                 document.getElementById('portfolio-change').innerHTML = `
@@ -2590,28 +2809,25 @@
                     (Total)
                 `;
 
-                // Update balance status
-                updateBalanceStatus(data);
-                
-                // Update rebalancing status
-                updateRebalanceStatusFromData(data);
+                // Update trading strategy status
+                updateTradingStrategyStatus(data);
 
                 // Calculate current allocations
-                const totalValue = data.portfolio_value_usd;
+                const totalValue = data.portfolio_value_eur;
                 const current = {
-                    BTC: (data.BTC?.amount * data.BTC?.last_price_usd / totalValue) * 100 || 0,
-                    ETH: (data.ETH?.amount * data.ETH?.last_price_usd / totalValue) * 100 || 0,
-                    SOL: (data.SOL?.amount * data.SOL?.last_price_usd / totalValue) * 100 || 0,
-                    USD: (data.USD?.amount / totalValue) * 100 || 0
+                    BTC: (data.BTC?.amount * data.BTC?.last_price_eur / totalValue) * 100 || 0,
+                    ETH: (data.ETH?.amount * data.ETH?.last_price_eur / totalValue) * 100 || 0,
+                    SOL: (data.SOL?.amount * data.SOL?.last_price_eur / totalValue) * 100 || 0,
+                    EUR: (data.EUR?.amount / totalValue) * 100 || 0
                 };
 
                 // Use correct target allocations based on enhanced trading strategy
-                // TARGET: 80% crypto (26.7% each) + 20% USD for optimal trading flexibility
+                // TARGET: 90% crypto (30% each) + 10% EUR for optimal trading flexibility
                 const target = {
-                    BTC: 26.7,  // 26.7% of total portfolio
-                    ETH: 26.7,  // 26.7% of total portfolio  
-                    SOL: 26.7,  // 26.7% of total portfolio
-                    USD: 20.0   // 20% of total portfolio for liquidity
+                    BTC: 30.0,  // 30% of total portfolio
+                    ETH: 30.0,  // 30% of total portfolio  
+                    SOL: 30.0,  // 30% of total portfolio
+                    EUR: 10.0   // 10% of total portfolio for liquidity
                 };
 
                 // Update allocation chart
@@ -2626,7 +2842,7 @@
                 const rebalanceDetails = document.getElementById('rebalance-details');
                 const timingInfo = document.getElementById('rebalance-timing-info');
                 const marketInfo = document.getElementById('rebalance-market-info');
-                const totalValue = portfolioData?.portfolio_value_usd || 0;
+                const totalValue = portfolioData?.portfolio_value_eur || 0;
                 
                 if (totalValue <= 0) {
                     rebalanceStatusText.innerHTML = '<i class="fas fa-exclamation-triangle"></i> No portfolio data available';
@@ -2637,14 +2853,14 @@
                 
                 // Calculate current allocation
                 const current = {
-                    BTC: (portfolioData.BTC?.amount * portfolioData.BTC?.last_price_usd / totalValue) * 100 || 0,
-                    ETH: (portfolioData.ETH?.amount * portfolioData.ETH?.last_price_usd / totalValue) * 100 || 0,
-                    SOL: (portfolioData.SOL?.amount * portfolioData.SOL?.last_price_usd / totalValue) * 100 || 0,
-                    USD: (portfolioData.USD?.amount / totalValue) * 100 || 0
+                    BTC: (portfolioData.BTC?.amount * portfolioData.BTC?.last_price_eur / totalValue) * 100 || 0,
+                    ETH: (portfolioData.ETH?.amount * portfolioData.ETH?.last_price_eur / totalValue) * 100 || 0,
+                    SOL: (portfolioData.SOL?.amount * portfolioData.SOL?.last_price_eur / totalValue) * 100 || 0,
+                    EUR: (portfolioData.EUR?.amount / totalValue) * 100 || 0
                 };
                 
                 // Target allocation
-                const target = {BTC: 26.7, ETH: 26.7, SOL: 26.7, USD: 20.0};
+                const target = {BTC: 26.7, ETH: 26.7, SOL: 26.7, EUR: 20.0};
                 const threshold = 5.0; // 5% threshold
                 
                 // Analyze rebalancing need
@@ -2653,7 +2869,7 @@
                 let criticalAssets = [];
                 let urgentAssets = [];
                 
-                for (const asset of ['BTC', 'ETH', 'SOL', 'USD']) {
+                for (const asset of ['BTC', 'ETH', 'SOL', 'EUR']) {
                     const deviation = Math.abs(current[asset] - target[asset]);
                     maxDeviation = Math.max(maxDeviation, deviation);
                     
@@ -2738,99 +2954,199 @@
             }
         }
 
-        // Function to update balance status
-        async function updateBalanceStatus(portfolioData) {
+        // Function to format AI reasoning from trade data
+        function formatAIReasoning(trade) {
             try {
-                // Get USD balance from portfolio data
-                const usdBalance = portfolioData?.USD?.amount || 0;
-                const usdBalanceElement = document.getElementById('usd-balance');
-                const usdStatusElement = document.getElementById('usd-status');
-                const tradingStatusElement = document.getElementById('trading-status');
-                const balanceExplanationElement = document.getElementById('balance-explanation');
+                // Try to get detailed reasoning from the trade data
+                let reasoning = [];
                 
-                // Update USD balance display
-                if (usdBalanceElement) {
-                    const amountSpan = usdBalanceElement.querySelector('.amount');
-                    if (amountSpan) {
-                        amountSpan.textContent = '$' + parseFloat(usdBalance).toFixed(2);
-                    }
-                }
-                
-                // Update status icons and messages based on balance
-                if (usdBalance >= 10) {
-                    // Sufficient balance for trading
-                    if (usdStatusElement) {
-                        usdStatusElement.innerHTML = '<i class="fas fa-check-circle text-success" title="Sufficient for trading"></i>';
-                    }
-                    if (tradingStatusElement) {
-                        tradingStatusElement.innerHTML = '<span class="badge bg-success">Ready to Trade</span>';
-                    }
-                    if (balanceExplanationElement) {
-                        balanceExplanationElement.innerHTML = `
-                            <small class="text-success">
-                                <i class="fas fa-check-circle"></i>
-                                Sufficient balance for BUY orders (minimum $10 required)
-                            </small>
-                        `;
-                    }
-                } else if (usdBalance > 0) {
-                    // Some balance but insufficient for trading
-                    if (usdStatusElement) {
-                        usdStatusElement.innerHTML = '<i class="fas fa-exclamation-triangle text-warning" title="Insufficient for trading"></i>';
-                    }
-                    if (tradingStatusElement) {
-                        tradingStatusElement.innerHTML = '<span class="badge bg-warning">Low Balance</span>';
-                    }
-                    if (balanceExplanationElement) {
-                        balanceExplanationElement.innerHTML = `
-                            <small class="text-warning">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                Need at least $10 USD for BUY orders (current: $${parseFloat(usdBalance).toFixed(2)})
-                            </small>
-                        `;
-                    }
+                // Check if we have detailed AI analysis data
+                if (trade.ai_analysis && trade.ai_analysis.detailed_reasoning) {
+                    reasoning = trade.ai_analysis.detailed_reasoning;
+                } else if (trade.detailed_reasoning) {
+                    reasoning = trade.detailed_reasoning;
+                } else if (trade.reason && trade.reason !== 'No detailed reasoning provided') {
+                    reasoning = [trade.reason];
                 } else {
-                    // No USD balance
-                    if (usdStatusElement) {
-                        usdStatusElement.innerHTML = '<i class="fas fa-times-circle text-danger" title="No USD available"></i>';
-                    }
-                    if (tradingStatusElement) {
-                        tradingStatusElement.innerHTML = '<span class="badge bg-danger">No USD - HOLD Only</span>';
-                    }
-                    if (balanceExplanationElement) {
-                        balanceExplanationElement.innerHTML = `
-                            <small class="text-danger">
-                                <i class="fas fa-exclamation-circle"></i>
-                                Add USD to your Coinbase account to enable BUY orders
-                            </small>
-                        `;
-                    }
+                    reasoning = ['AI analysis completed with standard market evaluation'];
                 }
                 
-                // Check crypto balances for SELL capability
-                const btcBalance = portfolioData?.BTC?.amount || 0;
-                const ethBalance = portfolioData?.ETH?.amount || 0;
-                const solBalance = portfolioData?.SOL?.amount || 0;
-                
-                const hasCrypto = btcBalance > 0.0001 || ethBalance > 0.001 || solBalance > 0.01;
-                
-                // Update trading status to reflect both BUY and SELL capabilities
-                if (usdBalance >= 10 && hasCrypto) {
-                    if (tradingStatusElement) {
-                        tradingStatusElement.innerHTML = '<span class="badge bg-success">Full Trading</span>';
-                    }
-                } else if (usdBalance >= 10) {
-                    if (tradingStatusElement) {
-                        tradingStatusElement.innerHTML = '<span class="badge bg-info">BUY Only</span>';
-                    }
-                } else if (hasCrypto) {
-                    if (tradingStatusElement) {
-                        tradingStatusElement.innerHTML = '<span class="badge bg-warning">SELL Only</span>';
-                    }
-                }
+                // Format as bullet points
+                return reasoning.map(point => `<div class="reasoning-point"><i class="fas fa-arrow-right me-2 text-primary"></i>${point}</div>`).join('');
                 
             } catch (error) {
-                console.error('Error updating balance status:', error);
+                console.error('Error formatting AI reasoning:', error);
+                return '<div class="reasoning-point"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>AI reasoning data not available</div>';
+            }
+        }
+        
+        // Function to format technical indicators
+        function formatTechnicalIndicators(trade) {
+            try {
+                if (!trade.ai_analysis || !trade.ai_analysis.technical_indicators) {
+                    return '<div class="indicator-item"><span class="text-muted">Technical indicator data not available for this trade</span></div>';
+                }
+                
+                const indicators = trade.ai_analysis.technical_indicators;
+                let html = '<div class="row">';
+                
+                // RSI
+                if (indicators.rsi) {
+                    const rsiColor = indicators.rsi.value > 70 ? 'text-danger' : indicators.rsi.value < 30 ? 'text-success' : 'text-warning';
+                    html += `
+                        <div class="col-md-4">
+                            <div class="indicator-item">
+                                <strong>RSI:</strong> <span class="${rsiColor}">${indicators.rsi.value}</span>
+                                <small class="d-block text-muted">${indicators.rsi.signal} (${(indicators.rsi.weight * 100).toFixed(0)}% weight)</small>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // MACD
+                if (indicators.macd) {
+                    const macdColor = indicators.macd.signal === 'bullish' ? 'text-success' : indicators.macd.signal === 'bearish' ? 'text-danger' : 'text-warning';
+                    html += `
+                        <div class="col-md-4">
+                            <div class="indicator-item">
+                                <strong>MACD:</strong> <span class="${macdColor}">${indicators.macd.signal}</span>
+                                <small class="d-block text-muted">Line: ${indicators.macd.macd_line}, Signal: ${indicators.macd.signal_line}</small>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Bollinger Bands
+                if (indicators.bollinger_bands) {
+                    html += `
+                        <div class="col-md-4">
+                            <div class="indicator-item">
+                                <strong>Bollinger:</strong> <span class="text-info">${indicators.bollinger_bands.signal}</span>
+                                <small class="d-block text-muted">${(indicators.bollinger_bands.weight * 100).toFixed(0)}% weight</small>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                return html;
+                
+            } catch (error) {
+                console.error('Error formatting technical indicators:', error);
+                return '<div class="indicator-item"><span class="text-muted">Technical indicator formatting error</span></div>';
+            }
+        }
+        
+        // Function to format bot decision logic
+        function formatBotDecisionLogic(trade) {
+            try {
+                if (!trade.bot_decision_logic) {
+                    return `
+                        <div class="decision-item">
+                            <strong>AI Recommendation:</strong> ${trade.ai_recommendation || trade.action}
+                            <br><strong>Confidence:</strong> ${trade.confidence}%
+                            <br><strong>Final Decision:</strong> ${trade.action}
+                        </div>
+                    `;
+                }
+                
+                const logic = trade.bot_decision_logic;
+                let html = '<div class="decision-logic-details">';
+                
+                // AI Recommendation
+                html += `<div class="decision-item"><strong>AI Recommendation:</strong> <span class="badge bg-primary">${logic.ai_recommendation}</span></div>`;
+                
+                // Confidence Check
+                if (logic.confidence_threshold_check) {
+                    const check = logic.confidence_threshold_check;
+                    const passedColor = check.passed ? 'text-success' : 'text-danger';
+                    const passedIcon = check.passed ? 'fa-check-circle' : 'fa-times-circle';
+                    html += `
+                        <div class="decision-item">
+                            <strong>Confidence Check:</strong> 
+                            <span class="${passedColor}"><i class="fas ${passedIcon} me-1"></i>${check.ai_confidence}% vs ${check.required_threshold}% required</span>
+                        </div>
+                    `;
+                }
+                
+                // Risk Management
+                if (logic.risk_management_applied && logic.risk_management_applied.position_sizing) {
+                    const sizing = logic.risk_management_applied.position_sizing;
+                    html += `
+                        <div class="decision-item">
+                            <strong>Risk Management:</strong> ${sizing.risk_level} risk (${(sizing.multiplier * 100).toFixed(0)}% position size)
+                            <small class="d-block text-muted">${sizing.reason}</small>
+                        </div>
+                    `;
+                }
+                
+                // Final Decision
+                html += `<div class="decision-item"><strong>Final Decision:</strong> <span class="badge bg-secondary">${trade.action}</span></div>`;
+                
+                html += '</div>';
+                return html;
+                
+            } catch (error) {
+                console.error('Error formatting bot decision logic:', error);
+                return '<div class="decision-item"><span class="text-muted">Decision logic formatting error</span></div>';
+            }
+        }
+        
+        // Function to format market context
+        function formatMarketContext(trade) {
+            try {
+                let html = '<div class="market-context-details">';
+                
+                // Market Data
+                if (trade.market_data) {
+                    const data = trade.market_data;
+                    html += `
+                        <div class="context-item">
+                            <strong>Price:</strong> €${data.price ? data.price.toLocaleString() : 'N/A'}
+                        </div>
+                    `;
+                    
+                    if (data.price_changes) {
+                        html += '<div class="context-item"><strong>Price Changes:</strong><br>';
+                        Object.entries(data.price_changes).forEach(([period, change]) => {
+                            const changeColor = change > 0 ? 'text-success' : change < 0 ? 'text-danger' : 'text-muted';
+                            const changeIcon = change > 0 ? 'fa-arrow-up' : change < 0 ? 'fa-arrow-down' : 'fa-minus';
+                            html += `<small class="${changeColor}"><i class="fas ${changeIcon} me-1"></i>${period}: ${change > 0 ? '+' : ''}${change}%</small> `;
+                        });
+                        html += '</div>';
+                    }
+                }
+                
+                // Market Conditions
+                if (trade.ai_analysis && trade.ai_analysis.market_conditions) {
+                    const conditions = trade.ai_analysis.market_conditions;
+                    html += `
+                        <div class="context-item">
+                            <strong>Market Conditions:</strong>
+                            <span class="badge bg-info">${conditions.trend}</span>
+                            <span class="badge bg-secondary">${conditions.volatility} volatility</span>
+                            <span class="badge bg-outline-secondary">${conditions.volume} volume</span>
+                        </div>
+                    `;
+                }
+                
+                // Execution Context
+                if (trade.execution_context) {
+                    const context = trade.execution_context;
+                    html += `
+                        <div class="context-item">
+                            <strong>Analysis Quality:</strong> ${context.data_points_analyzed} data points, ${(context.analysis_duration_ms / 1000).toFixed(1)}s analysis
+                            <br><small class="text-muted">Model: ${context.llm_model_used || 'N/A'}</small>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                return html;
+                
+            } catch (error) {
+                console.error('Error formatting market context:', error);
+                return '<div class="context-item"><span class="text-muted">Market context formatting error</span></div>';
             }
         }
 
@@ -2846,7 +3162,7 @@
             window.allocationChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['BTC', 'ETH', 'SOL', 'USD'],
+                    labels: ['BTC', 'ETH', 'SOL', 'EUR'],
                     datasets: [
                         {
                             label: 'Current %',
@@ -2854,7 +3170,7 @@
                                 current.BTC || 0,
                                 current.ETH || 0,
                                 current.SOL || 0,
-                                current.USD || 0
+                                current.EUR || 0
                             ],
                             backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#95a5a6'],  // More vibrant colors for light theme
                             borderColor: ['#e67e22', '#2980b9', '#27ae60', '#7f8c8d'],      // Darker borders for better contrast
@@ -2866,7 +3182,7 @@
                                 target.BTC || 0,
                                 target.ETH || 0,
                                 target.SOL || 0,
-                                target.USD || 0
+                                target.EUR || 0
                             ],
                             backgroundColor: ['rgba(243, 156, 18, 0.3)', 'rgba(52, 152, 219, 0.3)', 'rgba(46, 204, 113, 0.3)', 'rgba(149, 165, 166, 0.3)'],
                             borderColor: ['#e67e22', '#2980b9', '#27ae60', '#7f8c8d'],
@@ -2918,6 +3234,41 @@
                     }
                 }
             });
+        }
+
+        // Function to load detailed AI analysis for a trade
+        async function loadDetailedAnalysis(trade) {
+            try {
+                // Try to find the corresponding detailed analysis file
+                const timestamp = new Date(trade.timestamp);
+                const dateStr = timestamp.toISOString().slice(0, 10).replace(/-/g, '');
+                const timeStr = timestamp.toISOString().slice(11, 19).replace(/:/g, '');
+                
+                // Try different possible filename formats
+                const possibleFiles = [
+                    `/crypto-bot/data/${trade.product_id}_${dateStr}_${timeStr}.json`,
+                    `/crypto-bot/data/${trade.product_id}_${timestamp.toISOString().slice(0, 16).replace(/[-:]/g, '').replace('T', '_')}.json`
+                ];
+                
+                for (const filename of possibleFiles) {
+                    try {
+                        const detailedData = await loadData(filename);
+                        if (detailedData && detailedData.ai_analysis) {
+                            return detailedData;
+                        }
+                    } catch (e) {
+                        // File doesn't exist, try next
+                        continue;
+                    }
+                }
+                
+                // If no detailed file found, return the trade data itself
+                return trade;
+                
+            } catch (error) {
+                console.warn('Could not load detailed analysis for trade:', error);
+                return trade;
+            }
         }
 
         // Function to update trade history with filtering
@@ -3001,8 +3352,8 @@
                             </td>
                             <td>${trade.product_id.split('-')[0]}</td>
                             <td>${parseFloat(trade.crypto_amount || 0).toFixed(8)}</td>
-                            <td>$${parseFloat(trade.price).toLocaleString()}</td>
-                            <td>$${parseFloat(trade.trade_amount_usd || 0).toLocaleString()}</td>
+                            <td>€${parseFloat(trade.price).toLocaleString()}</td>
+                            <td>€${parseFloat(trade.trade_amount_usd || 0).toLocaleString()}</td>
                             <td>${(trade.confidence || 0)}%</td>
                             <td>
                                 <div class="reasoning-container">
@@ -3084,15 +3435,15 @@
                             <div class="detail-grid">
                                 <div class="detail-item">
                                     <span class="detail-label">Price:</span>
-                                    <span class="detail-value">$${(trade.price || 0).toFixed(2)}</span>
+                                    <span class="detail-value">€${(trade.price || 0).toFixed(2)}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Crypto Amount:</span>
                                     <span class="detail-value">${(trade.crypto_amount || 0).toFixed(6)}</span>
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">USD Amount:</span>
-                                    <span class="detail-value">$${(trade.trade_amount_usd || 0).toFixed(2)}</span>
+                                    <span class="detail-label">EUR Amount:</span>
+                                    <span class="detail-value">€${(trade.trade_amount_usd || 0).toFixed(2)}</span>
                                 </div>
                                 ${trade.skip_reason ? `
                                 <div class="detail-item">
@@ -3107,9 +3458,45 @@
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="detail-section">
-                            <h6 class="detail-title"><i class="fas fa-brain me-2"></i>AI Analysis & Reasoning</h6>
+                            <h6 class="detail-title"><i class="fas fa-brain me-2"></i>AI Analysis & Reasoning <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>Comprehensive AI Analysis</h6>Detailed breakdown of the AI's decision-making process:<ul><li><strong>Market Analysis:</strong> Current market conditions and trends</li><li><strong>Technical Indicators:</strong> RSI, MACD, Bollinger Bands analysis</li><li><strong>Risk Assessment:</strong> Portfolio and market risk evaluation</li><li><strong>Reasoning:</strong> Step-by-step decision logic</li></ul><div class="example">Click "Show Details" to expand full analysis</div></span></span></h6>
                             <div class="reasoning-detailed">
-                                ${trade.reason || 'No detailed reasoning provided'}
+                                <div class="ai-analysis-comprehensive">
+                                    <div class="analysis-header">
+                                        <h6><i class="fas fa-brain me-2"></i>AI Market Analysis</h6>
+                                    </div>
+                                    
+                                    <!-- AI Reasoning -->
+                                    <div class="analysis-section mb-3">
+                                        <h6 class="analysis-title"><i class="fas fa-lightbulb me-2"></i>AI Reasoning</h6>
+                                        <div class="reasoning-points" id="ai-reasoning-${trade.timestamp}">
+                                            ${formatAIReasoning(trade)}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Technical Indicators -->
+                                    <div class="analysis-section mb-3">
+                                        <h6 class="analysis-title"><i class="fas fa-chart-line me-2"></i>Technical Analysis</h6>
+                                        <div class="technical-indicators" id="technical-indicators-${trade.timestamp}">
+                                            ${formatTechnicalIndicators(trade)}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Bot Decision Logic -->
+                                    <div class="analysis-section mb-3">
+                                        <h6 class="analysis-title"><i class="fas fa-cogs me-2"></i>Bot Decision Process</h6>
+                                        <div class="decision-logic" id="decision-logic-${trade.timestamp}">
+                                            ${formatBotDecisionLogic(trade)}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Market Context -->
+                                    <div class="analysis-section">
+                                        <h6 class="analysis-title"><i class="fas fa-globe me-2"></i>Market Context</h6>
+                                        <div class="market-context" id="market-context-${trade.timestamp}">
+                                            ${formatMarketContext(trade)}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             ${trade.execution_message ? `
                             <div class="execution-message mt-2">
@@ -3169,16 +3556,6 @@
             });
         }
 
-        // Update all data initially and every 60 seconds
-        function updateAllData() {
-            updateBotStatus();
-            updateMarketData(); // This now includes recent decisions
-            updatePortfolio();
-            updateTradeHistory();
-            updatePerformanceMetrics();
-            updatePerformanceChart();
-        }
-
         // Performance Tab Functions
         let performanceChart = null;
 
@@ -3189,21 +3566,21 @@
             
             if (portfolio) {
                 // Calculate total return
-                const initialValue = portfolio.initial_value_usd || 0;
-                const currentValue = portfolio.portfolio_value_usd || 0;
+                const initialValue = portfolio.initial_value_eur || 0;
+                const currentValue = portfolio.portfolio_value_eur || 0;
                 const totalReturn = initialValue > 0 ? ((currentValue - initialValue) / initialValue * 100) : 0;
                 const totalReturnUsd = currentValue - initialValue;
                 
                 document.getElementById('total-return').textContent = 
                     (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(2) + '%';
                 document.getElementById('total-return-usd').textContent = 
-                    (totalReturnUsd >= 0 ? '+$' : '-$') + Math.abs(totalReturnUsd).toFixed(2);
+                    (totalReturnUsd >= 0 ? '+€' : '-€') + Math.abs(totalReturnUsd).toFixed(2);
                 
                 // Update portfolio value
                 document.getElementById('current-portfolio-value').textContent = 
-                    '$' + currentValue.toFixed(2);
+                    '€' + currentValue.toFixed(2);
                 document.getElementById('portfolio-change').textContent = 
-                    'vs $' + initialValue.toFixed(2) + ' initial';
+                    'vs €' + initialValue.toFixed(2) + ' initial';
                 
                 // Calculate today's P&L from portfolio value changes
                 // For now, we'll use the total return as today's P&L since we don't have historical daily data
@@ -3217,7 +3594,7 @@
                 const dailyPnlCard = dailyPnlElement.closest('.card');
                 
                 dailyPnlElement.textContent = 
-                    (todayPnl >= 0 ? '+$' : '-$') + Math.abs(todayPnl).toFixed(2);
+                    (todayPnl >= 0 ? '+€' : '-€') + Math.abs(todayPnl).toFixed(2);
                 dailyPnlPercentElement.textContent = 
                     (todayPnlPercent >= 0 ? '+' : '') + todayPnlPercent.toFixed(2) + '%';
                 
@@ -3269,7 +3646,7 @@
                 const tradeAmount = trade.trade_amount_usd || 0;
                 
                 // Show actual trade amount instead of fake P&L
-                const amountDisplay = tradeAmount > 0 ? `$${tradeAmount.toFixed(2)}` : 'Hold';
+                const amountDisplay = tradeAmount > 0 ? `€${tradeAmount.toFixed(2)}` : 'Hold';
                 
                 // Show realistic status based on trade execution
                 let status, statusClass;
@@ -3302,14 +3679,14 @@
         function updateAllocationBars(portfolio) {
             if (!portfolio) return;
             
-            const totalValue = portfolio.portfolio_value_usd || 0;
+            const totalValue = portfolio.portfolio_value_eur || 0;
             if (totalValue === 0) return;
             
             // Calculate current allocations
-            const btcValue = (portfolio.BTC?.amount || 0) * (portfolio.BTC?.last_price_usd || 0);
-            const ethValue = (portfolio.ETH?.amount || 0) * (portfolio.ETH?.last_price_usd || 0);
-            const solValue = (portfolio.SOL?.amount || 0) * (portfolio.SOL?.last_price_usd || 0);
-            const usdValue = portfolio.USD?.amount || 0;
+            const btcValue = (portfolio.BTC?.amount || 0) * (portfolio.BTC?.last_price_eur || 0);
+            const ethValue = (portfolio.ETH?.amount || 0) * (portfolio.ETH?.last_price_eur || 0);
+            const solValue = (portfolio.SOL?.amount || 0) * (portfolio.SOL?.last_price_eur || 0);
+            const usdValue = portfolio.EUR?.amount || 0;
             
             const btcPercent = (btcValue / totalValue * 100);
             const ethPercent = (ethValue / totalValue * 100);
@@ -3387,7 +3764,7 @@
                 data: {
                     labels: sampleData.labels,
                     datasets: [{
-                        label: 'Portfolio Value ($)',
+                        label: 'Portfolio Value (€)',
                         data: sampleData.values,
                         borderColor: '#008cba',
                         backgroundColor: 'rgba(0, 140, 186, 0.1)',
@@ -3408,7 +3785,7 @@
                         y: {
                             beginAtZero: false,
                             ticks: {
-                                callback: value => '$' + value.toFixed(0)
+                                callback: value => '€' + value.toFixed(0)
                             }
                         }
                     }
@@ -3424,6 +3801,9 @@
             updateTradeHistory();
             updatePerformanceMetrics();
             updatePerformanceChart();
+            
+            // Refresh tooltips after data updates
+            refreshTooltips();
         }
 
         // Global event delegation for expand buttons
@@ -3481,11 +3861,69 @@
             setInterval(updateAllData, 60000);
         }
         
-        // Initialize Bootstrap tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+        // Initialize Bootstrap tooltips with enhanced configuration
+        function initializeTooltips() {
+            try {
+                // Dispose of existing tooltips first
+                var existingTooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+                existingTooltips.forEach(function(element) {
+                    var tooltip = bootstrap.Tooltip.getInstance(element);
+                    if (tooltip) {
+                        tooltip.dispose();
+                    }
+                });
+
+                // Initialize new tooltips
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl, {
+                        html: true,
+                        trigger: 'hover focus',
+                        delay: { show: 300, hide: 100 },
+                        container: 'body'
+                    });
+                });
+                
+                console.log('Initialized', tooltipList.length, 'Bootstrap tooltips');
+            } catch (error) {
+                console.error('Error initializing tooltips:', error);
+            }
+        }
+
+        // Initialize tooltips on page load
+        initializeTooltips();
+
+        // Re-initialize tooltips when content is dynamically updated
+        function refreshTooltips() {
+            setTimeout(initializeTooltips, 100);
+        }
+
+        // Add some visual feedback for help icons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add pulse animation to help icons on first load
+            setTimeout(function() {
+                const helpIcons = document.querySelectorAll('.help-icon');
+                helpIcons.forEach(function(icon, index) {
+                    setTimeout(function() {
+                        icon.style.animation = 'pulse 0.6s ease-in-out';
+                        setTimeout(function() {
+                            icon.style.animation = '';
+                        }, 600);
+                    }, index * 100);
+                });
+            }, 1000);
         });
+
+        // Add CSS animation for pulse effect
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>

@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Crypto Bot - Configuration Dashboard</title>
+    <!-- Bootstrap 5 CSS with Bootswatch Yeti Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/yeti/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Custom styles to enhance Yeti theme */
+        :root {
+            --yeti-primary: #008cba;
+            --yeti-secondary: #6c757d;
+            --yeti-success: #28a745;
+            --yeti-danger: #dc3545;
+            --yeti-warning: #ffc107;
+            --yeti-info: #17a2b8;
+            --yeti-light: #f8f9fa;
+            --yeti-dark: #343a40;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .card {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background-color: var(--yeti-primary);
+            color: white;
+            font-weight: 600;
+            border-bottom: none;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--yeti-primary) !important;
+        }
+
+        .nav-link {
+            color: var(--yeti-dark) !important;
+            font-weight: 500;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--yeti-primary) !important;
+            background-color: rgba(0, 140, 186, 0.1);
+            border-radius: 8px;
+        }
+
+        .config-item {
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 0;
+        }
+
+        .config-item:last-child {
+            border-bottom: none;
+        }
+
+        .config-name {
+            font-weight: 600;
+            color: var(--yeti-dark);
+        }
+
+        .config-value {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+        }
+
+        .config-default {
+            color: var(--yeti-secondary);
+            font-style: italic;
+        }
+
+        .config-missing {
+            color: var(--yeti-danger);
+            font-weight: 600;
+        }
+
+        .config-set {
+            color: var(--yeti-success);
+        }
+
+        .config-description {
+            color: var(--yeti-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .section-header {
+            background-color: var(--yeti-light);
+            padding: 0.75rem 1rem;
+            margin: 1rem -1rem;
+            border-left: 4px solid var(--yeti-primary);
+            font-weight: 600;
+            color: var(--yeti-dark);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        #live-clock {
+            color: #a0c4ff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">
+                <i class="fas fa-robot me-2"></i>
+                AI Crypto Bot
+            </a>
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="index.html">Dashboard</a>
+                <a class="nav-link" href="analysis.html">Analysis</a>
+                <a class="nav-link active" href="config.html">Configuration</a>
+            </div>
+            <div class="ms-auto">
+                <span id="live-clock" class="me-3">
+                    <i class="far fa-clock me-1"></i>
+                    Loading...
+                </span>
+                <span id="bot-uptime">
+                    <i class="fas fa-history me-1"></i>
+                    Uptime: Loading...
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- Configuration Overview -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>
+                            Configuration Overview
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="total-configs">0</h4>
+                                    <small class="text-muted">Total Configurations</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="set-configs" class="text-success">0</h4>
+                                    <small class="text-muted">Set in .env</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="default-configs" class="text-warning">0</h4>
+                                    <small class="text-muted">Using Defaults</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 id="missing-configs" class="text-danger">0</h4>
+                                    <small class="text-muted">Missing/Undefined</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            This dashboard shows all configuration options for the AI Crypto Trading Bot. 
+                            Green values are set in your .env file, yellow values are using defaults, 
+                            and red values are missing or undefined.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Sections -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            All Configuration Settings
+                        </h5>
+                    </div>
+                    <div class="card-body" id="config-sections">
+                        <!-- Configuration sections will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration definitions with defaults and descriptions
+        const CONFIG_DEFINITIONS = {
+            'API Credentials': {
+                'COINBASE_API_KEY': {
+                    default: 'organizations/your-org-id/apiKeys/your-key-id',
+                    description: 'Your Coinbase API key for trading operations',
+                    sensitive: true
+                },
+                'COINBASE_API_SECRET': {
+                    default: '-----BEGIN EC PRIVATE KEY-----\\nYOUR PRIVATE KEY\\n-----END EC PRIVATE KEY-----\\n',
+                    description: 'Your Coinbase API secret key (private key)',
+                    sensitive: true
+                }
+            },
+            'Google Cloud Settings': {
+                'GOOGLE_CLOUD_PROJECT': {
+                    default: 'your-project-id',
+                    description: 'Google Cloud project ID for AI services'
+                },
+                'GOOGLE_APPLICATION_CREDENTIALS': {
+                    default: 'path/to/service-account-key.json',
+                    description: 'Path to Google Cloud service account credentials file'
+                }
+            },
+            'LLM Configuration': {
+                'LLM_PROVIDER': {
+                    default: 'vertex',
+                    description: 'AI provider for trading decisions (vertex, palm, gemini)'
+                },
+                'LLM_MODEL': {
+                    default: 'gemini-1.5-flash',
+                    description: 'Specific AI model to use for analysis'
+                },
+                'LLM_LOCATION': {
+                    default: 'us-central1',
+                    description: 'Google Cloud region for AI services'
+                }
+            },
+            'Trading Parameters': {
+                'TRADING_PAIRS': {
+                    default: 'BTC-EUR,ETH-EUR',
+                    description: 'Comma-separated list of cryptocurrency pairs to trade'
+                },
+                'DECISION_INTERVAL_MINUTES': {
+                    default: '60',
+                    description: 'How often (in minutes) the bot makes trading decisions'
+                },
+                'RISK_LEVEL': {
+                    default: 'medium',
+                    description: 'Overall risk tolerance (low, medium, high)'
+                },
+                'SIMULATION_MODE': {
+                    default: 'true',
+                    description: 'Whether to run in simulation mode (true) or live trading (false)'
+                }
+            },
+            'Portfolio Management': {
+                'PORTFOLIO_REBALANCE': {
+                    default: 'true',
+                    description: 'Enable automatic portfolio rebalancing'
+                },
+                'MAX_TRADE_PERCENTAGE': {
+                    default: '25',
+                    description: 'Maximum percentage of portfolio to trade in a single transaction'
+                },
+                'TARGET_CRYPTO_ALLOCATION': {
+                    default: '80',
+                    description: 'Target percentage of portfolio in cryptocurrency'
+                },
+                'TARGET_BASE_ALLOCATION': {
+                    default: '10',
+                    description: 'Target percentage of portfolio in EUR cash'
+                }
+            },
+            'Enhanced Trading Strategy': {
+                'CONFIDENCE_THRESHOLD_BUY': {
+                    default: '60',
+                    description: 'Minimum AI confidence required to execute BUY orders'
+                },
+                'CONFIDENCE_THRESHOLD_SELL': {
+                    default: '60',
+                    description: 'Minimum AI confidence required to execute SELL orders'
+                },
+                'CONFIDENCE_BOOST_TREND_ALIGNED': {
+                    default: '10',
+                    description: 'Confidence boost when trade aligns with market trend'
+                },
+                'CONFIDENCE_PENALTY_COUNTER_TREND': {
+                    default: '5',
+                    description: 'Confidence penalty when trade goes against market trend'
+                }
+            },
+            'Technical Analysis': {
+                'RSI_NEUTRAL_MIN': {
+                    default: '45',
+                    description: 'RSI lower bound for neutral market conditions'
+                },
+                'RSI_NEUTRAL_MAX': {
+                    default: '55',
+                    description: 'RSI upper bound for neutral market conditions'
+                },
+                'MACD_SIGNAL_WEIGHT': {
+                    default: '0.4',
+                    description: 'Weight of MACD indicator in trading decisions (0.0-1.0)'
+                },
+                'RSI_SIGNAL_WEIGHT': {
+                    default: '0.3',
+                    description: 'Weight of RSI indicator in trading decisions (0.0-1.0)'
+                },
+                'BOLLINGER_SIGNAL_WEIGHT': {
+                    default: '0.3',
+                    description: 'Weight of Bollinger Bands in trading decisions (0.0-1.0)'
+                }
+            },
+            'Risk Management': {
+                'RISK_HIGH_POSITION_MULTIPLIER': {
+                    default: '0.5',
+                    description: 'Position size multiplier for high-risk market conditions'
+                },
+                'RISK_MEDIUM_POSITION_MULTIPLIER': {
+                    default: '0.75',
+                    description: 'Position size multiplier for medium-risk market conditions'
+                },
+                'RISK_LOW_POSITION_MULTIPLIER': {
+                    default: '1.0',
+                    description: 'Position size multiplier for low-risk market conditions'
+                }
+            },
+            'Trade Limits': {
+                'MIN_TRADE_AMOUNT': {
+                    default: '10.0',
+                    description: 'Minimum EUR amount for any trade execution'
+                },
+                'MAX_POSITION_SIZE': {
+                    default: '1000.0',
+                    description: 'Maximum EUR amount for a single position'
+                }
+            },
+            'Portfolio Rebalancing': {
+                'REBALANCE_THRESHOLD_PERCENT': {
+                    default: '5',
+                    description: 'Percentage deviation that triggers rebalancing'
+                },
+                'REBALANCE_CHECK_INTERVAL_MINUTES': {
+                    default: '180',
+                    description: 'How often (in minutes) to check for rebalancing needs'
+                }
+            },
+            'Dashboard & Logging': {
+                'DASHBOARD_TRADE_HISTORY_LIMIT': {
+                    default: '10',
+                    description: 'Number of recent trades to display in dashboard'
+                },
+                'LOG_LEVEL': {
+                    default: 'INFO',
+                    description: 'Logging level (DEBUG, INFO, WARNING, ERROR)'
+                },
+                'LOG_FILE': {
+                    default: 'logs/crypto_bot.log',
+                    description: 'Path to the main log file'
+                }
+            },
+            'Web Server Sync': {
+                'WEBSERVER_SYNC_ENABLED': {
+                    default: 'false',
+                    description: 'Enable syncing dashboard data to web server'
+                },
+                'WEBSERVER_SYNC_PATH': {
+                    default: '/var/www/html/crypto-bot',
+                    description: 'Path on web server to sync dashboard files'
+                }
+            }
+        };
+
+        // Function to format UTC time consistently
+        function formatUTCTime(date) {
+            if (!date) return 'Unknown';
+            
+            if (typeof date === 'string') {
+                date = new Date(date + (date.includes('Z') ? '' : 'Z'));
+            }
+            
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'UTC',
+                hour12: false
+            };
+            
+            return date.toLocaleString('en-GB', options) + ' UTC';
+        }
+
+        // Function to update the live clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerHTML = 
+                '<i class="far fa-clock me-1"></i>' + 
+                formatUTCTime(now);
+        }
+
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Function to load data
+        async function loadData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                if (url.endsWith('.txt')) {
+                    return await response.text();
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                return null;
+            }
+        }
+
+        // Function to update bot status in header
+        async function updateBotStatus() {
+            const data = await loadData('/crypto-bot/data/cache/bot_startup.json');
+            
+            if (data && data.startup_time) {
+                const startTime = new Date(data.startup_time + 'Z');
+                const uptime = Math.floor((new Date() - startTime) / 1000);
+                document.getElementById('bot-uptime').innerHTML = 
+                    '<i class="fas fa-history me-1"></i>Uptime: ' + 
+                    formatUptime(uptime);
+            }
+        }
+
+        // Function to format uptime
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = seconds % 60;
+            
+            return `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`;
+        }
+
+        // Function to load current configuration
+        async function loadCurrentConfig() {
+            // Load the detailed config data from the bot
+            const detailedConfig = await loadData('/crypto-bot/data/config/detailed_config.json');
+            const configData = await loadData('/crypto-bot/data/config/config.json');
+            const botStartup = await loadData('/crypto-bot/data/cache/bot_startup.json');
+            
+            // Use detailed config as primary source, with fallbacks
+            let currentConfig = {};
+            
+            if (detailedConfig) {
+                currentConfig = detailedConfig;
+            } else if (configData) {
+                // Fallback to basic config.json data
+                currentConfig.TRADING_PAIRS = configData.trading_pairs;
+                currentConfig.DECISION_INTERVAL_MINUTES = configData.decision_interval_minutes?.toString();
+                currentConfig.RISK_LEVEL = configData.risk_level;
+                currentConfig.LLM_MODEL = configData.llm_model;
+                currentConfig.PORTFOLIO_REBALANCE = configData.portfolio_rebalance?.toString();
+                currentConfig.MAX_TRADE_PERCENTAGE = configData.max_trade_percentage?.toString();
+                currentConfig.SIMULATION_MODE = configData.simulation_mode?.toString();
+                currentConfig.DASHBOARD_TRADE_HISTORY_LIMIT = configData.dashboard_trade_history_limit?.toString();
+            }
+            
+            if (botStartup) {
+                // Override with bot startup data if available
+                currentConfig.SIMULATION_MODE = botStartup.simulation_mode?.toString();
+                currentConfig.RISK_LEVEL = botStartup.risk_level;
+            }
+            
+            return currentConfig;
+        }
+
+        // Function to load .env file status
+        async function loadEnvStatus() {
+            // This would ideally load from a server endpoint that reads the .env file
+            // For now, we'll simulate based on known missing configurations
+            const knownMissingFromEnv = [
+                'DECISION_INTERVAL_MINUTES',
+                'LOG_FILE', 
+                'LOG_LEVEL'
+            ];
+            
+            return {
+                missing: knownMissingFromEnv,
+                total_in_env: 33,
+                total_possible: 36
+            };
+        }
+
+        // Function to render configuration sections
+        async function renderConfigSections() {
+            const currentConfig = await loadCurrentConfig();
+            const envStatus = await loadEnvStatus();
+            const sectionsContainer = document.getElementById('config-sections');
+            
+            let totalConfigs = 0;
+            let setConfigs = 0;
+            let defaultConfigs = 0;
+            let missingConfigs = 0;
+            
+            let html = '';
+            
+            for (const [sectionName, configs] of Object.entries(CONFIG_DEFINITIONS)) {
+                html += `<div class="section-header">${sectionName}</div>`;
+                
+                for (const [configName, configDef] of Object.entries(configs)) {
+                    totalConfigs++;
+                    
+                    const currentValue = currentConfig[configName];
+                    const defaultValue = configDef.default;
+                    const description = configDef.description;
+                    const isSensitive = configDef.sensitive;
+                    const isMissingFromEnv = envStatus.missing.includes(configName);
+                    
+                    let statusBadge = '';
+                    let valueDisplay = '';
+                    let statusClass = '';
+                    let envStatusInfo = '';
+                    
+                    if (currentValue !== undefined && currentValue !== null && currentValue !== '' && currentValue !== 'None') {
+                        if (isMissingFromEnv) {
+                            statusBadge = '<span class="badge bg-warning status-badge">Default (Not in .env)</span>';
+                            statusClass = 'config-default';
+                            envStatusInfo = '<small class="text-warning"><i class="fas fa-exclamation-triangle"></i> Using default - not set in .env file</small>';
+                            defaultConfigs++;
+                        } else if (currentValue === defaultValue) {
+                            statusBadge = '<span class="badge bg-info status-badge">Default (Set in .env)</span>';
+                            statusClass = 'config-default';
+                            envStatusInfo = '<small class="text-info"><i class="fas fa-info-circle"></i> Set in .env but matches default value</small>';
+                            defaultConfigs++;
+                        } else {
+                            statusBadge = '<span class="badge bg-success status-badge">Custom</span>';
+                            statusClass = 'config-set';
+                            envStatusInfo = '<small class="text-success"><i class="fas fa-check-circle"></i> Custom value set in .env file</small>';
+                            setConfigs++;
+                        }
+                        
+                        if (isSensitive) {
+                            valueDisplay = '••••••••••••••••';
+                        } else {
+                            valueDisplay = currentValue;
+                        }
+                    } else {
+                        statusBadge = '<span class="badge bg-danger status-badge">Missing</span>';
+                        statusClass = 'config-missing';
+                        valueDisplay = 'Not set';
+                        envStatusInfo = '<small class="text-danger"><i class="fas fa-times-circle"></i> Configuration not available</small>';
+                        missingConfigs++;
+                    }
+                    
+                    html += `
+                        <div class="config-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="config-name">${configName}</div>
+                                    <div class="config-description">${description}</div>
+                                    <div class="mt-2">
+                                        <strong>Current:</strong> 
+                                        <span class="config-value ${statusClass}">${valueDisplay}</span>
+                                    </div>
+                                    <div class="mt-1">
+                                        <strong>Default:</strong> 
+                                        <span class="config-value config-default">${isSensitive ? '••••••••••••••••' : defaultValue}</span>
+                                    </div>
+                                    <div class="mt-1">
+                                        ${envStatusInfo}
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            sectionsContainer.innerHTML = html;
+            
+            // Update overview counters
+            document.getElementById('total-configs').textContent = totalConfigs;
+            document.getElementById('set-configs').textContent = setConfigs;
+            document.getElementById('default-configs').textContent = defaultConfigs;
+            document.getElementById('missing-configs').textContent = missingConfigs;
+        }
+
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            updateBotStatus();
+            renderConfigSections();
+            
+            // Update every 60 seconds
+            setInterval(() => {
+                updateBotStatus();
+                renderConfigSections();
+            }, 60000);
+        });
+    </script>
+</body>
+</html>

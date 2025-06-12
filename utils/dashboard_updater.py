@@ -28,6 +28,7 @@ class DashboardUpdater:
             self._update_trading_cache(trading_data)
             self._update_portfolio_data(portfolio)
             self._update_config_data()
+            self._update_detailed_config_data()
             self._update_latest_decisions(trading_data)
             self._generate_charts(trading_data, portfolio)
             self._update_timestamp()
@@ -137,6 +138,84 @@ class DashboardUpdater:
                 
         except Exception as e:
             logger.error(f"Error updating config data: {e}")
+    
+    def _update_detailed_config_data(self) -> None:
+        """Update detailed configuration data including all environment variables"""
+        try:
+            import os
+            from config import config
+            
+            # Get all configuration attributes from the config object
+            detailed_config = {}
+            
+            # API Credentials
+            detailed_config['COINBASE_API_KEY'] = getattr(config, 'COINBASE_API_KEY', None)
+            detailed_config['COINBASE_API_SECRET'] = '***HIDDEN***' if getattr(config, 'COINBASE_API_SECRET', None) else None
+            
+            # Google Cloud Settings
+            detailed_config['GOOGLE_CLOUD_PROJECT'] = getattr(config, 'GOOGLE_CLOUD_PROJECT', None)
+            detailed_config['GOOGLE_APPLICATION_CREDENTIALS'] = getattr(config, 'GOOGLE_APPLICATION_CREDENTIALS', None)
+            
+            # LLM Configuration
+            detailed_config['LLM_PROVIDER'] = getattr(config, 'LLM_PROVIDER', None)
+            detailed_config['LLM_MODEL'] = getattr(config, 'LLM_MODEL', None)
+            detailed_config['LLM_LOCATION'] = getattr(config, 'LLM_LOCATION', None)
+            
+            # Trading Parameters
+            detailed_config['TRADING_PAIRS'] = ",".join(getattr(config, 'TRADING_PAIRS', []))
+            detailed_config['DECISION_INTERVAL_MINUTES'] = getattr(config, 'DECISION_INTERVAL_MINUTES', None)
+            detailed_config['RISK_LEVEL'] = getattr(config, 'RISK_LEVEL', None)
+            detailed_config['SIMULATION_MODE'] = getattr(config, 'SIMULATION_MODE', None)
+            
+            # Portfolio Management
+            detailed_config['PORTFOLIO_REBALANCE'] = getattr(config, 'PORTFOLIO_REBALANCE', None)
+            detailed_config['MAX_TRADE_PERCENTAGE'] = getattr(config, 'MAX_TRADE_PERCENTAGE', None)
+            detailed_config['TARGET_CRYPTO_ALLOCATION'] = getattr(config, 'TARGET_CRYPTO_ALLOCATION', None)
+            detailed_config['TARGET_USD_ALLOCATION'] = getattr(config, 'TARGET_USD_ALLOCATION', None)
+            
+            # Enhanced Trading Strategy
+            detailed_config['CONFIDENCE_THRESHOLD_BUY'] = getattr(config, 'CONFIDENCE_THRESHOLD_BUY', None)
+            detailed_config['CONFIDENCE_THRESHOLD_SELL'] = getattr(config, 'CONFIDENCE_THRESHOLD_SELL', None)
+            detailed_config['CONFIDENCE_BOOST_TREND_ALIGNED'] = getattr(config, 'CONFIDENCE_BOOST_TREND_ALIGNED', None)
+            detailed_config['CONFIDENCE_PENALTY_COUNTER_TREND'] = getattr(config, 'CONFIDENCE_PENALTY_COUNTER_TREND', None)
+            
+            # Technical Analysis
+            detailed_config['RSI_NEUTRAL_MIN'] = getattr(config, 'RSI_NEUTRAL_MIN', None)
+            detailed_config['RSI_NEUTRAL_MAX'] = getattr(config, 'RSI_NEUTRAL_MAX', None)
+            detailed_config['MACD_SIGNAL_WEIGHT'] = getattr(config, 'MACD_SIGNAL_WEIGHT', None)
+            detailed_config['RSI_SIGNAL_WEIGHT'] = getattr(config, 'RSI_SIGNAL_WEIGHT', None)
+            detailed_config['BOLLINGER_SIGNAL_WEIGHT'] = getattr(config, 'BOLLINGER_SIGNAL_WEIGHT', None)
+            
+            # Risk Management
+            detailed_config['RISK_HIGH_POSITION_MULTIPLIER'] = getattr(config, 'RISK_HIGH_POSITION_MULTIPLIER', None)
+            detailed_config['RISK_MEDIUM_POSITION_MULTIPLIER'] = getattr(config, 'RISK_MEDIUM_POSITION_MULTIPLIER', None)
+            detailed_config['RISK_LOW_POSITION_MULTIPLIER'] = getattr(config, 'RISK_LOW_POSITION_MULTIPLIER', None)
+            
+            # Trade Limits
+            detailed_config['MIN_TRADE_USD'] = getattr(config, 'MIN_TRADE_USD', None)
+            detailed_config['MAX_POSITION_SIZE_USD'] = getattr(config, 'MAX_POSITION_SIZE_USD', None)
+            
+            # Portfolio Rebalancing
+            detailed_config['REBALANCE_THRESHOLD_PERCENT'] = getattr(config, 'REBALANCE_THRESHOLD_PERCENT', None)
+            detailed_config['REBALANCE_CHECK_INTERVAL_MINUTES'] = getattr(config, 'REBALANCE_CHECK_INTERVAL_MINUTES', None)
+            
+            # Dashboard & Logging
+            detailed_config['DASHBOARD_TRADE_HISTORY_LIMIT'] = getattr(config, 'DASHBOARD_TRADE_HISTORY_LIMIT', None)
+            detailed_config['LOG_LEVEL'] = getattr(config, 'LOG_LEVEL', None)
+            detailed_config['LOG_FILE'] = getattr(config, 'LOG_FILE', None)
+            
+            # Web Server Sync
+            detailed_config['WEBSERVER_SYNC_ENABLED'] = getattr(config, 'WEBSERVER_SYNC_ENABLED', None)
+            detailed_config['WEBSERVER_SYNC_PATH'] = getattr(config, 'WEBSERVER_SYNC_PATH', None)
+            
+            # Save detailed configuration
+            with open("data/config/detailed_config.json", "w") as f:
+                json.dump(detailed_config, f, indent=2, default=str)
+                
+            logger.debug("Updated detailed configuration data")
+                
+        except Exception as e:
+            logger.error(f"Error updating detailed config data: {e}")
     
     def _update_latest_decisions(self, trading_data: Dict[str, Any]) -> None:
         """Update latest trading decisions cache"""
