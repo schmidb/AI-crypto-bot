@@ -1,0 +1,38 @@
+<!-- Shared Header Component for AI Crypto Bot Dashboards -->
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <!-- Brand -->
+        <a class="navbar-brand" href="https://github.com/schmidb/AI-crypto-bot" target="_blank">
+            <i class="fas fa-robot me-2"></i>
+            AI Crypto Bot
+        </a>
+        
+        <!-- Mobile hamburger button -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+                aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <!-- Collapsible content -->
+        <div class="collapse navbar-collapse" id="navbarContent">
+            <!-- Navigation links -->
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="index.html" id="nav-dashboard">Dashboard</a>
+                <a class="nav-link" href="analysis.html" id="nav-analysis">Analysis</a>
+                <a class="nav-link" href="config.html" id="nav-config">Configuration</a>
+            </div>
+            
+            <!-- Time and uptime info -->
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3" id="live-clock">
+                    <i class="far fa-clock me-1"></i>
+                    Loading...
+                </span>
+                <span class="navbar-text" id="bot-uptime">
+                    <i class="fas fa-history me-1"></i>
+                    Uptime: Loading...
+                </span>
+            </div>
+        </div>
+    </div>
+</nav>

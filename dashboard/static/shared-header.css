@@ -1,0 +1,75 @@
+/* Shared Header Styles for AI Crypto Bot Dashboards */
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--yeti-primary) !important;
+}
+
+.nav-link {
+    color: var(--yeti-dark) !important;
+    font-weight: 500;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--yeti-primary) !important;
+    background-color: rgba(0, 140, 186, 0.1);
+    border-radius: 4px;
+}
+
+#live-clock, #bot-uptime {
+    color: var(--yeti-primary);
+    font-weight: 600;
+}
+
+/* Navbar toggler styling */
+.navbar-toggler {
+    border: 1px solid var(--yeti-primary);
+    padding: 4px 8px;
+}
+
+.navbar-toggler:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 140, 186, 0.25);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 991.98px) {
+    /* Stack navigation items vertically on mobile */
+    .navbar-nav {
+        text-align: center;
+        margin-top: 10px;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 8px 16px;
+        margin: 2px 0;
+    }
+    
+    /* Time and uptime styling for mobile */
+    .navbar-text {
+        display: block !important;
+        text-align: center;
+        padding: 8px 16px;
+        margin: 2px 0;
+        border-top: 1px solid rgba(0, 140, 186, 0.2);
+    }
+    
+    #live-clock {
+        border-top: 1px solid rgba(0, 140, 186, 0.2);
+        margin-top: 10px;
+    }
+    
+    #bot-uptime {
+        border-top: none;
+    }
+}
+
+/* Desktop specific adjustments */
+@media (min-width: 992px) {
+    .navbar-text {
+        display: inline-block !important;
+    }
+}

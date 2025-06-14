@@ -95,6 +95,7 @@ class WebServerSync:
                 "data/cache/trading_data.json": "data/cache/trading_data.json",
                 "data/cache/last_updated.txt": "data/cache/last_updated.txt",
                 "data/cache/bot_startup.json": "data/cache/bot_startup.json",
+                "data/cache/bot_uptime.json": "data/cache/bot_uptime.json",
                 "data/trades/trade_history.json": "data/trades/trade_history.json",
                 "data/reports/strategy_performance.json": "data/reports/strategy_performance.json"
             }

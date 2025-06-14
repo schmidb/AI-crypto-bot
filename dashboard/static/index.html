@@ -347,6 +347,75 @@
             transform: scale(1.1);
         }
 
+        /* Plain CSS Question Mark Icon */
+        .help-icon-css {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: #17a2b8;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            cursor: help;
+            margin-left: 8px;
+            transition: all 0.2s ease;
+            border: 2px solid #17a2b8;
+        }
+
+        .help-icon-css:hover {
+            background-color: #138496;
+            border-color: #138496;
+            transform: scale(1.1);
+        }
+
+        .help-icon-css::before {
+            content: "?";
+            line-height: 1;
+        }
+
+        /* Orange variant for blue backgrounds */
+        .help-icon-css-orange {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: #ff6600;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            cursor: help;
+            margin-left: 8px;
+            transition: all 0.2s ease;
+            border: 2px solid #ff6600;
+            position: relative;
+            z-index: 1;
+        }
+
+        .help-icon-css-orange:hover {
+            background-color: #ff4400;
+            border-color: #ff4400;
+            transform: scale(1.1);
+        }
+
+        .help-icon-css-orange::before {
+            content: "?";
+            line-height: 1;
+        }
+
+        /* Ensure tooltip works with orange icon */
+        .tooltip .help-icon-css-orange:hover + .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(-5px);
+        }
+
         .tooltip {
             position: relative;
             display: inline-block;
@@ -385,6 +454,15 @@
         }
 
         .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(-5px);
+        }
+
+        /* Ensure tooltip works when hovering over any child element */
+        .tooltip:hover .tooltiptext,
+        .tooltip .help-icon-css:hover + .tooltiptext,
+        .tooltip .help-icon-css-orange:hover + .tooltiptext {
             visibility: visible;
             opacity: 1;
             transform: translateY(-5px);
@@ -692,14 +770,16 @@
         }
 
         .coinbase-link {
-            color: #fff;
-            opacity: 0.7;
-            transition: opacity 0.2s;
+            color: #17a2b8;
+            opacity: 0.8;
+            transition: all 0.2s;
+            text-decoration: none;
         }
 
         .coinbase-link:hover {
             opacity: 1;
-            color: #ffd700;
+            color: #138496;
+            transform: scale(1.1);
         }
 
         .reasoning-section {
@@ -873,6 +953,11 @@
             text-transform: uppercase;
         }
 
+        #bot-risk-level {
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
         .risk-low { color: #28a745; }
         .risk-medium { color: #ffc107; }
         .risk-high { color: #dc3545; }
@@ -885,31 +970,72 @@
             border-bottom: 2px solid #dee2e6;  /* Add bottom border for definition */
         }
     </style>
+    <!-- Shared Header CSS -->
+    <link rel="stylesheet" href="shared-header.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">
-                <i class="fas fa-robot me-2"></i>
-                AI Crypto Bot
-            </a>
-            <div class="navbar-nav me-auto">
-                <a class="nav-link active" href="index.html">Dashboard</a>
-                <a class="nav-link" href="analysis.html">Analysis</a>
-                <a class="nav-link" href="config.html">Configuration</a>
-            </div>
-            <div class="ms-auto">
-                <span id="live-clock" class="me-3">
-                    <i class="far fa-clock me-1"></i>
-                    Loading...
-                </span>
-                <span id="bot-uptime">
-                    <i class="fas fa-history me-1"></i>
-                    Uptime: Loading...
-                </span>
-            </div>
-        </div>
-    </nav>
+    <!-- Load Shared Header -->
+    <div id="shared-header"></div>
+
+    <!-- Shared Header JavaScript -->
+    <script src="shared-header.js"></script>
+    <script>
+        // Load shared header and initialize
+        async function loadSharedHeader() {
+            try {
+                const response = await fetch('shared-header.html');
+                if (!response.ok) throw new Error('Failed to load header');
+                const html = await response.text();
+                document.getElementById('shared-header').innerHTML = html;
+                
+                // Initialize header functionality
+                initializeHeader('dashboard');
+            } catch (error) {
+                console.error('Error loading header:', error);
+                // Fallback: show a basic header
+                document.getElementById('shared-header').innerHTML = `
+                    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+                        <div class="container-fluid">
+                            <a class="navbar-brand" href="https://github.com/schmidb/AI-crypto-bot" target="_blank">
+                                <i class="fas fa-robot me-2"></i>
+                                AI Crypto Bot
+                            </a>
+                            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+                                    aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div class="collapse navbar-collapse" id="navbarContent">
+                                <div class="navbar-nav me-auto">
+                                    <a class="nav-link active" href="index.html">Dashboard</a>
+                                    <a class="nav-link" href="analysis.html">Analysis</a>
+                                    <a class="nav-link" href="config.html">Configuration</a>
+                                </div>
+                                <div class="navbar-nav ms-auto">
+                                    <span class="navbar-text me-3" id="live-clock">
+                                        <i class="far fa-clock me-1"></i>
+                                        Loading...
+                                    </span>
+                                    <span class="navbar-text" id="bot-uptime">
+                                        <i class="fas fa-history me-1"></i>
+                                        Uptime: Loading...
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+                `;
+                // Initialize even with fallback
+                initializeHeader('dashboard');
+            }
+        }
+        
+        // Load header when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadSharedHeader);
+        } else {
+            loadSharedHeader();
+        }
+    </script>
 
     <div class="container-fluid py-4">
         <!-- First Row - Bot Status and Portfolio Overview (Full Width) -->
@@ -920,19 +1046,19 @@
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             Bot Status
-                            <span class="tooltip">
-                                <i class="fas fa-question-circle help-icon"></i>
-                                <span class="tooltiptext">
-                                    <h6>AI Trading Bot Status</h6>
-                                    This section shows the current operational status of your AI-powered cryptocurrency trading bot.
-                                    <ul>
-                                        <li><strong>Status:</strong> Whether the bot is running, stopped, or has errors</li>
-                                        <li><strong>Uptime:</strong> How long the bot has been running continuously</li>
-                                        <li><strong>Next Decision:</strong> Countdown to the next AI trading analysis</li>
-                                        <li><strong>Last Update:</strong> When the bot last made a trading decision</li>
-                                    </ul>
-                                    <div class="example">The bot analyzes market conditions every 60 minutes and makes intelligent trading decisions.</div>
-                                </span>
+                            <span class="help-icon-css-orange"
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   data-bs-html="true"
+                                   title="<strong>AI Trading Bot Status</strong><br/>
+                                          This section shows the current operational status of your AI-powered cryptocurrency trading bot.<br/>
+                                          <br/>
+                                          <strong>Status:</strong> Whether the bot is running, stopped, or has errors<br/>
+                                          <strong>Uptime:</strong> How long the bot has been running continuously<br/>
+                                          <strong>Next Decision:</strong> Countdown to the next AI trading analysis<br/>
+                                          <strong>Last Update:</strong> When the bot last made a trading decision<br/>
+                                          <br/>
+                                          <em>The bot analyzes market conditions every 60 minutes and makes intelligent trading decisions.</em>">
                             </span>
                         </h5>
                     </div>
@@ -974,7 +1100,7 @@
                         <div class="mb-3">
                             <small class="text-muted">
                                 Market Risk Level:
-                                <i class="fas fa-question-circle ms-1" 
+                                <span class="help-icon-css" 
                                    data-bs-toggle="tooltip" 
                                    data-bs-placement="top" 
                                    data-bs-html="true"
@@ -991,9 +1117,34 @@
                                           <br/>
                                           <em>Based on RSI extremes, MACD divergence, and Bollinger Band breakouts</em>"
                                    style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
-                                </i>
+                                </span>
                             </small>
                             <div id="risk-level">Loading...</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                Bot Risk Level:
+                                <span class="help-icon-css" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   data-bs-html="true"
+                                   title="<strong>Bot Risk Assessment:</strong><br/>
+                                          This shows how risky the bot's current trading behavior is.<br/>
+                                          <br/>
+                                          <strong>HIGH</strong> bot risk means:<br/>
+                                          • Bot is trading aggressively<br/>
+                                          • Lower AI confidence thresholds (60-65%)<br/>
+                                          • Larger position sizes<br/>
+                                          • More frequent trading activity<br/>
+                                          <br/>
+                                          <strong>MEDIUM</strong> bot risk: Standard confidence thresholds (70%)<br/>
+                                          <strong>LOW</strong> bot risk: Conservative trading, high confidence required (75%+)<br/>
+                                          <br/>
+                                          <em>When market conditions are volatile, bot operates at LOW risk (conservative)</em>"
+                                   style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
+                                </span>
+                            </small>
+                            <div id="bot-risk-level">MEDIUM</div>
                         </div>
                     </div>
                 </div>
@@ -1005,19 +1156,19 @@
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             Portfolio Overview
-                            <span class="tooltip">
-                                <i class="fas fa-question-circle help-icon"></i>
-                                <span class="tooltiptext">
-                                    <h6>Your Cryptocurrency Portfolio</h6>
-                                    This shows your complete cryptocurrency holdings and their current value.
-                                    <ul>
-                                        <li><strong>Total Value:</strong> Combined EUR value of all your crypto assets</li>
-                                        <li><strong>Returns:</strong> Profit/loss since you started using the bot</li>
-                                        <li><strong>Asset Allocation:</strong> How your portfolio is distributed across different cryptocurrencies</li>
-                                        <li><strong>Target vs Current:</strong> Optimal allocation vs actual allocation</li>
-                                    </ul>
-                                    <div class="example">The bot aims for 26.7% each in BTC, ETH, SOL and 20% in EUR for optimal trading.</div>
-                                </span>
+                            <span class="help-icon-css-orange"
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   data-bs-html="true"
+                                   title="<strong>Your Portfolio Dashboard</strong><br/>
+                                          Complete overview of your cryptocurrency portfolio and trading strategy.<br/>
+                                          <br/>
+                                          <strong>Portfolio Value:</strong> Total EUR value with profit/loss tracking<br/>
+                                          <strong>AI-First Strategy:</strong> Smart limits with minimum balances and safety thresholds<br/>
+                                          <strong>Current Allocation:</strong> Real-time distribution across BTC, ETH, SOL, and EUR<br/>
+                                          <strong>Visual Chart:</strong> Interactive allocation chart with percentages and values<br/>
+                                          <br/>
+                                          <em>Shows live portfolio status with AI-driven trading approach rather than rigid rebalancing.</em>">
                             </span>
                         </h5>
                     </div>
@@ -1036,20 +1187,6 @@
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0">
                                     AI-First Trading Strategy
-                                    <span class="tooltip">
-                                        <i class="fas fa-question-circle help-icon"></i>
-                                        <span class="tooltiptext">
-                                            <h6>AI-Driven Trading with Smart Limits</h6>
-                                            The bot prioritizes AI trading decisions while maintaining safety through smart limits:
-                                            <ul>
-                                                <li><strong>AI Priority:</strong> Market analysis drives all trading decisions</li>
-                                                <li><strong>Dynamic Sizing:</strong> Position sizes adapt to confidence and allocation</li>
-                                                <li><strong>Safety Limits:</strong> Minimum €50 EUR, 3% minimum per crypto</li>
-                                                <li><strong>No Trade Blocking:</strong> Doesn't block profitable trades for rigid allocation</li>
-                                            </ul>
-                                            <div class="example">Higher AI confidence = larger position sizes (up to 1.5x)</div>
-                                        </span>
-                                    </span>
                                 </h6>
                                 <span class="badge bg-success" id="trading-strategy-badge">
                                     <i class="fas fa-brain me-1"></i>
@@ -1058,7 +1195,6 @@
                             </div>
                             <div class="rebalance-status" id="trading-strategy-status">
                                 <small class="text-muted">
-                                    <i class="fas fa-check-circle text-success"></i>
                                     <span id="trading-strategy-text">AI decisions prioritized with smart safety limits</span>
                                 </small>
                             </div>
@@ -1101,20 +1237,20 @@
                     <div class="card-header">
                         <h5 class="card-title mb-0">
                             Market Overview & Recent Decisions
-                            <span class="tooltip">
-                                <i class="fas fa-question-circle help-icon"></i>
-                                <span class="tooltiptext">
-                                    <h6>Real-time Market Analysis</h6>
-                                    Shows current cryptocurrency prices and the AI's latest trading decisions.
-                                    <ul>
-                                        <li><strong>Current Prices:</strong> Live market prices from Coinbase</li>
-                                        <li><strong>Price Changes:</strong> Percentage changes over different time periods</li>
-                                        <li><strong>AI Decisions:</strong> Latest BUY/SELL/HOLD recommendations</li>
-                                        <li><strong>Confidence Levels:</strong> How confident the AI is in each decision (0-100%)</li>
-                                        <li><strong>Reasoning:</strong> Why the AI made each decision</li>
-                                    </ul>
-                                    <div class="example">The AI analyzes technical indicators, market trends, and risk factors to make decisions.</div>
-                                </span>
+                            <span class="help-icon-css-orange"
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   data-bs-html="true"
+                                   title="<strong>Real-time Market Analysis</strong><br/>
+                                          Shows current cryptocurrency prices and the AI's latest trading decisions.<br/>
+                                          <br/>
+                                          <strong>Current Prices:</strong> Live market prices from Coinbase<br/>
+                                          <strong>Price Changes:</strong> Percentage changes over different time periods<br/>
+                                          <strong>AI Decisions:</strong> Latest BUY/SELL/HOLD recommendations<br/>
+                                          <strong>Confidence Levels:</strong> How confident the AI is in each decision (0-100%)<br/>
+                                          <strong>Reasoning:</strong> Why the AI made each decision<br/>
+                                          <br/>
+                                          <em>The AI analyzes technical indicators, market trends, and risk factors to make decisions.</em>">
                             </span>
                         </h5>
                     </div>
@@ -1126,21 +1262,6 @@
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <h4 class="mb-0">
                                             <strong>BTC</strong>
-                                            <span class="tooltip">
-                                                <i class="fas fa-question-circle help-icon"></i>
-                                                <span class="tooltiptext">
-                                                    <h6>Bitcoin (BTC) Analysis</h6>
-                                                    Real-time analysis of Bitcoin, the world's first cryptocurrency.
-                                                    <ul>
-                                                        <li><strong>Current Price:</strong> Live market price from Coinbase</li>
-                                                        <li><strong>Price Changes:</strong> Performance over different time periods</li>
-                                                        <li><strong>AI Decision:</strong> Latest BUY/SELL/HOLD recommendation</li>
-                                                        <li><strong>Confidence:</strong> AI's certainty in the decision</li>
-                                                        <li><strong>Reasoning:</strong> Technical analysis and market factors</li>
-                                                    </ul>
-                                                    <div class="example">Click the external link to view live Bitcoin trading on Coinbase.</div>
-                                                </span>
-                                            </span>
                                             <a href="https://www.coinbase.com/advanced-trade/spot/BTC-EUR" target="_blank" class="ms-2 coinbase-link">
                                                 <i class="fas fa-external-link-alt"></i>
                                             </a>
@@ -1209,10 +1330,10 @@
                                             
                                             <!-- Risk Management -->
                                             <div class="risk-management mb-2" style="display: none;">
-                                                <small class="text-muted">Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
+                                                <small class="text-muted">Market Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Market Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
                                                 <span class="risk-level-badge badge bg-info">--</span>
                                                 <span class="position-size ms-1">
-                                                    <small class="text-muted">Size: <span class="size-multiplier">100%</span></small>
+                                                    <small class="text-muted">Reduction Size: <span class="size-multiplier">100%</span><span class="help-icon-css" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="<strong>Position Size Reduction</strong><br/>How much the bot reduces trade sizes based on market risk:<br/><br/><strong>100%</strong> = Normal full position size (low market risk)<br/><strong>75%</strong> = Reduced to 75% of normal size (medium risk)<br/><strong>50%</strong> = Reduced to 50% of normal size (high risk)<br/><br/><em>Example: If bot wants to trade €200, at 50% it only trades €100</em>" style="font-size: 0.6rem; margin-left: 4px;"></span></small>
                                                 </span>
                                             </div>
                                             
@@ -1260,21 +1381,6 @@
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <h4 class="mb-0">
                                             <strong>ETH</strong>
-                                            <span class="tooltip">
-                                                <i class="fas fa-question-circle help-icon"></i>
-                                                <span class="tooltiptext">
-                                                    <h6>Ethereum (ETH) Analysis</h6>
-                                                    Real-time analysis of Ethereum, the leading smart contract platform.
-                                                    <ul>
-                                                        <li><strong>Current Price:</strong> Live market price from Coinbase</li>
-                                                        <li><strong>Price Changes:</strong> Performance over different time periods</li>
-                                                        <li><strong>AI Decision:</strong> Latest BUY/SELL/HOLD recommendation</li>
-                                                        <li><strong>Confidence:</strong> AI's certainty in the decision</li>
-                                                        <li><strong>Reasoning:</strong> Technical analysis and market factors</li>
-                                                    </ul>
-                                                    <div class="example">Click the external link to view live Ethereum trading on Coinbase.</div>
-                                                </span>
-                                            </span>
                                             <a href="https://www.coinbase.com/advanced-trade/spot/ETH-EUR" target="_blank" class="ms-2 coinbase-link">
                                                 <i class="fas fa-external-link-alt"></i>
                                             </a>
@@ -1343,10 +1449,10 @@
                                             
                                             <!-- Risk Management -->
                                             <div class="risk-management mb-2" style="display: none;">
-                                                <small class="text-muted">Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
+                                                <small class="text-muted">Market Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Market Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
                                                 <span class="risk-level-badge badge bg-info">--</span>
                                                 <span class="position-size ms-1">
-                                                    <small class="text-muted">Size: <span class="size-multiplier">100%</span></small>
+                                                    <small class="text-muted">Reduction Size: <span class="size-multiplier">100%</span><span class="help-icon-css" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="<strong>Position Size Reduction</strong><br/>How much the bot reduces trade sizes based on market risk:<br/><br/><strong>100%</strong> = Normal full position size (low market risk)<br/><strong>75%</strong> = Reduced to 75% of normal size (medium risk)<br/><strong>50%</strong> = Reduced to 50% of normal size (high risk)<br/><br/><em>Example: If bot wants to trade €200, at 50% it only trades €100</em>" style="font-size: 0.6rem; margin-left: 4px;"></span></small>
                                                 </span>
                                             </div>
                                             
@@ -1394,21 +1500,6 @@
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <h4 class="mb-0">
                                             <strong>SOL</strong>
-                                            <span class="tooltip">
-                                                <i class="fas fa-question-circle help-icon"></i>
-                                                <span class="tooltiptext">
-                                                    <h6>Solana (SOL) Analysis</h6>
-                                                    Real-time analysis of Solana, the high-performance blockchain platform.
-                                                    <ul>
-                                                        <li><strong>Current Price:</strong> Live market price from Coinbase</li>
-                                                        <li><strong>Price Changes:</strong> Performance over different time periods</li>
-                                                        <li><strong>AI Decision:</strong> Latest BUY/SELL/HOLD recommendation</li>
-                                                        <li><strong>Confidence:</strong> AI's certainty in the decision</li>
-                                                        <li><strong>Reasoning:</strong> Technical analysis and market factors</li>
-                                                    </ul>
-                                                    <div class="example">Click the external link to view live Solana trading on Coinbase.</div>
-                                                </span>
-                                            </span>
                                             <a href="https://www.coinbase.com/advanced-trade/spot/SOL-EUR" target="_blank" class="ms-2 coinbase-link">
                                                 <i class="fas fa-external-link-alt"></i>
                                             </a>
@@ -1477,10 +1568,10 @@
                                             
                                             <!-- Risk Management -->
                                             <div class="risk-management mb-2" style="display: none;">
-                                                <small class="text-muted">Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
+                                                <small class="text-muted">Market Risk Management: <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.7rem;"></i><span class="tooltiptext"><h6>Market Risk Management System</h6>The AI applies sophisticated risk management to protect your portfolio:<ul><li><strong>Position Sizing:</strong> Adjusts trade amounts based on market volatility</li><li><strong>Risk Level:</strong> Low/Medium/High classification based on market conditions</li><li><strong>Confidence Threshold:</strong> Only executes trades above minimum confidence level</li></ul><div class="example">Higher risk = smaller position sizes for protection</div></span></span></small>
                                                 <span class="risk-level-badge badge bg-info">--</span>
                                                 <span class="position-size ms-1">
-                                                    <small class="text-muted">Size: <span class="size-multiplier">100%</span></small>
+                                                    <small class="text-muted">Reduction Size: <span class="size-multiplier">100%</span><span class="help-icon-css" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-html="true" title="<strong>Position Size Reduction</strong><br/>How much the bot reduces trade sizes based on market risk:<br/><br/><strong>100%</strong> = Normal full position size (low market risk)<br/><strong>75%</strong> = Reduced to 75% of normal size (medium risk)<br/><strong>50%</strong> = Reduced to 50% of normal size (high risk)<br/><br/><em>Example: If bot wants to trade €200, at 50% it only trades €100</em>" style="font-size: 0.6rem; margin-left: 4px;"></span></small>
                                                 </span>
                                             </div>
                                             
@@ -1536,20 +1627,20 @@
                             <li class="nav-item">
                                 <a class="nav-link active" data-bs-toggle="tab" href="#trade-history">
                                     Trade History
-                                    <span class="tooltip">
-                                        <i class="fas fa-question-circle help-icon"></i>
-                                        <span class="tooltiptext">
-                                            <h6>Complete Trading Activity Log</h6>
-                                            Shows all trading decisions and executions made by the AI bot.
-                                            <ul>
-                                                <li><strong>Actions:</strong> BUY (green), SELL (red), HOLD (gray)</li>
-                                                <li><strong>Confidence:</strong> AI's certainty level (0-100%)</li>
-                                                <li><strong>Reasoning:</strong> Why the AI made each decision</li>
-                                                <li><strong>Show Details:</strong> Click to see comprehensive trade information</li>
-                                                <li><strong>Filters:</strong> Filter by asset, action, or time period</li>
-                                            </ul>
-                                            <div class="example">Use filters to analyze specific trading patterns or time periods.</div>
-                                        </span>
+                                    <span class="help-icon-css"
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="top" 
+                                           data-bs-html="true"
+                                           title="<strong>Complete Trading Activity Log</strong><br/>
+                                                  Shows all trading decisions and executions made by the AI bot.<br/>
+                                                  <br/>
+                                                  <strong>Actions:</strong> BUY (green), SELL (red), HOLD (gray)<br/>
+                                                  <strong>Confidence:</strong> AI's certainty level (0-100%)<br/>
+                                                  <strong>Reasoning:</strong> Why the AI made each decision<br/>
+                                                  <strong>Show Details:</strong> Click to see comprehensive trade information<br/>
+                                                  <strong>Filters:</strong> Filter by asset, action, or time period<br/>
+                                                  <br/>
+                                                  <em>Use filters to analyze specific trading patterns or time periods.</em>">
                                     </span>
                                 </a>
                             </li>
@@ -1952,7 +2043,7 @@
                                                         <div class="d-flex justify-content-between">
                                                             <span>
                                                                 Market Risk Level
-                                                                <i class="fas fa-question-circle ms-1" 
+                                                                <span class="help-icon-css" 
                                                                    data-bs-toggle="tooltip" 
                                                                    data-bs-placement="top" 
                                                                    data-bs-html="true"
@@ -1966,7 +2057,7 @@
                                                                           <br/>
                                                                           <em>Based on volatility, indicator conflicts, and price movements</em>"
                                                                    style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
-                                                                </i>
+                                                                </span>
                                                             </span>
                                                             <strong id="current-risk-level">High</strong>
                                                         </div>
@@ -2124,42 +2215,6 @@
     <!-- Chart.js for performance charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // Function to format UTC time consistently (24-hour format)
-        function formatUTCTime(date) {
-            if (!date) return 'Unknown';
-            
-            // Ensure we have a Date object
-            if (typeof date === 'string') {
-                date = new Date(date + (date.includes('Z') ? '' : 'Z'));
-            }
-            
-            // Format as 24-hour UTC time
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                timeZone: 'UTC',
-                hour12: false
-            };
-            
-            return date.toLocaleString('en-GB', options) + ' UTC';
-        }
-
-        // Function to update the live clock
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('live-clock').innerHTML = 
-                '<i class="far fa-clock me-1"></i>' + 
-                formatUTCTime(now);
-        }
-
-        // Update clock every second
-        setInterval(updateClock, 1000);
-        updateClock();
-
         // Function to load data
         async function loadData(url) {
             try {
@@ -2218,11 +2273,32 @@
                     statusElement.textContent = 'Online';
                     statusIndicator.className = 'status-indicator status-online me-2';
                     
-                    const startTime = new Date(data.startup_time + 'Z'); // Ensure UTC
-                    const uptime = Math.floor((new Date() - startTime) / 1000);
-                    document.getElementById('bot-uptime').innerHTML = 
-                        '<i class="fas fa-history me-1"></i>Uptime: ' + 
-                        formatUptime(uptime);
+                    // Use total uptime if available, otherwise fall back to session uptime
+                    let uptimeSeconds;
+                    let uptimeText = '';
+                    
+                    if (data.total_uptime_seconds !== undefined) {
+                        // Calculate current session time
+                        const sessionStart = new Date(data.startup_time + 'Z');
+                        const currentSessionSeconds = Math.floor((new Date() - sessionStart) / 1000);
+                        
+                        // Total uptime is previous sessions + current session
+                        uptimeSeconds = data.total_uptime_seconds + currentSessionSeconds;
+                        
+                        // Add restart count if available
+                        if (data.restart_count > 0) {
+                            uptimeText = `<i class="fas fa-history me-1"></i>Uptime: ${formatUptime(uptimeSeconds)} <small class="text-muted">(${data.restart_count} restarts)</small>`;
+                        } else {
+                            uptimeText = `<i class="fas fa-history me-1"></i>Uptime: ${formatUptime(uptimeSeconds)}`;
+                        }
+                    } else {
+                        // Fallback to session uptime
+                        const startTime = new Date(data.startup_time + 'Z');
+                        uptimeSeconds = Math.floor((new Date() - startTime) / 1000);
+                        uptimeText = `<i class="fas fa-history me-1"></i>Session: ${formatUptime(uptimeSeconds)}`;
+                    }
+                    
+                    document.getElementById('bot-uptime').innerHTML = uptimeText;
 
                     // Update next decision countdown
                     if (data.next_decision_time) {
@@ -2305,6 +2381,30 @@
                     riskLevel.textContent = 'UNKNOWN';
                     riskLevel.className = '';
                 }
+                
+                // Update bot risk level (inverse of market risk - when market is risky, bot is conservative)
+                const botRiskLevel = document.getElementById('bot-risk-level');
+                if (data.risk_level) {
+                    // Invert the risk level: high market risk = low bot risk (conservative)
+                    let botRisk;
+                    switch(data.risk_level.toLowerCase()) {
+                        case 'high':
+                            botRisk = 'LOW';  // Market is risky, so bot is conservative (low risk)
+                            break;
+                        case 'low':
+                            botRisk = 'HIGH'; // Market is stable, so bot can be more aggressive (high risk)
+                            break;
+                        case 'medium':
+                        default:
+                            botRisk = 'MEDIUM';
+                            break;
+                    }
+                    botRiskLevel.textContent = botRisk;
+                    botRiskLevel.className = `risk-${botRisk.toLowerCase()}`;
+                } else {
+                    botRiskLevel.textContent = 'MEDIUM';
+                    botRiskLevel.className = 'risk-medium';
+                }
             } else {
                 // If no data available, show fallback
                 document.getElementById('next-decision-timer').textContent = 'Data unavailable';
@@ -2345,16 +2445,6 @@
             
             // Set up interval to update every second
             countdownInterval = setInterval(updateTimer, 1000);
-        }
-
-        // Function to format uptime
-        function formatUptime(seconds) {
-            const days = Math.floor(seconds / 86400);
-            const hours = Math.floor((seconds % 86400) / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const remainingSeconds = seconds % 60;
-            
-            return `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`;
         }
 
         // Function to extract price changes from AI analysis text
@@ -2821,17 +2911,8 @@
                     EUR: (data.EUR?.amount / totalValue) * 100 || 0
                 };
 
-                // Use correct target allocations based on enhanced trading strategy
-                // TARGET: 90% crypto (30% each) + 10% EUR for optimal trading flexibility
-                const target = {
-                    BTC: 30.0,  // 30% of total portfolio
-                    ETH: 30.0,  // 30% of total portfolio  
-                    SOL: 30.0,  // 30% of total portfolio
-                    EUR: 10.0   // 10% of total portfolio for liquidity
-                };
-
-                // Update allocation chart
-                updateAllocationComparison(current, target);
+                // Update allocation chart (current holdings only)
+                updateAllocationComparison(current, data);
             }
         }
 
@@ -3074,7 +3155,7 @@
                     const sizing = logic.risk_management_applied.position_sizing;
                     html += `
                         <div class="decision-item">
-                            <strong>Risk Management:</strong> ${sizing.risk_level} risk (${(sizing.multiplier * 100).toFixed(0)}% position size)
+                            <strong>Market Risk Management:</strong> ${sizing.risk_level} risk (${(sizing.multiplier * 100).toFixed(0)}% position size)
                             <small class="d-block text-muted">${sizing.reason}</small>
                         </div>
                     `;
@@ -3150,8 +3231,8 @@
             }
         }
 
-        // Function to update allocation comparison chart
-        function updateAllocationComparison(current, target) {
+        // Function to update allocation chart (current holdings only)
+        function updateAllocationComparison(current, portfolioData) {
             const ctx = document.getElementById('allocationComparisonChart').getContext('2d');
             
             // Destroy existing chart if it exists
@@ -3159,13 +3240,20 @@
                 window.allocationChart.destroy();
             }
             
+            // Calculate EUR values for each asset
+            const totalValue = portfolioData?.portfolio_value_eur || 0;
+            const btcValue = (portfolioData?.BTC?.amount * portfolioData?.BTC?.last_price_eur) || 0;
+            const ethValue = (portfolioData?.ETH?.amount * portfolioData?.ETH?.last_price_eur) || 0;
+            const solValue = (portfolioData?.SOL?.amount * portfolioData?.SOL?.last_price_eur) || 0;
+            const eurCashValue = portfolioData?.EUR?.amount || 0;
+            
             window.allocationChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['BTC', 'ETH', 'SOL', 'EUR'],
                     datasets: [
                         {
-                            label: 'Current %',
+                            label: 'Current Holdings',
                             data: [
                                 current.BTC || 0,
                                 current.ETH || 0,
@@ -3175,19 +3263,6 @@
                             backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#95a5a6'],  // More vibrant colors for light theme
                             borderColor: ['#e67e22', '#2980b9', '#27ae60', '#7f8c8d'],      // Darker borders for better contrast
                             borderWidth: 1
-                        },
-                        {
-                            label: 'Target %',
-                            data: [
-                                target.BTC || 0,
-                                target.ETH || 0,
-                                target.SOL || 0,
-                                target.EUR || 0
-                            ],
-                            backgroundColor: ['rgba(243, 156, 18, 0.3)', 'rgba(52, 152, 219, 0.3)', 'rgba(46, 204, 113, 0.3)', 'rgba(149, 165, 166, 0.3)'],
-                            borderColor: ['#e67e22', '#2980b9', '#27ae60', '#7f8c8d'],
-                            borderWidth: 2,
-                            borderDash: [5, 5]
                         }
                     ]
                 },
@@ -3196,12 +3271,23 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'bottom',
-                            labels: {
-                                color: '#343a40',  // Dark text for light theme
-                                font: {
-                                    size: 12
+                            display: false  // Hide legend since we only have one dataset
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const asset = context.label;
+                                    const percentage = context.parsed.y.toFixed(1);
+                                    let value = 0;
+                                    
+                                    switch(asset) {
+                                        case 'BTC': value = btcValue; break;
+                                        case 'ETH': value = ethValue; break;
+                                        case 'SOL': value = solValue; break;
+                                        case 'EUR': value = eurCashValue; break;
+                                    }
+                                    
+                                    return `${asset}: ${percentage}% (€${value.toFixed(2)})`;
                                 }
                             }
                         }
@@ -3209,7 +3295,7 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            max: 50,
+                            max: Math.max(50, Math.max(current.BTC || 0, current.ETH || 0, current.SOL || 0, current.EUR || 0) + 5),
                             ticks: {
                                 color: '#495057',  // Dark gray text
                                 callback: value => value + '%'
@@ -3219,13 +3305,27 @@
                             },
                             title: {
                                 display: true,
-                                text: 'Allocation %',
+                                text: 'Portfolio Allocation',
                                 color: '#495057'
                             }
                         },
                         x: {
                             ticks: {
-                                color: '#495057'  // Dark gray text for asset labels
+                                color: '#495057',  // Dark gray text for asset labels
+                                callback: function(value, index) {
+                                    const asset = this.getLabelForValue(value);
+                                    const percentage = current[asset] || 0;
+                                    let eurValue = 0;
+                                    
+                                    switch(asset) {
+                                        case 'BTC': eurValue = btcValue; break;
+                                        case 'ETH': eurValue = ethValue; break;
+                                        case 'SOL': eurValue = solValue; break;
+                                        case 'EUR': eurValue = eurCashValue; break;
+                                    }
+                                    
+                                    return `${asset}\n${percentage.toFixed(1)}%\n€${eurValue.toFixed(0)}`;
+                                }
                             },
                             grid: {
                                 color: 'rgba(0, 0, 0, 0.05)'  // Very light grid lines
@@ -3883,8 +3983,6 @@
                         container: 'body'
                     });
                 });
-                
-                console.log('Initialized', tooltipList.length, 'Bootstrap tooltips');
             } catch (error) {
                 console.error('Error initializing tooltips:', error);
             }

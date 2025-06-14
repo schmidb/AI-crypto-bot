@@ -116,35 +116,73 @@
             padding: 0.25rem 0.5rem;
         }
 
-        #live-clock {
-            color: #a0c4ff;
-        }
     </style>
+    <!-- Shared Header CSS -->
+    <link rel="stylesheet" href="shared-header.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="index.html">
-                <i class="fas fa-robot me-2"></i>
-                AI Crypto Bot
-            </a>
-            <div class="navbar-nav me-auto">
-                <a class="nav-link" href="index.html">Dashboard</a>
-                <a class="nav-link" href="analysis.html">Analysis</a>
-                <a class="nav-link active" href="config.html">Configuration</a>
-            </div>
-            <div class="ms-auto">
-                <span id="live-clock" class="me-3">
-                    <i class="far fa-clock me-1"></i>
-                    Loading...
-                </span>
-                <span id="bot-uptime">
-                    <i class="fas fa-history me-1"></i>
-                    Uptime: Loading...
-                </span>
-            </div>
-        </div>
-    </nav>
+    <!-- Load Shared Header -->
+    <div id="shared-header"></div>
+
+    <!-- Shared Header JavaScript -->
+    <script src="shared-header.js"></script>
+    <script>
+        // Load shared header and initialize
+        async function loadSharedHeader() {
+            try {
+                const response = await fetch('shared-header.html');
+                if (!response.ok) throw new Error('Failed to load header');
+                const html = await response.text();
+                document.getElementById('shared-header').innerHTML = html;
+                
+                // Initialize header functionality
+                initializeHeader('config');
+            } catch (error) {
+                console.error('Error loading header:', error);
+                // Fallback: show a basic header
+                document.getElementById('shared-header').innerHTML = `
+                    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+                        <div class="container-fluid">
+                            <a class="navbar-brand" href="https://github.com/schmidb/AI-crypto-bot" target="_blank">
+                                <i class="fas fa-robot me-2"></i>
+                                AI Crypto Bot
+                            </a>
+                            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" 
+                                    aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                                <span class="navbar-toggler-icon"></span>
+                            </button>
+                            <div class="collapse navbar-collapse" id="navbarContent">
+                                <div class="navbar-nav me-auto">
+                                    <a class="nav-link" href="index.html">Dashboard</a>
+                                    <a class="nav-link" href="analysis.html">Analysis</a>
+                                    <a class="nav-link active" href="config.html">Configuration</a>
+                                </div>
+                                <div class="navbar-nav ms-auto">
+                                    <span class="navbar-text me-3" id="live-clock">
+                                        <i class="far fa-clock me-1"></i>
+                                        Loading...
+                                    </span>
+                                    <span class="navbar-text" id="bot-uptime">
+                                        <i class="fas fa-history me-1"></i>
+                                        Uptime: Loading...
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+                `;
+                // Initialize even with fallback
+                initializeHeader('config');
+            }
+        }
+        
+        // Load header when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadSharedHeader);
+        } else {
+            loadSharedHeader();
+        }
+    </script>
 
     <div class="container-fluid py-4">
         <!-- Configuration Overview -->
@@ -390,40 +428,6 @@
             }
         };
 
-        // Function to format UTC time consistently
-        function formatUTCTime(date) {
-            if (!date) return 'Unknown';
-            
-            if (typeof date === 'string') {
-                date = new Date(date + (date.includes('Z') ? '' : 'Z'));
-            }
-            
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                timeZone: 'UTC',
-                hour12: false
-            };
-            
-            return date.toLocaleString('en-GB', options) + ' UTC';
-        }
-
-        // Function to update the live clock
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('live-clock').innerHTML = 
-                '<i class="far fa-clock me-1"></i>' + 
-                formatUTCTime(now);
-        }
-
-        // Update clock every second
-        setInterval(updateClock, 1000);
-        updateClock();
-
         // Function to load data
         async function loadData(url) {
             try {
@@ -439,29 +443,6 @@
                 console.error('Error loading data:', error);
                 return null;
             }
-        }
-
-        // Function to update bot status in header
-        async function updateBotStatus() {
-            const data = await loadData('/crypto-bot/data/cache/bot_startup.json');
-            
-            if (data && data.startup_time) {
-                const startTime = new Date(data.startup_time + 'Z');
-                const uptime = Math.floor((new Date() - startTime) / 1000);
-                document.getElementById('bot-uptime').innerHTML = 
-                    '<i class="fas fa-history me-1"></i>Uptime: ' + 
-                    formatUptime(uptime);
-            }
-        }
-
-        // Function to format uptime
-        function formatUptime(seconds) {
-            const days = Math.floor(seconds / 86400);
-            const hours = Math.floor((seconds % 86400) / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const remainingSeconds = seconds % 60;
-            
-            return `${days}d ${hours}h ${minutes}m ${remainingSeconds}s`;
         }
 
         // Function to load current configuration
