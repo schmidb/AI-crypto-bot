@@ -4,9 +4,6 @@ import os
 import datetime
 from typing import Dict, List, Any
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib
-matplotlib.use('Agg')  # Use non-interactive backend
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +27,6 @@ class DashboardUpdater:
             self._update_config_data()
             self._update_detailed_config_data()
             self._update_latest_decisions(trading_data)
-            self._generate_charts(trading_data, portfolio)
             self._update_timestamp()
             logger.info("Local dashboard data updated successfully")
         except Exception as e:
@@ -259,133 +255,6 @@ class DashboardUpdater:
                 
         except Exception as e:
             logger.error(f"Error updating latest decisions: {e}")
-    
-    def _generate_charts(self, trading_data: Dict[str, Any], portfolio: Dict[str, Any]) -> None:
-        """Generate charts for the dashboard"""
-        try:
-            self._generate_portfolio_value_chart()
-            self._generate_portfolio_allocation_chart(portfolio)
-            self._generate_target_vs_current_allocation(portfolio)
-        except Exception as e:
-            logger.error(f"Error generating charts: {e}")
-    
-    def _generate_portfolio_value_chart(self) -> None:
-        """Generate line chart showing portfolio value over time"""
-        try:
-            history_file = "data/portfolio/portfolio_history.csv"
-            
-            if not os.path.exists(history_file):
-                logger.warning(f"Portfolio history file not found: {history_file}")
-                return
-                
-            df = pd.read_csv(history_file)
-            if df.empty:
-                return
-                
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            
-            plt.figure(figsize=(12, 6))
-            plt.plot(df['timestamp'], df['portfolio_value_usd'], linewidth=2, color='#4CAF50')
-            plt.title('Portfolio Value Over Time', fontsize=16, fontweight='bold')
-            plt.xlabel('Date', fontsize=12)
-            plt.ylabel('Value (USD)', fontsize=12)
-            plt.grid(True, alpha=0.3)
-            plt.xticks(rotation=45)
-            plt.tight_layout()
-            
-            plt.savefig("dashboard/images/portfolio_value.png", dpi=150, bbox_inches='tight')
-            plt.close()
-            
-        except Exception as e:
-            logger.error(f"Error generating portfolio value chart: {e}")
-    
-    def _generate_portfolio_allocation_chart(self, portfolio: Dict[str, Any]) -> None:
-        """Generate pie chart showing portfolio allocation"""
-        try:
-            if not portfolio:
-                return
-            
-            # Extract asset values
-            assets = {}
-            for asset in ['BTC', 'ETH', 'SOL', 'USD']:
-                if asset in portfolio and isinstance(portfolio[asset], dict):
-                    amount = portfolio[asset].get('amount', 0)
-                    price = portfolio[asset].get('last_price_usd', 1 if asset == 'USD' else 0)
-                    value = amount * price
-                    if value > 0:
-                        assets[asset] = value
-            
-            if not assets:
-                return
-            
-            # Create pie chart
-            plt.figure(figsize=(10, 8))
-            colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
-            wedges, texts, autotexts = plt.pie(
-                assets.values(), 
-                labels=assets.keys(), 
-                autopct='%1.1f%%',
-                colors=colors,
-                startangle=90
-            )
-            
-            plt.title('Portfolio Allocation', fontsize=16, fontweight='bold')
-            plt.axis('equal')
-            
-            plt.savefig("dashboard/images/portfolio_allocation.png", dpi=150, bbox_inches='tight')
-            plt.close()
-            
-        except Exception as e:
-            logger.error(f"Error generating portfolio allocation chart: {e}")
-    
-    def _generate_target_vs_current_allocation(self, portfolio: Dict[str, Any]) -> None:
-        """Generate bar chart comparing target vs current allocation"""
-        try:
-            from config import TARGET_ALLOCATION
-            
-            if not portfolio or not TARGET_ALLOCATION:
-                return
-            
-            # Calculate current allocation percentages
-            total_value = portfolio.get('portfolio_value_usd', 0)
-            if total_value <= 0:
-                return
-            
-            current_allocation = {}
-            for asset in TARGET_ALLOCATION.keys():
-                if asset in portfolio and isinstance(portfolio[asset], dict):
-                    amount = portfolio[asset].get('amount', 0)
-                    price = portfolio[asset].get('last_price_usd', 1 if asset == 'USD' else 0)
-                    value = amount * price
-                    current_allocation[asset] = (value / total_value) * 100
-                else:
-                    current_allocation[asset] = 0
-            
-            # Create comparison chart
-            assets = list(TARGET_ALLOCATION.keys())
-            target_values = [TARGET_ALLOCATION[asset] for asset in assets]
-            current_values = [current_allocation.get(asset, 0) for asset in assets]
-            
-            x = range(len(assets))
-            width = 0.35
-            
-            plt.figure(figsize=(12, 6))
-            plt.bar([i - width/2 for i in x], target_values, width, label='Target', color='#4CAF50', alpha=0.7)
-            plt.bar([i + width/2 for i in x], current_values, width, label='Current', color='#2196F3', alpha=0.7)
-            
-            plt.xlabel('Assets', fontsize=12)
-            plt.ylabel('Allocation (%)', fontsize=12)
-            plt.title('Target vs Current Allocation', fontsize=16, fontweight='bold')
-            plt.xticks(x, assets)
-            plt.legend()
-            plt.grid(True, alpha=0.3)
-            plt.tight_layout()
-            
-            plt.savefig("dashboard/images/allocation_comparison.png", dpi=150, bbox_inches='tight')
-            plt.close()
-            
-        except Exception as e:
-            logger.error(f"Error generating allocation comparison chart: {e}")
     
     def _update_timestamp(self) -> None:
         """Update the last updated timestamp using most recent activity"""

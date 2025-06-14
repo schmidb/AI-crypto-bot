@@ -75,9 +75,6 @@ class WebServerSync:
             # Sync static files
             self._sync_static_files()
             
-            # Sync images
-            self._sync_images()
-            
             logger.info("Web server sync completed successfully")
             
         except Exception as e:
@@ -196,27 +193,6 @@ class WebServerSync:
             
         except Exception as e:
             logger.error(f"Error copying and modifying HTML file {source_path}: {e}")
-    
-    def _sync_images(self) -> None:
-        """Sync image files using hard links"""
-        try:
-            if not os.path.exists("dashboard/images"):
-                logger.info("Dashboard images directory not found")
-                return
-            
-            images_dir = f"{self.web_path}/images"
-            os.makedirs(images_dir, exist_ok=True)
-            
-            for file in os.listdir("dashboard/images"):
-                if file.endswith((".png", ".jpg", ".jpeg", ".gif", ".svg")):
-                    source_path = os.path.abspath(f"dashboard/images/{file}")
-                    dest_path = f"{images_dir}/{file}"
-                    self._ensure_hard_link(source_path, dest_path)
-            
-            logger.info("Images synced")
-            
-        except Exception as e:
-            logger.error(f"Error syncing images: {e}")
     
     def force_sync(self) -> None:
         """Force sync regardless of enabled status (for manual sync)"""
