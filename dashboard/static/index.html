@@ -2870,7 +2870,7 @@
             const data = await loadData('/crypto-bot/data/portfolio/portfolio.json');
             if (data) {
                 document.getElementById('total-value').textContent = 
-                    '€' + parseFloat(data.portfolio_value_eur || 0).toLocaleString();
+                    '€' + parseFloat(data.portfolio_value_eur || 0).toFixed(2);
                 
                 // Calculate portfolio change
                 const changePercent = ((data.portfolio_value_eur - data.initial_value_eur) / data.initial_value_eur) * 100;
@@ -3168,7 +3168,7 @@
                     const data = trade.market_data;
                     html += `
                         <div class="context-item">
-                            <strong>Price:</strong> €${data.price ? data.price.toLocaleString() : 'N/A'}
+                            <strong>Price:</strong> €${data.price ? parseFloat(data.price).toFixed(2) : 'N/A'}
                         </div>
                     `;
                     
@@ -3437,8 +3437,8 @@
                             </td>
                             <td>${trade.product_id.split('-')[0]}</td>
                             <td>${parseFloat(trade.crypto_amount || 0).toFixed(8)}</td>
-                            <td>€${parseFloat(trade.price).toLocaleString()}</td>
-                            <td>€${parseFloat(trade.trade_amount_usd || 0).toLocaleString()}</td>
+                            <td>€${parseFloat(trade.price).toFixed(2)}</td>
+                            <td>€${parseFloat(trade.trade_amount_usd || 0).toFixed(2)}</td>
                             <td>${(trade.confidence || 0)}%</td>
                             <td>
                                 <div class="reasoning-container">
