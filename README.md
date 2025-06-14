@@ -25,10 +25,14 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
 - **No Trade Blocking**: Doesn't sacrifice profitable trades for rigid allocation targets
 
 ### 🛡️ **Risk Management**
+- **Dual-Layer System**: Static risk configuration + dynamic market assessment
 - **Confidence Thresholds**: 70% minimum confidence for BUY/SELL decisions
-- **Position Limits**: €30-€1000 trade size range
+- **Position Sizing**: Risk-adjusted trade sizes (HIGH=50% reduction, MEDIUM=25%, LOW=0%)
+- **Market Volatility**: Real-time assessment (high/medium/low) affects trading decisions
 - **Balance Protection**: Maintains minimum balances for continued trading
 - **Diversification**: Prevents over-concentration in any single asset
+
+📚 **[Complete Risk Management Guide →](RISK_MANAGEMENT.md)**
 
 ### 📱 **Professional Dashboard**
 - **Real-time Portfolio Tracking**: Live EUR values and allocations

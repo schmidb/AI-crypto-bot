@@ -117,10 +117,14 @@ class DashboardUpdater:
                 SIMULATION_MODE, TARGET_ALLOCATION, DASHBOARD_TRADE_HISTORY_LIMIT
             )
             
+            # Get current market volatility from recent analysis
+            market_volatility = self._get_current_market_volatility()
+            
             config_data = {
                 "trading_pairs": ",".join(TRADING_PAIRS),
                 "decision_interval_minutes": DECISION_INTERVAL_MINUTES,
                 "risk_level": RISK_LEVEL,
+                "market_volatility": market_volatility,
                 "llm_model": LLM_MODEL,
                 "portfolio_rebalance": PORTFOLIO_REBALANCE,
                 "max_trade_percentage": MAX_TRADE_PERCENTAGE,
@@ -286,6 +290,62 @@ class DashboardUpdater:
             logger.error(f"Error reading trade history: {e}")
         return '2000-01-01T00:00:00'
     
+    def _get_current_market_volatility(self) -> str:
+        """Get current market volatility from recent analysis files"""
+        try:
+            import glob
+            from datetime import datetime, timedelta
+            
+            # Get recent analysis files (last 2 hours)
+            cutoff_time = datetime.now() - timedelta(hours=2)
+            recent_files = []
+            
+            for pattern in ["data/*_EUR_*.json", "data/*_USD_*.json"]:
+                files = glob.glob(pattern)
+                for file in files:
+                    try:
+                        # Extract timestamp from filename
+                        parts = file.split('_')
+                        if len(parts) >= 3:
+                            timestamp_str = parts[-1].replace('.json', '')
+                            file_time = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
+                            if file_time > cutoff_time:
+                                recent_files.append(file)
+                    except:
+                        continue
+            
+            # Analyze volatility from recent files
+            volatility_levels = []
+            for file in recent_files[-6:]:  # Last 6 files
+                try:
+                    with open(file, 'r') as f:
+                        data = json.load(f)
+                        market_conditions = data.get('ai_analysis', {}).get('market_conditions', {})
+                        volatility = market_conditions.get('volatility', 'unknown')
+                        if volatility != 'unknown':
+                            volatility_levels.append(volatility)
+                except:
+                    continue
+            
+            if not volatility_levels:
+                return 'unknown'
+            
+            # Determine overall volatility
+            high_count = volatility_levels.count('high')
+            medium_count = volatility_levels.count('medium')
+            low_count = volatility_levels.count('low')
+            
+            if high_count >= len(volatility_levels) * 0.5:
+                return 'high'
+            elif medium_count >= len(volatility_levels) * 0.4:
+                return 'medium'
+            else:
+                return 'low'
+                
+        except Exception as e:
+            logger.error(f"Error getting market volatility: {e}")
+            return 'unknown'
+
     def _get_latest_decision_timestamp(self) -> str:
         """Get the most recent decision timestamp from latest decisions file"""
         try:

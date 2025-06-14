@@ -953,7 +953,7 @@
             text-transform: uppercase;
         }
 
-        #bot-risk-level {
+        #market-volatility {
             font-weight: 600;
             text-transform: uppercase;
         }
@@ -961,6 +961,11 @@
         .risk-low { color: #28a745; }
         .risk-medium { color: #ffc107; }
         .risk-high { color: #dc3545; }
+        
+        .volatility-low { color: #28a745; }
+        .volatility-medium { color: #ffc107; }
+        .volatility-high { color: #dc3545; }
+        .volatility-unknown { color: #6c757d; }
         
         /* Fix for table header text color - white text on white background issue */
         .table thead th {
@@ -1099,23 +1104,20 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted">
-                                Market Risk Level:
+                                Bot Risk Management:
                                 <span class="help-icon-css" 
                                    data-bs-toggle="tooltip" 
                                    data-bs-placement="top" 
                                    data-bs-html="true"
-                                   title="<strong>Market Risk Assessment:</strong><br/>
-                                          This measures current market volatility and uncertainty, not the bot's decision confidence.<br/>
+                                   title="<strong>Bot Risk Configuration:</strong><br/>
+                                          Your bot's risk tolerance setting (static configuration).<br/>
                                           <br/>
-                                          <strong>HIGH</strong> market risk indicates:<br/>
-                                          • High volatility detected in price movements<br/>
-                                          • Uncertain or conflicting market signals<br/>
-                                          • Bot reduces position sizes to 50% for safety<br/>
+                                          <strong>HIGH</strong>: Conservative (50% position sizes)<br/>
+                                          <strong>MEDIUM</strong>: Balanced (75% position sizes)<br/>
+                                          <strong>LOW</strong>: Aggressive (100% position sizes)<br/>
                                           <br/>
-                                          <strong>MEDIUM</strong> market risk: 75% position sizes<br/>
-                                          <strong>LOW</strong> market risk: 100% position sizes<br/>
-                                          <br/>
-                                          <em>Based on RSI extremes, MACD divergence, and Bollinger Band breakouts</em>"
+                                          This is different from current market volatility.<br/>
+                                          <em>Set in .env file as RISK_LEVEL</em>"
                                    style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
                                 </span>
                             </small>
@@ -1123,28 +1125,24 @@
                         </div>
                         <div class="mb-3">
                             <small class="text-muted">
-                                Bot Risk Level:
+                                Market Volatility:
                                 <span class="help-icon-css" 
                                    data-bs-toggle="tooltip" 
                                    data-bs-placement="top" 
                                    data-bs-html="true"
-                                   title="<strong>Bot Risk Assessment:</strong><br/>
-                                          This shows how risky the bot's current trading behavior is.<br/>
+                                   title="<strong>Current Market Volatility:</strong><br/>
+                                          Real-time assessment of market conditions (dynamic analysis).<br/>
                                           <br/>
-                                          <strong>HIGH</strong> bot risk means:<br/>
-                                          • Bot is trading aggressively<br/>
-                                          • Lower AI confidence thresholds (60-65%)<br/>
-                                          • Larger position sizes<br/>
-                                          • More frequent trading activity<br/>
+                                          <strong>HIGH</strong>: >5% price swings, high uncertainty<br/>
+                                          <strong>MEDIUM</strong>: 2-5% price movements, moderate activity<br/>
+                                          <strong>LOW</strong>: <2% price changes, stable conditions<br/>
                                           <br/>
-                                          <strong>MEDIUM</strong> bot risk: Standard confidence thresholds (70%)<br/>
-                                          <strong>LOW</strong> bot risk: Conservative trading, high confidence required (75%+)<br/>
-                                          <br/>
-                                          <em>When market conditions are volatile, bot operates at LOW risk (conservative)</em>"
+                                          Based on recent price movements and technical indicators.<br/>
+                                          <em>Updates with each market analysis</em>"
                                    style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
                                 </span>
                             </small>
-                            <div id="bot-risk-level">MEDIUM</div>
+                            <div id="market-volatility">Loading...</div>
                         </div>
                     </div>
                 </div>
@@ -2372,7 +2370,7 @@
                     simulationBadge.className = 'ms-2 badge simulation-badge bg-secondary';
                 }
                 
-                // Update risk level
+                // Update bot risk level (static configuration)
                 const riskLevel = document.getElementById('risk-level');
                 if (data.risk_level) {
                     riskLevel.textContent = data.risk_level.toUpperCase();
@@ -2382,28 +2380,15 @@
                     riskLevel.className = '';
                 }
                 
-                // Update bot risk level (inverse of market risk - when market is risky, bot is conservative)
-                const botRiskLevel = document.getElementById('bot-risk-level');
-                if (data.risk_level) {
-                    // Invert the risk level: high market risk = low bot risk (conservative)
-                    let botRisk;
-                    switch(data.risk_level.toLowerCase()) {
-                        case 'high':
-                            botRisk = 'LOW';  // Market is risky, so bot is conservative (low risk)
-                            break;
-                        case 'low':
-                            botRisk = 'HIGH'; // Market is stable, so bot can be more aggressive (high risk)
-                            break;
-                        case 'medium':
-                        default:
-                            botRisk = 'MEDIUM';
-                            break;
-                    }
-                    botRiskLevel.textContent = botRisk;
-                    botRiskLevel.className = `risk-${botRisk.toLowerCase()}`;
+                // Update market volatility (dynamic assessment)
+                const marketVolatility = document.getElementById('market-volatility');
+                if (data.market_volatility) {
+                    marketVolatility.textContent = data.market_volatility.toUpperCase();
+                    marketVolatility.className = `volatility-${data.market_volatility.toLowerCase()}`;
                 } else {
-                    botRiskLevel.textContent = 'MEDIUM';
-                    botRiskLevel.className = 'risk-medium';
+                    // Fallback: try to get volatility from recent analysis data
+                    marketVolatility.textContent = 'ANALYZING...';
+                    marketVolatility.className = 'volatility-unknown';
                 }
             } else {
                 // If no data available, show fallback
