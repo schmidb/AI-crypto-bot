@@ -80,6 +80,13 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
    python3 main.py
    ```
 
+### ☁️ **Cloud Deployment**
+For production deployment on cloud platforms, use the automated setup scripts:
+- **AWS EC2**: See [`aws_setup/README.md`](aws_setup/README.md) for complete AWS deployment guide
+- **Google Cloud**: See [`gcp_setup/README.md`](gcp_setup/README.md) for complete GCP deployment guide
+
+Both include automated scripts for dependencies, web server setup, and service configuration.
+
 ## ⚙️ **Configuration**
 
 ### **Core Settings** (`.env`)
@@ -180,11 +187,50 @@ AI-crypto-bot/
 ├── dashboard/             # Web dashboard
 │   ├── static/
 │   └── images/
+├── aws_setup/             # AWS deployment scripts
+│   ├── setup_ec2.sh
+│   ├── iam_policy.json
+│   ├── cloudwatch_setup.sh
+│   └── create_secrets.sh
+├── gcp_setup/             # Google Cloud deployment scripts
+│   ├── setup_gce.sh
+│   └── README.md
 ├── data/                  # Runtime data
 ├── logs/                  # Application logs
 ├── .env                   # Environment variables
 └── requirements.txt       # Dependencies
 ```
+
+## 🕒 **Persistent Uptime Tracking**
+
+The bot features intelligent uptime management that distinguishes between restarts and stops:
+
+### **Uptime Behavior**
+- **Restarts**: Configuration changes, updates, or service restarts **preserve uptime**
+- **Explicit Stops**: Manual stops or `systemctl stop` **reset uptime**
+- **Crash Recovery**: Automatic restarts after crashes **preserve uptime**
+
+### **Bot Management**
+Use the included bot manager for proper uptime handling:
+
+```bash
+# Start the bot
+python3 bot_manager.py start
+
+# Restart (preserves uptime) - for config changes, updates
+python3 bot_manager.py restart
+
+# Stop (resets uptime) - for maintenance, shutdown
+python3 bot_manager.py stop
+
+# Check status and total uptime
+python3 bot_manager.py status
+```
+
+### **Dashboard Display**
+- **Total Uptime**: Cumulative uptime across all sessions
+- **Restart Count**: Number of restarts since original start
+- **Professional Metrics**: True operational uptime tracking
 
 ## 🔧 **Advanced Configuration**
 
@@ -260,7 +306,9 @@ SIMULATION_MODE=True
 
 ## 🔄 **Deployment**
 
-### **Systemd Service**
+### **Local Deployment**
+
+#### **Systemd Service**
 ```bash
 # Copy service file
 sudo cp crypto-bot.service /etc/systemd/system/
@@ -269,10 +317,133 @@ sudo systemctl enable crypto-bot
 sudo systemctl start crypto-bot
 ```
 
-### **Dashboard Deployment**
+#### **Dashboard Deployment**
 ```bash
 # Deploy dashboard to web server
 python3 deploy_dashboard.py
+```
+
+### **☁️ Cloud Deployment**
+
+#### **🚀 AWS EC2 Deployment**
+
+**1. Launch EC2 Instance**
+- Choose Amazon Linux 2023 AMI
+- Select t2.medium or better for production
+- Configure security groups:
+  - SSH access (port 22)
+  - HTTP access (port 80) for dashboard
+  - API access (port 5000) for portfolio refresh
+
+**2. Connect and Setup**
+```bash
+# Connect to instance
+ssh -i your-key.pem ec2-user@your-instance-ip
+
+# Clone repository
+git clone https://github.com/schmidb/AI-crypto-bot.git
+cd AI-crypto-bot
+
+# Run setup script
+bash aws_setup/setup_ec2.sh
+```
+
+**3. Configure and Start**
+```bash
+# Edit configuration
+nano .env
+
+# Start service
+sudo systemctl start crypto-bot
+sudo systemctl enable crypto-bot
+
+# Check status
+sudo systemctl status crypto-bot
+sudo journalctl -u crypto-bot -f
+```
+
+**4. Access Dashboard**
+```
+http://your-ec2-ip/crypto-bot/
+```
+
+#### **🌐 Google Cloud Deployment**
+
+**1. Create VM Instance**
+- Navigate to Compute Engine > VM instances
+- Choose e2-medium or better
+- Select Debian/Ubuntu boot disk
+- Allow HTTP/HTTPS traffic
+- Add firewall rule for port 80
+
+**2. Connect and Setup**
+```bash
+# Connect via SSH
+gcloud compute ssh your-instance-name --zone=your-zone
+
+# Clone repository
+git clone https://github.com/schmidb/AI-crypto-bot.git
+cd AI-crypto-bot
+
+# Run setup script
+bash gcp_setup/setup_gce.sh
+```
+
+**3. Configure and Start**
+```bash
+# Edit configuration
+nano .env
+
+# Check service status
+sudo supervisorctl status crypto-bot
+
+# View logs
+tail -f /var/log/crypto-bot/crypto-bot.log
+
+# Restart if needed
+sudo supervisorctl restart crypto-bot
+```
+
+**4. Access Dashboard**
+```
+http://your-vm-ip/crypto-bot/
+```
+
+#### **🔐 Security Configuration**
+
+**AWS IAM Policy** (for CloudWatch integration):
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricData",
+        "cloudwatch:GetMetricStatistics",
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+**GCP Firewall Rules**:
+```bash
+# Allow HTTP traffic for dashboard
+gcloud compute firewall-rules create allow-http-crypto-bot \
+    --allow tcp:80 \
+    --source-ranges 0.0.0.0/0 \
+    --description "Allow HTTP access to crypto bot dashboard"
+
+# Allow API access for portfolio refresh
+gcloud compute firewall-rules create allow-api-crypto-bot \
+    --allow tcp:5000 \
+    --source-ranges 0.0.0.0/0 \
+    --description "Allow API access for portfolio refresh"
 ```
 
 ## 📞 **Support & Troubleshooting**
