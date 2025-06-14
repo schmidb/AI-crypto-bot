@@ -191,116 +191,6 @@ class TradingStrategy:
         except Exception as e:
             logger.error(f"Error updating portfolio: {e}")
     
-    def rebalance_portfolio(self) -> Dict[str, Any]:
-        """
-        Rebalance portfolio to maintain target allocations
-        
-        Returns:
-            Dict with rebalancing results
-        """
-        try:
-            logger.info("Starting portfolio rebalancing...")
-            
-            # Get current portfolio from Coinbase
-            refresh_result = self.refresh_portfolio_from_coinbase()
-            if refresh_result.get("status") != "success":
-                return {"status": "error", "message": "Failed to refresh portfolio before rebalancing"}
-            
-            # Define target allocation (Enhanced Trading Strategy)
-            target_allocation = {
-                'BTC': 26.7,  # 26.7% of total portfolio
-                'ETH': 26.7,  # 26.7% of total portfolio  
-                'SOL': 26.7,  # 26.7% of total portfolio
-                'EUR': 20.0   # 20% of total portfolio for liquidity
-            }
-            
-            # Check if rebalancing is needed
-            current_allocation = self._get_current_allocation()
-            rebalance_needed = self._check_rebalancing_needed(current_allocation, target_allocation)
-            
-            if not rebalance_needed:
-                logger.info("Portfolio is within target allocation ranges - no rebalancing needed")
-                return {
-                    "status": "success", 
-                    "message": "Portfolio is within target ranges",
-                    "actions_taken": [],
-                    "current_allocation": current_allocation,
-                    "target_allocation": target_allocation
-                }
-            
-            # Calculate required rebalancing actions
-            from utils.portfolio import Portfolio
-            portfolio_util = Portfolio()
-            portfolio_util.data = self.portfolio
-            
-            try:
-                rebalance_actions = portfolio_util.calculate_rebalance_actions(target_allocation)
-            except Exception as e:
-                logger.error(f"Error calculating rebalance actions: {e}")
-                return {"status": "error", "message": f"Failed to calculate rebalance actions: {str(e)}"}
-            
-            if not rebalance_actions:
-                logger.info("No rebalancing actions required")
-                return {
-                    "status": "success",
-                    "message": "No rebalancing actions required", 
-                    "actions_taken": [],
-                    "current_allocation": current_allocation,
-                    "target_allocation": target_allocation
-                }
-            
-            # Execute rebalancing trades
-            executed_actions = []
-            failed_actions = []
-            
-            logger.info(f"Executing {len(rebalance_actions)} rebalancing actions...")
-            
-            for action in rebalance_actions:
-                try:
-                    result = self._execute_rebalance_action(action)
-                    if result.get("success"):
-                        executed_actions.append({**action, "execution_result": result})
-                        logger.info(f"Successfully executed: {action['action'].upper()} {action['amount']:.6f} {action['asset']}")
-                    else:
-                        failed_actions.append({**action, "error": result.get("error", "Unknown error")})
-                        logger.warning(f"Failed to execute: {action['action'].upper()} {action['amount']:.6f} {action['asset']} - {result.get('error')}")
-                        
-                except Exception as e:
-                    failed_actions.append({**action, "error": str(e)})
-                    logger.error(f"Exception executing rebalance action: {e}")
-                
-                # Add delay between trades to avoid rate limiting
-                import time
-                time.sleep(2)
-            
-            # Update portfolio after rebalancing
-            if executed_actions:
-                logger.info("Refreshing portfolio after rebalancing...")
-                self.refresh_portfolio_from_coinbase()
-                updated_allocation = self._get_current_allocation()
-            else:
-                updated_allocation = current_allocation
-            
-            # Prepare result summary
-            result = {
-                "status": "success" if executed_actions else "partial_failure",
-                "message": f"Rebalancing completed: {len(executed_actions)} successful, {len(failed_actions)} failed",
-                "actions_executed": len(executed_actions),
-                "actions_failed": len(failed_actions),
-                "executed_actions": executed_actions,
-                "failed_actions": failed_actions,
-                "current_allocation": current_allocation,
-                "updated_allocation": updated_allocation,
-                "target_allocation": target_allocation
-            }
-            
-            logger.info(f"Portfolio rebalancing completed: {len(executed_actions)} actions executed, {len(failed_actions)} failed")
-            return result
-            
-        except Exception as e:
-            error_msg = f"Error during portfolio rebalancing: {str(e)}"
-            logger.error(error_msg)
-            return {"status": "error", "message": error_msg}
 
     def _get_current_allocation(self) -> Dict[str, float]:
         """Get current portfolio allocation percentages"""
@@ -329,26 +219,6 @@ class TradingStrategy:
         except Exception as e:
             logger.error(f"Error calculating current allocation: {e}")
             return {}
-
-    def _check_rebalancing_needed(self, current: Dict[str, float], target: Dict[str, float]) -> bool:
-        """Check if rebalancing is needed based on threshold"""
-        try:
-            threshold = getattr(self.config, 'REBALANCE_THRESHOLD_PERCENT', 5.0)
-            
-            for asset in target.keys():
-                current_pct = current.get(asset, 0)
-                target_pct = target.get(asset, 0)
-                deviation = abs(current_pct - target_pct)
-                
-                if deviation > threshold:
-                    logger.info(f"Rebalancing needed: {asset} deviation {deviation:.1f}% > {threshold}% threshold")
-                    return True
-            
-            return False
-            
-        except Exception as e:
-            logger.error(f"Error checking rebalancing threshold: {e}")
-            return False
 
     def _execute_rebalance_action(self, action: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a single rebalancing action (buy or sell)"""
@@ -412,10 +282,6 @@ class TradingStrategy:
         Uses market conditions and trading context to make smart rebalancing decisions
         """
         try:
-            # Only rebalance if enabled in config
-            if not getattr(self.config, 'PORTFOLIO_REBALANCE', True):
-                return {"status": "disabled", "message": "Portfolio rebalancing is disabled"}
-            
             logger.info("Checking if intelligent portfolio rebalancing is needed...")
             
             # Get current portfolio state
@@ -470,7 +336,7 @@ class TradingStrategy:
     def _analyze_rebalancing_need(self, current: Dict[str, float], target: Dict[str, float]) -> Dict[str, Any]:
         """Analyze if rebalancing is needed and how urgent it is"""
         try:
-            threshold = getattr(self.config, 'REBALANCE_THRESHOLD_PERCENT', 5.0)
+            threshold = 5.0  # Fixed 5% threshold for rebalancing
             deviations = {}
             max_deviation = 0
             urgent_assets = []

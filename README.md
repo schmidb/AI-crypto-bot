@@ -21,8 +21,8 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
 ### 📊 **Smart Trading Strategy**
 - **AI Priority**: Market analysis drives all trading decisions
 - **Dynamic Position Sizing**: Trade sizes adapt to confidence (10-25% of balance)
+- **Intelligent Rebalancing**: Automatic portfolio rebalancing every 3 hours based on market conditions
 - **Safety Limits**: Minimum €50 EUR balance, 3% minimum crypto allocation
-- **No Trade Blocking**: Doesn't sacrifice profitable trades for rigid allocation targets
 
 ### 🛡️ **Risk Management**
 - **Dual-Layer System**: Static risk configuration + dynamic market assessment
@@ -111,7 +111,6 @@ MIN_TRADE_AMOUNT=30.0               # Minimum trade size (EUR)
 MAX_POSITION_SIZE=1000.0            # Maximum single trade size (EUR)
 
 # Portfolio Strategy
-PORTFOLIO_REBALANCE=false           # Disabled - AI decisions prioritized
 TARGET_CRYPTO_ALLOCATION=90         # Target crypto allocation %
 TARGET_BASE_ALLOCATION=10           # Target EUR allocation %
 ```
@@ -166,6 +165,13 @@ Market Data → AI Analysis → Confidence Score → Safety Check → Position S
   - **Market Context**: Price trends, conditions, and analysis quality
 - **Recent Decisions**: Latest BUY/SELL/HOLD recommendations
 - **Confidence Levels**: AI confidence scores (0-100%)
+
+### **Live Logs Dashboard**
+- **Real-time Log Monitoring**: Last 30 lines of bot activity
+- **Auto-refresh**: Updates every 5 seconds automatically
+- **Color-coded Log Levels**: ERROR (red), WARNING (yellow), INFO (blue), DEBUG (gray)
+- **Live Status Indicators**: Bot operational status and last update time
+- **Interactive Controls**: Manual refresh, auto-scroll toggle, clear logs
 
 ### **Market Data**
 - **Live Prices**: Real-time cryptocurrency prices

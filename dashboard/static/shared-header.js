@@ -55,32 +55,11 @@ async function updateBotStatus() {
         const data = await response.json();
         
         if (data && data.status !== 'offline') {
-            // Use total uptime if available, otherwise fall back to session uptime
-            let uptimeSeconds;
-            let uptimeText = '';
+            // Calculate session uptime
+            const startTime = new Date(data.startup_time + 'Z');
+            const sessionSeconds = Math.floor((new Date() - startTime) / 1000);
             
-            if (data.total_uptime_seconds !== undefined) {
-                // Calculate current session time
-                const sessionStart = new Date(data.startup_time + 'Z');
-                const currentSessionSeconds = Math.floor((new Date() - sessionStart) / 1000);
-                
-                // Total uptime is previous sessions + current session
-                uptimeSeconds = data.total_uptime_seconds + currentSessionSeconds;
-                
-                // Add restart count if available
-                if (data.restart_count > 0) {
-                    uptimeText = `<i class="fas fa-history me-1"></i>Uptime: ${formatUptime(uptimeSeconds)} <small class="text-muted">(${data.restart_count} restarts)</small>`;
-                } else {
-                    uptimeText = `<i class="fas fa-history me-1"></i>Uptime: ${formatUptime(uptimeSeconds)}`;
-                }
-            } else {
-                // Fallback to session uptime
-                const startTime = new Date(data.startup_time + 'Z');
-                uptimeSeconds = Math.floor((new Date() - startTime) / 1000);
-                uptimeText = `<i class="fas fa-history me-1"></i>Session: ${formatUptime(uptimeSeconds)}`;
-            }
-            
-            uptimeElement.innerHTML = uptimeText;
+            uptimeElement.innerHTML = `<i class="fas fa-history me-1"></i>Session: ${formatUptime(sessionSeconds)}`;
         } else {
             // Bot is offline
             if (data && data.shutdown_time) {

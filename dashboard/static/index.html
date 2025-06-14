@@ -995,6 +995,8 @@
                 
                 // Initialize header functionality
                 initializeHeader('dashboard');
+                
+                // Header is now loaded and ready for updates
             } catch (error) {
                 console.error('Error loading header:', error);
                 // Fallback: show a basic header
@@ -2251,6 +2253,7 @@
         // Function to update bot status
         async function updateBotStatus() {
             const data = await loadData('/crypto-bot/data/cache/bot_startup.json');
+            const configData = await loadData('/crypto-bot/data/config/config.json');
             const lastUpdated = await loadData('/crypto-bot/data/cache/last_updated.txt');
             
             if (data) {
@@ -2259,18 +2262,27 @@
                 const statusIndicator = document.querySelector('.status-indicator');
                 
                 if (data.status === 'offline') {
-                    statusElement.textContent = 'Offline';
-                    statusIndicator.className = 'status-indicator status-offline me-2';
+                    if (statusElement) {
+                        statusElement.textContent = 'Offline';
+                    }
+                    if (statusIndicator) {
+                        statusIndicator.className = 'status-indicator status-offline me-2';
+                    }
                     
                     // Show shutdown time instead of uptime
+                    const uptimeElement = document.getElementById('bot-uptime');
                     if (data.shutdown_time) {
                         const shutdownTime = new Date(data.shutdown_time + 'Z');
-                        document.getElementById('bot-uptime').innerHTML = 
-                            '<i class="fas fa-power-off me-1"></i>Stopped: ' + 
-                            formatUTCTime(shutdownTime);
+                        if (uptimeElement) {
+                            uptimeElement.innerHTML = 
+                                '<i class="fas fa-power-off me-1"></i>Stopped: ' + 
+                                formatUTCTime(shutdownTime);
+                        }
                     } else {
-                        document.getElementById('bot-uptime').innerHTML = 
-                            '<i class="fas fa-power-off me-1"></i>Status: Offline';
+                        if (uptimeElement) {
+                            uptimeElement.innerHTML = 
+                                '<i class="fas fa-power-off me-1"></i>Status: Offline';
+                        }
                     }
                     
                     // Clear countdown timer for offline bot
@@ -2278,12 +2290,19 @@
                         clearInterval(countdownInterval);
                         countdownInterval = null;
                     }
-                    document.getElementById('next-decision-timer').textContent = 'Bot offline';
+                    const nextDecisionElement = document.getElementById('next-decision-timer');
+                    if (nextDecisionElement) {
+                        nextDecisionElement.textContent = 'Bot offline';
+                    }
                     
                 } else {
                     // Bot is online
-                    statusElement.textContent = 'Online';
-                    statusIndicator.className = 'status-indicator status-online me-2';
+                    if (statusElement) {
+                        statusElement.textContent = 'Online';
+                    }
+                    if (statusIndicator) {
+                        statusIndicator.className = 'status-indicator status-online me-2';
+                    }
                     
                     // Use total uptime if available, otherwise fall back to session uptime
                     let uptimeSeconds;
@@ -2310,7 +2329,12 @@
                         uptimeText = `<i class="fas fa-history me-1"></i>Session: ${formatUptime(uptimeSeconds)}`;
                     }
                     
-                    document.getElementById('bot-uptime').innerHTML = uptimeText;
+                    const uptimeElement = document.getElementById('bot-uptime');
+                    if (uptimeElement) {
+                        uptimeElement.innerHTML = uptimeText;
+                    } else {
+                        console.warn('bot-uptime element not found in DOM');
+                    }
 
                     // Update next decision countdown
                     if (data.next_decision_time) {
@@ -2327,7 +2351,10 @@
                             if (nextDecision > new Date()) {
                                 updateCountdown(nextDecision);
                             } else {
-                                document.getElementById('next-decision-timer').textContent = 'Due now';
+                                const nextDecisionElement = document.getElementById('next-decision-timer');
+                                if (nextDecisionElement) {
+                                    nextDecisionElement.textContent = 'Due now';
+                                }
                             }
                         }
                     } else {
@@ -2341,37 +2368,49 @@
                 
                 // Update last trade time (from trade history)
                 const tradeHistory = await loadData('/crypto-bot/data/trades/trade_history.json');
+                const lastUpdateElement = document.getElementById('last-update');
                 if (tradeHistory && tradeHistory.length > 0) {
                     const lastTrade = tradeHistory[tradeHistory.length - 1];
                     const lastTradeTime = new Date(lastTrade.timestamp + 'Z');
-                    document.getElementById('last-update').innerHTML = 
-                        `<i class="far fa-clock me-1"></i>${formatUTCTime(lastTradeTime)}`;
+                    if (lastUpdateElement) {
+                        lastUpdateElement.innerHTML = 
+                            `<i class="far fa-clock me-1"></i>${formatUTCTime(lastTradeTime)}`;
+                    }
                 } else if (data.last_decision_time) {
                     // Fallback to last decision time if no trades
                     const lastDecision = new Date(data.last_decision_time + 'Z');
-                    document.getElementById('last-update').innerHTML = 
-                        `<i class="far fa-clock me-1"></i>${formatUTCTime(lastDecision)}`;
+                    if (lastUpdateElement) {
+                        lastUpdateElement.innerHTML = 
+                            `<i class="far fa-clock me-1"></i>${formatUTCTime(lastDecision)}`;
+                    }
                 } else {
-                    document.getElementById('last-update').innerHTML = 
-                        `<i class="far fa-clock me-1"></i>No recent updates`;
+                    if (lastUpdateElement) {
+                        lastUpdateElement.innerHTML = 
+                            `<i class="far fa-clock me-1"></i>No recent updates`;
+                    }
                 }
                 
                 // Update market data timestamp (from latest decision files)
                 const btcMarketData = await loadData('/crypto-bot/data/BTC_EUR_latest.json');
+                const marketDataUpdateElement = document.getElementById('market-data-update');
                 if (btcMarketData && btcMarketData.market_data && btcMarketData.market_data.timestamp) {
                     const marketDataTime = new Date(btcMarketData.market_data.timestamp + (btcMarketData.market_data.timestamp.includes('Z') ? '' : 'Z'));
-                    document.getElementById('market-data-update').innerHTML = 
-                        `<i class="far fa-clock me-1"></i>${formatUTCTime(marketDataTime)}`;
+                    if (marketDataUpdateElement) {
+                        marketDataUpdateElement.innerHTML = 
+                            `<i class="far fa-clock me-1"></i>${formatUTCTime(marketDataTime)}`;
+                    }
                 } else if (btcMarketData && btcMarketData.timestamp) {
                     // Fallback to decision timestamp if market_data timestamp not available
                     const decisionTime = new Date(btcMarketData.timestamp + (btcMarketData.timestamp.includes('Z') ? '' : 'Z'));
-                    document.getElementById('market-data-update').innerHTML = 
-                        `<i class="far fa-clock me-1"></i>${formatUTCTime(decisionTime)}`;
+                    if (marketDataUpdateElement) {
+                        marketDataUpdateElement.innerHTML = 
+                            `<i class="far fa-clock me-1"></i>${formatUTCTime(decisionTime)}`;
+                    }
                 }
                 
                 // Update simulation mode badge
                 const simulationBadge = document.querySelector('.simulation-badge');
-                if (data.simulation_mode !== undefined) {
+                if (data.simulation_mode !== undefined && simulationBadge) {
                     if (data.simulation_mode) {
                         simulationBadge.textContent = 'SIMULATION';
                         simulationBadge.className = 'ms-2 badge simulation-badge simulation';
@@ -2379,36 +2418,44 @@
                         simulationBadge.textContent = 'LIVE TRADING';
                         simulationBadge.className = 'ms-2 badge simulation-badge live';
                     }
-                } else {
+                } else if (simulationBadge) {
                     simulationBadge.textContent = 'UNKNOWN';
                     simulationBadge.className = 'ms-2 badge simulation-badge bg-secondary';
                 }
                 
                 // Update bot risk level (static configuration)
                 const riskLevel = document.getElementById('risk-level');
-                if (data.risk_level) {
+                if (data.risk_level && riskLevel) {
                     riskLevel.textContent = data.risk_level.toUpperCase();
                     riskLevel.className = `risk-${data.risk_level.toLowerCase()}`;
-                } else {
+                } else if (riskLevel) {
                     riskLevel.textContent = 'UNKNOWN';
                     riskLevel.className = '';
                 }
                 
-                // Update market volatility (dynamic assessment)
+                // Update market volatility (dynamic assessment from config)
                 const marketVolatility = document.getElementById('market-volatility');
-                if (data.market_volatility) {
-                    marketVolatility.textContent = data.market_volatility.toUpperCase();
-                    marketVolatility.className = `volatility-${data.market_volatility.toLowerCase()}`;
-                } else {
+                const volatilityFromConfig = configData?.market_volatility || 'unknown';
+                if (volatilityFromConfig !== 'unknown' && marketVolatility) {
+                    marketVolatility.textContent = volatilityFromConfig.toUpperCase();
+                    marketVolatility.className = `volatility-${volatilityFromConfig.toLowerCase()}`;
+                } else if (marketVolatility) {
                     // Fallback: try to get volatility from recent analysis data
                     marketVolatility.textContent = 'ANALYZING...';
                     marketVolatility.className = 'volatility-unknown';
                 }
             } else {
                 // If no data available, show fallback
-                document.getElementById('next-decision-timer').textContent = 'Data unavailable';
-                document.getElementById('last-update').innerHTML = 
-                    `<i class="far fa-clock me-1"></i>Data unavailable`;
+                const nextDecisionElement = document.getElementById('next-decision-timer');
+                const lastUpdateElement = document.getElementById('last-update');
+                
+                if (nextDecisionElement) {
+                    nextDecisionElement.textContent = 'Data unavailable';
+                }
+                if (lastUpdateElement) {
+                    lastUpdateElement.innerHTML = 
+                        `<i class="far fa-clock me-1"></i>Data unavailable`;
+                }
             }
         }
 
@@ -2423,9 +2470,12 @@
             function updateTimer() {
                 const now = new Date();
                 const diff = nextDecisionTime - now;
+                const nextDecisionElement = document.getElementById('next-decision-timer');
                 
                 if (diff <= 0) {
-                    document.getElementById('next-decision-timer').textContent = 'Due now';
+                    if (nextDecisionElement) {
+                        nextDecisionElement.textContent = 'Due now';
+                    }
                     if (countdownInterval) {
                         clearInterval(countdownInterval);
                         countdownInterval = null;
@@ -2435,8 +2485,10 @@
 
                 const minutes = Math.floor(diff / 60000);
                 const seconds = Math.floor((diff % 60000) / 1000);
-                document.getElementById('next-decision-timer').textContent = 
-                    `${minutes}m ${seconds}s`;
+                if (nextDecisionElement) {
+                    nextDecisionElement.textContent = 
+                        `${minutes}m ${seconds}s`;
+                }
             }
 
             // Update immediately
@@ -3894,6 +3946,7 @@
 
         // Update all data initially and every 60 seconds
         function updateAllData() {
+            // Header should be loaded by now, so always call updateBotStatus
             updateBotStatus();
             updateMarketData(); // This now includes recent decisions
             updatePortfolio();
@@ -3945,9 +3998,11 @@
 
         // Initialize everything when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
-            setupTradeHistoryFilters();
-            updateAllData();
-            setInterval(updateAllData, 60000);
+            loadSharedHeader().then(() => {
+                setupTradeHistoryFilters();
+                updateAllData();
+                setInterval(updateAllData, 60000);
+            });
         });
 
         // Fallback initialization if DOMContentLoaded already fired
@@ -3955,9 +4010,11 @@
             // DOM is still loading, event listener will handle it
         } else {
             // DOM is already loaded
-            setupTradeHistoryFilters();
-            updateAllData();
-            setInterval(updateAllData, 60000);
+            loadSharedHeader().then(() => {
+                setupTradeHistoryFilters();
+                updateAllData();
+                setInterval(updateAllData, 60000);
+            });
         }
         
         // Initialize Bootstrap tooltips with enhanced configuration

@@ -311,10 +311,6 @@
                 }
             },
             'Portfolio Management': {
-                'PORTFOLIO_REBALANCE': {
-                    default: 'true',
-                    description: 'Enable automatic portfolio rebalancing'
-                },
                 'MAX_TRADE_PERCENTAGE': {
                     default: '25',
                     description: 'Maximum percentage of portfolio to trade in a single transaction'
@@ -392,16 +388,6 @@
                     description: 'Maximum EUR amount for a single position'
                 }
             },
-            'Portfolio Rebalancing': {
-                'REBALANCE_THRESHOLD_PERCENT': {
-                    default: '5',
-                    description: 'Percentage deviation that triggers rebalancing'
-                },
-                'REBALANCE_CHECK_INTERVAL_MINUTES': {
-                    default: '180',
-                    description: 'How often (in minutes) to check for rebalancing needs'
-                }
-            },
             'Dashboard & Logging': {
                 'DASHBOARD_TRADE_HISTORY_LIMIT': {
                     default: '10',
@@ -463,7 +449,6 @@
                 currentConfig.DECISION_INTERVAL_MINUTES = configData.decision_interval_minutes?.toString();
                 currentConfig.RISK_LEVEL = configData.risk_level;
                 currentConfig.LLM_MODEL = configData.llm_model;
-                currentConfig.PORTFOLIO_REBALANCE = configData.portfolio_rebalance?.toString();
                 currentConfig.MAX_TRADE_PERCENTAGE = configData.max_trade_percentage?.toString();
                 currentConfig.SIMULATION_MODE = configData.simulation_mode?.toString();
                 currentConfig.DASHBOARD_TRADE_HISTORY_LIMIT = configData.dashboard_trade_history_limit?.toString();

@@ -90,6 +90,7 @@ class WebServerSync:
                 "data/config/detailed_config.json": "data/config/detailed_config.json",
                 "data/cache/latest_decisions.json": "data/cache/latest_decisions.json",
                 "data/cache/trading_data.json": "data/cache/trading_data.json",
+                "data/cache/logs_data.json": "logs_data.json",  # Logs data for dashboard
                 "data/cache/last_updated.txt": "data/cache/last_updated.txt",
                 "data/cache/bot_startup.json": "data/cache/bot_startup.json",
                 "data/cache/bot_uptime.json": "data/cache/bot_uptime.json",

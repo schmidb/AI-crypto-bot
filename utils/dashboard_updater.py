@@ -27,6 +27,7 @@ class DashboardUpdater:
             self._update_config_data()
             self._update_detailed_config_data()
             self._update_latest_decisions(trading_data)
+            self._update_logs_data()
             self._update_timestamp()
             logger.info("Local dashboard data updated successfully")
         except Exception as e:
@@ -113,7 +114,7 @@ class DashboardUpdater:
         try:
             from config import (
                 TRADING_PAIRS, DECISION_INTERVAL_MINUTES, RISK_LEVEL,
-                LLM_MODEL, PORTFOLIO_REBALANCE, MAX_TRADE_PERCENTAGE,
+                LLM_MODEL, MAX_TRADE_PERCENTAGE,
                 SIMULATION_MODE, TARGET_ALLOCATION, DASHBOARD_TRADE_HISTORY_LIMIT
             )
             
@@ -126,7 +127,6 @@ class DashboardUpdater:
                 "risk_level": RISK_LEVEL,
                 "market_volatility": market_volatility,
                 "llm_model": LLM_MODEL,
-                "portfolio_rebalance": PORTFOLIO_REBALANCE,
                 "max_trade_percentage": MAX_TRADE_PERCENTAGE,
                 "simulation_mode": SIMULATION_MODE,
                 "target_allocation": TARGET_ALLOCATION,
@@ -168,7 +168,6 @@ class DashboardUpdater:
             detailed_config['SIMULATION_MODE'] = getattr(config, 'SIMULATION_MODE', None)
             
             # Portfolio Management
-            detailed_config['PORTFOLIO_REBALANCE'] = getattr(config, 'PORTFOLIO_REBALANCE', None)
             detailed_config['MAX_TRADE_PERCENTAGE'] = getattr(config, 'MAX_TRADE_PERCENTAGE', None)
             detailed_config['TARGET_CRYPTO_ALLOCATION'] = getattr(config, 'TARGET_CRYPTO_ALLOCATION', None)
             detailed_config['TARGET_USD_ALLOCATION'] = getattr(config, 'TARGET_USD_ALLOCATION', None)
@@ -194,10 +193,6 @@ class DashboardUpdater:
             # Trade Limits
             detailed_config['MIN_TRADE_USD'] = getattr(config, 'MIN_TRADE_USD', None)
             detailed_config['MAX_POSITION_SIZE_USD'] = getattr(config, 'MAX_POSITION_SIZE_USD', None)
-            
-            # Portfolio Rebalancing
-            detailed_config['REBALANCE_THRESHOLD_PERCENT'] = getattr(config, 'REBALANCE_THRESHOLD_PERCENT', None)
-            detailed_config['REBALANCE_CHECK_INTERVAL_MINUTES'] = getattr(config, 'REBALANCE_CHECK_INTERVAL_MINUTES', None)
             
             # Dashboard & Logging
             detailed_config['DASHBOARD_TRADE_HISTORY_LIMIT'] = getattr(config, 'DASHBOARD_TRADE_HISTORY_LIMIT', None)
@@ -260,6 +255,43 @@ class DashboardUpdater:
         except Exception as e:
             logger.error(f"Error updating latest decisions: {e}")
     
+    def _update_logs_data(self) -> None:
+        """Update logs data for dashboard display"""
+        try:
+            from utils.log_reader import LogReader
+            
+            # Initialize log reader
+            log_reader = LogReader()
+            
+            # Get recent logs (last 30 lines)
+            logs_data = log_reader.get_formatted_logs(num_lines=30)
+            
+            # Save to dashboard data directory
+            os.makedirs("data/cache", exist_ok=True)
+            with open("data/cache/logs_data.json", "w") as f:
+                json.dump(logs_data, f, indent=2)
+            
+            logger.debug("Updated logs data for dashboard")
+            
+        except Exception as e:
+            logger.error(f"Error updating logs data: {e}")
+            # Create empty logs data on error
+            try:
+                empty_logs = {
+                    "logs": [],
+                    "parsed_logs": [],
+                    "stats": {"exists": False, "error": str(e)},
+                    "count": 0,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "status": "error",
+                    "error": str(e)
+                }
+                os.makedirs("data/cache", exist_ok=True)
+                with open("data/cache/logs_data.json", "w") as f:
+                    json.dump(empty_logs, f, indent=2)
+            except Exception as nested_e:
+                logger.error(f"Error creating empty logs data: {nested_e}")
+    
     def _update_timestamp(self) -> None:
         """Update the last updated timestamp using most recent activity"""
         try:
@@ -304,15 +336,20 @@ class DashboardUpdater:
                 files = glob.glob(pattern)
                 for file in files:
                     try:
-                        # Extract timestamp from filename
+                        # Extract timestamp from filename - format: ASSET_CURRENCY_YYYYMMDD_HHMMSS.json
                         parts = file.split('_')
-                        if len(parts) >= 3:
-                            timestamp_str = parts[-1].replace('.json', '')
+                        if len(parts) >= 4:
+                            date_part = parts[-2]  # YYYYMMDD
+                            time_part = parts[-1].replace('.json', '')  # HHMMSS
+                            timestamp_str = f"{date_part}_{time_part}"
                             file_time = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
                             if file_time > cutoff_time:
                                 recent_files.append(file)
-                    except:
+                    except Exception as e:
+                        logger.debug(f"Error parsing timestamp from {file}: {e}")
                         continue
+            
+            logger.debug(f"Found {len(recent_files)} recent analysis files for volatility calculation")
             
             # Analyze volatility from recent files
             volatility_levels = []
@@ -324,11 +361,16 @@ class DashboardUpdater:
                         volatility = market_conditions.get('volatility', 'unknown')
                         if volatility != 'unknown':
                             volatility_levels.append(volatility)
-                except:
+                            logger.debug(f"Found volatility '{volatility}' in {file}")
+                except Exception as e:
+                    logger.debug(f"Error reading volatility from {file}: {e}")
                     continue
             
             if not volatility_levels:
+                logger.debug("No volatility data found in recent files")
                 return 'unknown'
+            
+            logger.debug(f"Volatility levels found: {volatility_levels}")
             
             # Determine overall volatility
             high_count = volatility_levels.count('high')
@@ -336,11 +378,14 @@ class DashboardUpdater:
             low_count = volatility_levels.count('low')
             
             if high_count >= len(volatility_levels) * 0.5:
-                return 'high'
+                calculated_volatility = 'high'
             elif medium_count >= len(volatility_levels) * 0.4:
-                return 'medium'
+                calculated_volatility = 'medium'
             else:
-                return 'low'
+                calculated_volatility = 'low'
+                
+            logger.debug(f"Calculated market volatility: {calculated_volatility} (high:{high_count}, medium:{medium_count}, low:{low_count})")
+            return calculated_volatility
                 
         except Exception as e:
             logger.error(f"Error getting market volatility: {e}")
@@ -359,3 +404,19 @@ class DashboardUpdater:
         except Exception as e:
             logger.error(f"Error reading latest decisions: {e}")
         return '2000-01-01T00:00:00'
+    
+    # Dummy methods to handle old chart generation calls gracefully
+    def _generate_portfolio_value_chart(self, portfolio: Dict[str, Any]) -> None:
+        """Dummy method - chart generation has been removed"""
+        logger.debug("Chart generation has been disabled - portfolio value chart not generated")
+        pass
+    
+    def _generate_portfolio_allocation_chart(self, portfolio: Dict[str, Any]) -> None:
+        """Dummy method - chart generation has been removed"""
+        logger.debug("Chart generation has been disabled - portfolio allocation chart not generated")
+        pass
+    
+    def _generate_allocation_comparison_chart(self, portfolio: Dict[str, Any]) -> None:
+        """Dummy method - chart generation has been removed"""
+        logger.debug("Chart generation has been disabled - allocation comparison chart not generated")
+        pass

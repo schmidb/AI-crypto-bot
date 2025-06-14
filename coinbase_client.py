@@ -495,16 +495,17 @@ class CoinbaseClient:
             from config import Config
             config = Config()
             trading_pairs = config.get_trading_pairs()
+            base_currency = config.BASE_CURRENCY  # Use configured base currency (EUR)
             
             # Extract unique crypto currencies from trading pairs
             crypto_currencies = set()
             for pair in trading_pairs:
-                if '-USD' in pair:
-                    crypto = pair.replace('-USD', '')
+                if f'-{base_currency}' in pair:
+                    crypto = pair.replace(f'-{base_currency}', '')
                     crypto_currencies.add(crypto)
             
-            # Always include USD
-            crypto_currencies.add('USD')
+            # Always include base currency
+            crypto_currencies.add(base_currency)
             
             # Get all accounts/wallets
             accounts = self.get_accounts()
@@ -512,17 +513,17 @@ class CoinbaseClient:
             # Initialize portfolio structure dynamically
             portfolio = {
                 "trades_executed": 0,
-                "portfolio_value_usd": 0,
-                "initial_value_usd": 0,
+                f"portfolio_value_{base_currency.lower()}": 0,
+                f"initial_value_{base_currency.lower()}": 0,
                 "last_updated": datetime.now().isoformat()
             }
             
             # Initialize each currency in the portfolio
             for currency in crypto_currencies:
-                if currency == 'USD':
+                if currency == base_currency:
                     portfolio[currency] = {"amount": 0, "initial_amount": 0}
                 else:
-                    portfolio[currency] = {"amount": 0, "initial_amount": 0, "last_price_usd": 0}
+                    portfolio[currency] = {"amount": 0, "initial_amount": 0, f"last_price_{base_currency.lower()}": 0}
             
             # Fill in actual balances from Coinbase
             for account in accounts:
@@ -552,27 +553,27 @@ class CoinbaseClient:
             # Get current prices for all crypto currencies
             total_value = 0
             for currency in crypto_currencies:
-                if currency != 'USD':
+                if currency != base_currency:
                     try:
-                        price_data = self.get_product_price(f"{currency}-USD")
+                        price_data = self.get_product_price(f"{currency}-{base_currency}")
                         price = float(price_data.get("price", 0))
-                        portfolio[currency]["last_price_usd"] = price
+                        portfolio[currency][f"last_price_{base_currency.lower()}"] = price
                         
                         # Calculate value
                         currency_value = portfolio[currency]["amount"] * price
                         total_value += currency_value
                         
-                        logger.info(f"Retrieved {currency}: amount={portfolio[currency]['amount']}, price=${price}")
+                        logger.info(f"Retrieved {currency}: amount={portfolio[currency]['amount']}, price={base_currency}{price}")
                     except Exception as e:
-                        logger.warning(f"Could not get price for {currency}-USD: {e}")
-                        portfolio[currency]["last_price_usd"] = 0
+                        logger.warning(f"Could not get price for {currency}-{base_currency}: {e}")
+                        portfolio[currency][f"last_price_{base_currency.lower()}"] = 0
                 else:
-                    # Add USD value
-                    total_value += portfolio["USD"]["amount"]
+                    # Add base currency value
+                    total_value += portfolio[base_currency]["amount"]
             
             # Update total portfolio value
-            portfolio["portfolio_value_usd"] = total_value
-            portfolio["initial_value_usd"] = total_value  # Set initial value to current value
+            portfolio[f"portfolio_value_{base_currency.lower()}"] = total_value
+            portfolio[f"initial_value_{base_currency.lower()}"] = total_value  # Set initial value to current value
             
             # Log portfolio summary
             currency_summary = []

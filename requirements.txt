@@ -7,7 +7,7 @@ google-cloud-aiplatform>=1.25.0
 google-auth>=2.22.0
 schedule==1.2.0
 dataclasses==0.6
-psutil>=5.9.0
+# psutil - removed (was only used for uptime monitoring)
 # No longer needed as we're using Python's built-in http.server
 # flask==2.0.1
 # werkzeug==2.0.1

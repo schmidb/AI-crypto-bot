@@ -137,7 +137,7 @@ The bot features intelligent uptime tracking:
 
 4. **Uptime not tracking correctly:**
    - Check bot_manager.py status for service detection
-   - Verify psutil is installed: `pip install psutil`
+   - Verify dependencies are installed: `pip install -r requirements.txt`
    - Review logs for uptime-related messages
 
 For additional help, please open an issue on the GitHub repository.

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Crypto Trading Bot - Logs</title>
+    <!-- Bootstrap 5 CSS with Bootswatch Yeti Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/yeti/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Shared Header CSS -->
+    <link rel="stylesheet" href="shared-header.css">
+    
+    <style>
+        /* Custom styles to match Yeti theme */
+        :root {
+            --yeti-primary: #008cba;
+            --yeti-secondary: #6c757d;
+            --yeti-success: #28a745;
+            --yeti-danger: #dc3545;
+            --yeti-warning: #ffc107;
+            --yeti-info: #17a2b8;
+            --yeti-light: #f8f9fa;
+            --yeti-dark: #343a40;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        .card {
+            border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background-color: var(--yeti-primary);
+            color: white;
+            font-weight: 600;
+            border-bottom: none;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--yeti-primary) !important;
+        }
+        
+        .log-viewer {
+            background: #1e1e1e;
+            color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #495057;
+            position: relative;
+        }
+        
+        .log-line {
+            margin-bottom: 2px;
+            padding: 2px 0;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        
+        .log-line.error {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .log-line.warning {
+            color: #ffd93d;
+            background: rgba(255, 217, 61, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .log-line.info {
+            color: #74c0fc;
+        }
+        
+        .log-line.debug {
+            color: #95a5a6;
+        }
+        
+        .log-line.success {
+            color: #51cf66;
+        }
+        
+        .log-timestamp {
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .log-level {
+            font-weight: bold;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        
+        .log-level.ERROR {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .log-level.WARNING {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .log-level.INFO {
+            background: #0dcaf0;
+            color: #212529;
+        }
+        
+        .log-level.DEBUG {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .auto-scroll-indicator {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: rgba(0, 123, 255, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            display: none;
+        }
+        
+        .auto-scroll-indicator.active {
+            display: block;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-badge.online {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-badge.offline {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .btn-logs {
+            background: var(--yeti-primary);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-logs:hover {
+            background: #006a8a;
+            color: white;
+        }
+        
+        .btn-logs.btn-secondary {
+            background: var(--yeti-secondary);
+        }
+        
+        .btn-logs.btn-secondary:hover {
+            background: #5a6268;
+            color: white;
+        }
+        
+        .form-check-input:checked {
+            background-color: var(--yeti-primary);
+            border-color: var(--yeti-primary);
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+        
+        .no-logs {
+            text-align: center;
+            color: #6c757d;
+            padding: 40px;
+            font-style: italic;
+        }
+        
+        .logs-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .logs-controls {
+                justify-content: center;
+            }
+            
+            .log-viewer {
+                height: 400px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Load Shared Header -->
+    <div id="shared-header"></div>
+
+    <!-- Shared Header JavaScript -->
+    <script src="shared-header.js"></script>
+    <script>
+        // Load shared header and initialize
+        async function loadSharedHeader() {
+            try {
+                const response = await fetch('shared-header.html');
+                if (!response.ok) throw new Error('Failed to load header');
+                const html = await response.text();
+                document.getElementById('shared-header').innerHTML = html;
+                
+                // Initialize header functionality
+                initializeHeader('logs');
+                
+                // Header is now loaded and ready for updates
+            } catch (error) {
+                console.error('Error loading shared header:', error);
+                // Fallback: show a basic header
+                document.getElementById('shared-header').innerHTML = `
+                    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+                        <div class="container-fluid">
+                            <a class="navbar-brand" href="https://github.com/schmidb/AI-crypto-bot" target="_blank">
+                                <i class="fas fa-robot me-2"></i>
+                                AI Crypto Bot
+                            </a>
+                            <div class="collapse navbar-collapse">
+                                <div class="navbar-nav me-auto">
+                                    <a class="nav-link" href="index.html">Dashboard</a>
+                                    <a class="nav-link" href="analysis.html">Analysis</a>
+                                    <a class="nav-link active" href="logs.html">Logs</a>
+                                    <a class="nav-link" href="config.html">Configuration</a>
+                                </div>
+                                <div class="navbar-nav ms-auto">
+                                    <span class="navbar-text me-3" id="live-clock">
+                                        <i class="far fa-clock me-1"></i>
+                                        Loading...
+                                    </span>
+                                    <span class="navbar-text" id="bot-uptime">
+                                        <i class="fas fa-history me-1"></i>
+                                        Uptime: Loading...
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </nav>
+                `;
+                // Initialize even with fallback
+                initializeHeader('logs');
+            }
+        }
+        
+        // Load header when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadSharedHeader);
+        } else {
+            loadSharedHeader();
+        }
+    </script>
+
+    <div class="container-fluid py-4">
+        <!-- Logs Dashboard Row -->
+        <div class="row g-4">
+            <!-- Log Status Card -->
+            <div class="col-12 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Log Status
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-column gap-3">
+                            <div class="status-badge online" id="logStatus">
+                                <i class="fas fa-circle"></i>
+                                <span>Live Logs</span>
+                            </div>
+                            <div class="status-badge" id="lastUpdate">
+                                <i class="fas fa-clock"></i>
+                                <span>Last updated: Never</span>
+                            </div>
+                            <div class="mt-3">
+                                <h6 class="text-muted mb-2">Log File Info</h6>
+                                <div id="logFileInfo">
+                                    <small class="text-muted">Loading...</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log Controls Card -->
+            <div class="col-12 col-lg-8">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>Log Controls
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="logs-controls">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                                <label class="form-check-label" for="autoRefresh">
+                                    Auto-refresh (5s)
+                                </label>
+                            </div>
+                            <button class="btn btn-logs" onclick="refreshLogs()">
+                                <i class="fas fa-sync-alt me-1"></i> Refresh
+                            </button>
+                            <button class="btn btn-logs btn-secondary" onclick="clearLogs()">
+                                <i class="fas fa-trash me-1"></i> Clear
+                            </button>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoScroll" checked>
+                                <label class="form-check-label" for="autoScroll">
+                                    Auto-scroll
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Showing last 30 lines from <code>logs/supervisor.log</code>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Viewer Row -->
+        <div class="row g-4 mt-2">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-file-alt me-2"></i>Live Bot Logs
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <!-- Loading Spinner -->
+                        <div class="loading-spinner" id="loadingSpinner">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading logs...
+                        </div>
+                        
+                        <!-- Log Viewer -->
+                        <div class="log-viewer" id="logViewer">
+                            <div class="auto-scroll-indicator" id="autoScrollIndicator">
+                                <i class="fas fa-arrow-down"></i> Auto-scrolling
+                            </div>
+                            <div class="no-logs" id="noLogs">
+                                <i class="fas fa-file-alt fa-2x mb-3"></i>
+                                <div>No logs available</div>
+                                <small>Logs will appear here when the bot is running</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let autoRefreshInterval;
+        let isAutoScrolling = true;
+        let lastLogCount = 0;
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial log load
+            refreshLogs();
+            
+            // Setup auto-refresh
+            setupAutoRefresh();
+            
+            // Setup scroll detection
+            setupScrollDetection();
+        });
+        
+        function setupAutoRefresh() {
+            const autoRefreshCheckbox = document.getElementById('autoRefresh');
+            
+            function startAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+                
+                if (autoRefreshCheckbox.checked) {
+                    autoRefreshInterval = setInterval(refreshLogs, 5000); // Refresh every 5 seconds
+                }
+            }
+            
+            autoRefreshCheckbox.addEventListener('change', startAutoRefresh);
+            startAutoRefresh();
+        }
+        
+        function setupScrollDetection() {
+            const logViewer = document.getElementById('logViewer');
+            const autoScrollIndicator = document.getElementById('autoScrollIndicator');
+            const autoScrollCheckbox = document.getElementById('autoScroll');
+            
+            logViewer.addEventListener('scroll', function() {
+                const isAtBottom = logViewer.scrollTop + logViewer.clientHeight >= logViewer.scrollHeight - 10;
+                
+                if (autoScrollCheckbox.checked) {
+                    isAutoScrolling = isAtBottom;
+                    
+                    if (isAutoScrolling) {
+                        autoScrollIndicator.classList.add('active');
+                    } else {
+                        autoScrollIndicator.classList.remove('active');
+                    }
+                }
+            });
+            
+            autoScrollCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    isAutoScrolling = true;
+                    logViewer.scrollTop = logViewer.scrollHeight;
+                } else {
+                    isAutoScrolling = false;
+                    autoScrollIndicator.classList.remove('active');
+                }
+            });
+        }
+        
+        async function refreshLogs() {
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const logViewer = document.getElementById('logViewer');
+            const noLogs = document.getElementById('noLogs');
+            const lastUpdate = document.getElementById('lastUpdate');
+            const logStatus = document.getElementById('logStatus');
+            const logFileInfo = document.getElementById('logFileInfo');
+            
+            try {
+                loadingSpinner.style.display = 'block';
+                
+                // Try to read the log file
+                const response = await fetch('logs_data.json?' + new Date().getTime());
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayLogs(data.logs || []);
+                    
+                    // Update status
+                    logStatus.className = 'status-badge online';
+                    logStatus.innerHTML = '<i class="fas fa-circle"></i><span>Live Logs</span>';
+                    
+                    // Update last update time
+                    const now = new Date();
+                    lastUpdate.innerHTML = `<i class="fas fa-clock"></i><span>Last updated: ${now.toLocaleTimeString()}</span>`;
+                    
+                    // Update file info
+                    if (data.stats) {
+                        const stats = data.stats;
+                        logFileInfo.innerHTML = `
+                            <div class="small">
+                                <div><strong>File:</strong> logs/supervisor.log</div>
+                                <div><strong>Size:</strong> ${formatFileSize(stats.size || 0)}</div>
+                                <div><strong>Lines:</strong> ${stats.lines || 0}</div>
+                                <div><strong>Status:</strong> ${stats.exists ? 'Available' : 'Not found'}</div>
+                            </div>
+                        `;
+                    }
+                    
+                } else {
+                    throw new Error('Failed to fetch logs');
+                }
+                
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                
+                // Update status to offline
+                logStatus.className = 'status-badge offline';
+                logStatus.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Logs Unavailable</span>';
+                
+                // Show no logs message
+                noLogs.style.display = 'block';
+                
+                // Update file info
+                logFileInfo.innerHTML = `
+                    <div class="small text-danger">
+                        <div><strong>Error:</strong> Unable to load logs</div>
+                        <div>Check if bot is running</div>
+                    </div>
+                `;
+                
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+        
+        function displayLogs(logs) {
+            const logViewer = document.getElementById('logViewer');
+            const noLogs = document.getElementById('noLogs');
+            
+            if (!logs || logs.length === 0) {
+                noLogs.style.display = 'block';
+                return;
+            }
+            
+            noLogs.style.display = 'none';
+            
+            // Clear existing logs except indicators
+            const existingLogs = logViewer.querySelectorAll('.log-line');
+            existingLogs.forEach(log => log.remove());
+            
+            // Add new logs
+            logs.forEach(logEntry => {
+                const logLine = createLogLine(logEntry);
+                logViewer.appendChild(logLine);
+            });
+            
+            // Auto-scroll to bottom if enabled
+            const autoScrollCheckbox = document.getElementById('autoScroll');
+            if (autoScrollCheckbox.checked && isAutoScrolling) {
+                logViewer.scrollTop = logViewer.scrollHeight;
+            }
+            
+            // Update log count for new log detection
+            if (logs.length > lastLogCount) {
+                // New logs detected, briefly show auto-scroll indicator
+                const autoScrollIndicator = document.getElementById('autoScrollIndicator');
+                if (autoScrollCheckbox.checked && isAutoScrolling) {
+                    autoScrollIndicator.classList.add('active');
+                    setTimeout(() => {
+                        if (isAutoScrolling) {
+                            autoScrollIndicator.classList.remove('active');
+                        }
+                    }, 2000);
+                }
+            }
+            lastLogCount = logs.length;
+        }
+        
+        function createLogLine(logEntry) {
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            
+            // Parse log entry (assuming format: "TIMESTAMP - LEVEL - MESSAGE")
+            const parts = logEntry.split(' - ');
+            if (parts.length >= 3) {
+                const timestamp = parts[0];
+                const level = parts[1];
+                const message = parts.slice(2).join(' - ');
+                
+                // Apply styling based on log level
+                const levelLower = level.toLowerCase();
+                if (levelLower.includes('error')) {
+                    logLine.classList.add('error');
+                } else if (levelLower.includes('warning') || levelLower.includes('warn')) {
+                    logLine.classList.add('warning');
+                } else if (levelLower.includes('info')) {
+                    logLine.classList.add('info');
+                } else if (levelLower.includes('debug')) {
+                    logLine.classList.add('debug');
+                } else if (levelLower.includes('success')) {
+                    logLine.classList.add('success');
+                }
+                
+                // Create formatted log line
+                logLine.innerHTML = `
+                    <span class="log-timestamp">${timestamp}</span> - 
+                    <span class="log-level ${level}">${level}</span> - 
+                    <span class="log-message">${escapeHtml(message)}</span>
+                `;
+            } else {
+                // Fallback for non-standard log format
+                logLine.innerHTML = `<span class="log-message">${escapeHtml(logEntry)}</span>`;
+            }
+            
+            return logLine;
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function clearLogs() {
+            const logViewer = document.getElementById('logViewer');
+            const existingLogs = logViewer.querySelectorAll('.log-line');
+            existingLogs.forEach(log => log.remove());
+            
+            const noLogs = document.getElementById('noLogs');
+            noLogs.style.display = 'block';
+            noLogs.innerHTML = `
+                <i class="fas fa-broom fa-2x mb-3"></i>
+                <div>Logs cleared</div>
+                <small>New logs will appear here as they are generated</small>
+            `;
+        }
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -18,7 +18,7 @@ from utils.webserver_sync import WebServerSync
 from utils.tax_report import TaxReportGenerator
 from utils.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
-from utils.uptime_manager import UptimeManager
+
 from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED, SIMULATION_MODE, RISK_LEVEL, Config
 
 # Configure logging with daily rotation
@@ -49,7 +49,6 @@ class TradingBot:
         
         # Initialize components
         self.config = Config()
-        self.uptime_manager = UptimeManager()
         self.coinbase_client = CoinbaseClient()
         self.llm_analyzer = LLMAnalyzer()
         self.data_collector = DataCollector(self.coinbase_client)
@@ -73,118 +72,19 @@ class TradingBot:
         # Perform initial web server sync
         self.sync_to_webserver()
         
-        # Detect if this is a restart by checking for existing uptime data
-        is_restart = self._detect_restart()
-        
         # Record bot startup time
-        self.record_startup_time(is_restart=is_restart)
+        self.record_startup_time()
         
         logger.info(f"Trading bot initialized with trading pairs: {TRADING_PAIRS}")
     
-    def _detect_restart(self) -> bool:
-        """
-        Detect if this is a restart by checking for existing uptime data
-        and recent activity
-        """
-        try:
-            # Check if uptime file exists and has recent data
-            uptime_file = "data/cache/bot_uptime.json"
-            if os.path.exists(uptime_file):
-                with open(uptime_file, 'r') as f:
-                    uptime_data = json.load(f)
-                
-                # If status is 'restarting' or we have recent activity, it's a restart
-                if uptime_data.get('status') == 'restarting':
-                    return True
-                
-                # Check if last update was recent (within last 10 minutes)
-                if uptime_data.get('last_updated'):
-                    last_update = datetime.fromisoformat(uptime_data['last_updated'])
-                    time_diff = (datetime.utcnow() - last_update).total_seconds()
-                    if time_diff < 600:  # 10 minutes
-                        return True
-                
-                # Check if we have an original start time (indicates previous session)
-                if uptime_data.get('original_start_time'):
-                    return True
-            
-            return False
-            
-        except Exception as e:
-            logger.error(f"Error detecting restart: {e}")
-            return False
     
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully"""
         logger.info(f"Received signal {signum}, shutting down gracefully...")
-        
-        # Determine if this is an explicit stop or restart based on context
-        is_explicit_stop = self._determine_stop_context(signum)
-        
-        logger.info(f"Signal {signum} interpreted as {'EXPLICIT STOP' if is_explicit_stop else 'RESTART'}")
-        self.record_shutdown_time(is_explicit_stop=is_explicit_stop)
+        self.record_shutdown_time()
         sys.exit(0)
     
-    def _determine_stop_context(self, signum):
-        """
-        Determine if a signal represents an explicit stop or restart
-        
-        Returns:
-            bool: True for explicit stop, False for restart
-        """
-        try:
-            # Check environment variables that indicate restart context
-            restart_context = os.environ.get('BOT_RESTART_CONTEXT', '').lower()
-            if restart_context == 'restart':
-                return False
-            elif restart_context == 'stop':
-                return True
-            
-            # Check for systemctl/supervisorctl context
-            # Look at parent process to determine context
-            try:
-                import psutil
-                current_process = psutil.Process()
-                parent = current_process.parent()
-                
-                if parent:
-                    parent_name = parent.name().lower()
-                    parent_cmdline = ' '.join(parent.cmdline()).lower()
-                    
-                    # If parent is systemd and we detect restart context
-                    if 'systemd' in parent_name:
-                        # Check if this is a restart by looking for restart indicators
-                        if 'restart' in parent_cmdline or os.environ.get('SYSTEMD_EXEC_PID'):
-                            return False  # This is a restart
-                    
-                    # If parent is supervisor
-                    elif 'supervisor' in parent_name:
-                        # Supervisor restarts are not explicit stops
-                        return False
-                        
-            except ImportError:
-                # psutil not available, fall back to signal-based logic
-                pass
-            except Exception as e:
-                logger.debug(f"Error checking parent process: {e}")
-            
-            # Default signal-based logic
-            if signum == signal.SIGTERM:
-                # SIGTERM could be restart or stop - default to restart to preserve uptime
-                # Only treat as explicit stop if explicitly marked
-                return False
-            elif signum == signal.SIGINT:
-                # SIGINT (Ctrl+C) is always explicit stop
-                return True
-            else:
-                # Other signals default to restart
-                return False
-                
-        except Exception as e:
-            logger.error(f"Error determining stop context: {e}")
-            # Default to restart to preserve uptime in case of errors
-            return False
-        
+    
     def sync_to_webserver(self):
         """Centralized web server sync - only place where web server sync happens"""
         try:
@@ -215,14 +115,11 @@ class TradingBot:
         except Exception as e:
             logger.error(f"Error updating next decision time: {e}")
     
-    def record_startup_time(self, is_restart: bool = False):
-        """Record the bot startup time for uptime tracking"""
+    def record_startup_time(self):
+        """Record the bot startup time"""
         try:
             startup_time = datetime.utcnow()
             next_decision_time = startup_time + timedelta(minutes=DECISION_INTERVAL_MINUTES)
-            
-            # Record startup with uptime manager
-            uptime_data = self.uptime_manager.record_startup(is_restart=is_restart)
             
             startup_data = {
                 "startup_time": startup_time.isoformat(),
@@ -235,26 +132,20 @@ class TradingBot:
                 "status": "online"
             }
             
-            # Update startup file with uptime information
-            self.uptime_manager.update_startup_file(startup_data)
+            # Save startup data
+            with open("data/cache/bot_startup.json", "w") as f:
+                json.dump(startup_data, f, indent=2)
             
             mode_text = "SIMULATION" if SIMULATION_MODE else "LIVE TRADING"
-            restart_text = " (RESTART)" if is_restart else " (FRESH START)"
-            logger.info(f"Bot startup time recorded: {startup_data['startup_time']} - Mode: {mode_text}{restart_text}")
-            
-            if uptime_data.get('restart_count', 0) > 0:
-                logger.info(f"Total restarts: {uptime_data['restart_count']}")
+            logger.info(f"Bot startup time recorded: {startup_data['startup_time']} - Mode: {mode_text}")
             
         except Exception as e:
             logger.error(f"Error recording startup time: {e}")
     
-    def record_shutdown_time(self, is_explicit_stop: bool = True):
+    def record_shutdown_time(self):
         """Record the bot shutdown time and set status to offline"""
         try:
             shutdown_time = datetime.utcnow()
-            
-            # Record shutdown with uptime manager
-            uptime_data = self.uptime_manager.record_shutdown(is_explicit_stop=is_explicit_stop)
             
             # Try to read existing startup data first
             startup_data = {}
@@ -273,17 +164,10 @@ class TradingBot:
             
             # Update with shutdown information
             startup_data.update({
-                "status": "offline" if is_explicit_stop else "restarting",
+                "status": "offline",
                 "shutdown_time": shutdown_time.isoformat(),
                 "last_seen": shutdown_time.isoformat()
             })
-            
-            # Add uptime information
-            if uptime_data:
-                startup_data.update({
-                    'total_uptime_seconds': uptime_data.get('total_uptime_seconds', 0),
-                    'restart_count': uptime_data.get('restart_count', 0)
-                })
             
             # Remove PID since process is stopping
             if "pid" in startup_data:
@@ -1023,10 +907,9 @@ class TradingBot:
         # Schedule weekly strategy performance report on Sunday at 1 AM
         schedule.every().sunday.at("01:00").do(self.generate_strategy_report)
         
-        # Schedule portfolio rebalancing based on configured interval
-        rebalance_interval = getattr(self.config, 'REBALANCE_CHECK_INTERVAL_MINUTES', 180)
-        schedule.every(rebalance_interval).minutes.do(self.trading_strategy.check_and_rebalance)
-        logger.info(f"Scheduled portfolio rebalancing every {rebalance_interval} minutes")
+        # Schedule portfolio rebalancing every 3 hours
+        schedule.every(180).minutes.do(self.trading_strategy.check_and_rebalance)
+        logger.info("Scheduled intelligent portfolio rebalancing every 180 minutes")
         
         # Schedule web server sync every 30 minutes (only sync point)
         schedule.every(30).minutes.do(self.sync_to_webserver)

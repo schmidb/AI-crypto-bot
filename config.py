@@ -34,7 +34,6 @@ class Config:
         self.SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
 
         # Portfolio settings
-        self.PORTFOLIO_REBALANCE = os.getenv("PORTFOLIO_REBALANCE", "true").lower() == "true"
         self.MAX_TRADE_PERCENTAGE = float(os.getenv("MAX_TRADE_PERCENTAGE", "25"))
 
         # Target allocation settings
@@ -82,10 +81,6 @@ class Config:
         # Trade Size Limits
         self.MIN_TRADE_AMOUNT = float(os.getenv("MIN_TRADE_AMOUNT", os.getenv("MIN_TRADE_USD", "10.0")))  # Backward compatibility
         self.MAX_POSITION_SIZE = float(os.getenv("MAX_POSITION_SIZE", os.getenv("MAX_POSITION_SIZE_USD", "1000.0")))  # Backward compatibility
-        
-        # Portfolio Rebalancing
-        self.REBALANCE_THRESHOLD_PERCENT = float(os.getenv("REBALANCE_THRESHOLD_PERCENT", "5"))
-        self.REBALANCE_CHECK_INTERVAL_MINUTES = int(os.getenv("REBALANCE_CHECK_INTERVAL_MINUTES", "180"))
     
     def get_trading_pairs(self) -> List[str]:
         """Get list of trading pairs"""
@@ -144,7 +139,6 @@ RISK_LEVEL = config.RISK_LEVEL
 SIMULATION_MODE = config.SIMULATION_MODE
 
 # Portfolio settings
-PORTFOLIO_REBALANCE = config.PORTFOLIO_REBALANCE
 MAX_TRADE_PERCENTAGE = config.MAX_TRADE_PERCENTAGE
 
 # Target allocation settings
