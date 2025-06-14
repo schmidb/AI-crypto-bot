@@ -7,12 +7,20 @@ Type=simple
 User=ec2-user
 WorkingDirectory=/home/ec2-user/AI-crypto-bot
 ExecStart=/home/ec2-user/miniconda3/envs/crypto-bot/bin/python /home/ec2-user/AI-crypto-bot/main.py
+# Use bot_manager.py stop only for explicit stops, not restarts
+ExecStop=/bin/bash -c 'export BOT_RESTART_CONTEXT=stop && /home/ec2-user/miniconda3/envs/crypto-bot/bin/python /home/ec2-user/AI-crypto-bot/bot_manager.py stop'
+# Set restart context for automatic restarts
+ExecReload=/bin/bash -c 'export BOT_RESTART_CONTEXT=restart && /bin/kill -TERM $MAINPID'
 Restart=on-failure
 RestartSec=10
 StandardOutput=syslog
 StandardError=syslog
 SyslogIdentifier=crypto-bot
 Environment=PYTHONUNBUFFERED=1
+# Graceful shutdown timeout
+TimeoutStopSec=30
+# Send SIGTERM first, then SIGKILL
+KillMode=mixed
 
 [Install]
 WantedBy=multi-user.target
