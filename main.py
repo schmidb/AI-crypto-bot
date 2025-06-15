@@ -18,6 +18,7 @@ from utils.webserver_sync import WebServerSync
 from utils.tax_report import TaxReportGenerator
 from utils.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
+from utils.notification_service import NotificationService
 
 from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED, SIMULATION_MODE, RISK_LEVEL, Config
 
@@ -66,6 +67,9 @@ class TradingBot:
         # Initialize strategy evaluator
         self.strategy_evaluator = StrategyEvaluator()
         
+        # Initialize notification service
+        self.notification_service = NotificationService()
+        
         # Initialize dashboard with existing data
         self.initialize_dashboard()
         
@@ -74,6 +78,15 @@ class TradingBot:
         
         # Record bot startup time
         self.record_startup_time()
+        
+        # Send startup notification
+        try:
+            mode_text = "SIMULATION" if SIMULATION_MODE else "LIVE TRADING"
+            self.notification_service.send_status_notification(
+                f"🚀 AI Crypto Bot Started\n\nMode: {mode_text}\nPairs: {', '.join(TRADING_PAIRS)}\nRisk Level: {RISK_LEVEL}"
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send startup notification: {e}")
         
         logger.info(f"Trading bot initialized with trading pairs: {TRADING_PAIRS}")
     
@@ -610,6 +623,15 @@ class TradingBot:
                 
         except Exception as e:
             logger.error(f"Error executing trade for {product_id}: {e}")
+            # Send critical error notification
+            try:
+                self.notification_service.send_error_notification(
+                    f"Trade execution failed for {product_id}: {str(e)[:100]}",
+                    f"Product: {product_id}, Action: {decision_result.get('action', 'UNKNOWN')}"
+                )
+            except:
+                pass  # Don't fail if notification fails
+            
             return {
                 'execution_status': 'error',
                 'execution_message': f'Execution error: {e}',
@@ -669,7 +691,8 @@ class TradingBot:
                     order_result = self.coinbase_client.place_market_order(
                         product_id=product_id,
                         side='BUY',
-                        size=trade_amount_base
+                        size=trade_amount_base,
+                        confidence=confidence
                     )
                     
                     if order_result.get('success'):
@@ -769,7 +792,8 @@ class TradingBot:
                     order_result = self.coinbase_client.place_market_order(
                         product_id=product_id,
                         side='SELL',
-                        size=crypto_amount
+                        size=crypto_amount,
+                        confidence=confidence
                     )
                     
                     if order_result.get('success'):
@@ -1147,6 +1171,18 @@ if __name__ == "__main__":
             bot.record_shutdown_time()
         log_bot_shutdown(logger)
         logger.error(f"Unexpected error: {e}")
+        
+        # Send critical error notification
+        try:
+            from utils.notification_service import NotificationService
+            notification_service = NotificationService()
+            notification_service.send_error_notification(
+                f"Trading bot crashed: {str(e)[:100]}",
+                "The bot has stopped due to a critical error and needs attention"
+            )
+        except:
+            pass  # Don't fail if notification fails
+        
         raise
     finally:
         # Ensure we always log shutdown and record offline status

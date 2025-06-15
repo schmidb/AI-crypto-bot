@@ -81,6 +81,11 @@ class Config:
         # Trade Size Limits
         self.MIN_TRADE_AMOUNT = float(os.getenv("MIN_TRADE_AMOUNT", os.getenv("MIN_TRADE_USD", "10.0")))  # Backward compatibility
         self.MAX_POSITION_SIZE = float(os.getenv("MAX_POSITION_SIZE", os.getenv("MAX_POSITION_SIZE_USD", "1000.0")))  # Backward compatibility
+        
+        # Push Notification Settings
+        self.NOTIFICATIONS_ENABLED = os.getenv("NOTIFICATIONS_ENABLED", "false").lower() == "true"
+        self.PUSHOVER_TOKEN = os.getenv("PUSHOVER_TOKEN")
+        self.PUSHOVER_USER = os.getenv("PUSHOVER_USER")
     
     def get_trading_pairs(self) -> List[str]:
         """Get list of trading pairs"""
@@ -163,3 +168,8 @@ LOG_FILE = config.LOG_FILE
 # Trade Size Limits (backward compatibility)
 MIN_TRADE_USD = config.MIN_TRADE_AMOUNT
 MAX_POSITION_SIZE_USD = config.MAX_POSITION_SIZE
+
+# Push Notification Settings
+NOTIFICATIONS_ENABLED = config.NOTIFICATIONS_ENABLED
+PUSHOVER_TOKEN = config.PUSHOVER_TOKEN
+PUSHOVER_USER = config.PUSHOVER_USER

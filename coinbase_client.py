@@ -191,14 +191,15 @@ class CoinbaseClient:
         
         return float(rounded)
 
-    def place_market_order(self, product_id: str, side: str, size: float) -> Dict:
+    def place_market_order(self, product_id: str, side: str, size: float, confidence: float = 0) -> Dict:
         """
-        Place a market order with proper precision handling
+        Place a market order with proper precision handling and notifications
         
         Args:
             product_id: Trading pair (e.g., 'BTC-USD')
             side: 'BUY' or 'SELL'
             size: Amount to buy/sell
+            confidence: AI confidence level for the trade (0-100)
             
         Returns:
             Order details
@@ -236,11 +237,63 @@ class CoinbaseClient:
                     product_id=product_id,
                     base_size=str(rounded_size)
                 )
+            
+            # If order was successful, send notification
+            if response and not response.get('error'):
+                self._send_trade_notification(response, side, product_id, size, confidence)
                 
             return response
         except Exception as e:
             logger.error(f"Error placing market order for {product_id}: {e}")
             return {"success": False, "error": str(e)}
+    
+    def _send_trade_notification(self, order_response: Dict, side: str, product_id: str, size: float, confidence: float):
+        """
+        Send push notification for executed trade
+        
+        Args:
+            order_response: Response from Coinbase API
+            side: 'BUY' or 'SELL'
+            product_id: Trading pair
+            size: Trade size
+            confidence: AI confidence level
+        """
+        try:
+            # Import here to avoid circular imports
+            from utils.notification_service import NotificationService
+            
+            notification_service = NotificationService()
+            
+            # Get current price for the notification
+            price_data = self.get_product_price(product_id)
+            current_price = price_data.get('price', 0) if price_data else 0
+            
+            # Calculate trade details
+            if side.upper() == "BUY":
+                total_value = size  # For BUY orders, size is the fiat amount
+                crypto_amount = size / current_price if current_price > 0 else 0
+            else:
+                crypto_amount = size  # For SELL orders, size is the crypto amount
+                total_value = size * current_price if current_price > 0 else 0
+            
+            # Prepare trade data for notification
+            trade_data = {
+                'action': side.upper(),
+                'product_id': product_id,
+                'amount': crypto_amount,
+                'price': current_price,
+                'total_value': total_value,
+                'confidence': confidence,
+                'order_id': order_response.get('order_id', 'unknown'),
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            # Send notification
+            notification_service.send_trade_notification(trade_data)
+            
+        except Exception as e:
+            logger.error(f"Error sending trade notification: {e}")
+            # Don't fail the trade if notification fails
     
     def get_market_data(self, product_id: str, granularity: str, start_time: str, end_time: str) -> List[Dict]:
         """

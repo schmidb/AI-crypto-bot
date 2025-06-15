@@ -24,6 +24,12 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
 - **Intelligent Rebalancing**: Automatic portfolio rebalancing every 3 hours based on market conditions
 - **Safety Limits**: Minimum €50 EUR balance, 3% minimum crypto allocation
 
+### 📱 **Push Notifications**
+- **Real-time Trade Alerts**: Instant notifications for BUY/SELL executions
+- **Error Notifications**: Critical error alerts with context
+- **Portfolio Summaries**: Daily portfolio performance updates
+- **Bot Status Updates**: Startup, shutdown, and status notifications
+
 ### 🛡️ **Risk Management**
 - **Dual-Layer System**: Static risk configuration + dynamic market assessment
 - **Confidence Thresholds**: 70% minimum confidence for BUY/SELL decisions
@@ -126,7 +132,39 @@ COINBASE_API_SECRET=your_private_key
 GOOGLE_CLOUD_PROJECT=your_project_id
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
 LLM_MODEL=gemini-2.5-pro-preview-05-06
+
+# Push Notifications (Pushover)
+NOTIFICATIONS_ENABLED=true
+PUSHOVER_TOKEN=your_pushover_app_token
+PUSHOVER_USER=your_pushover_user_key
 ```
+
+### **Push Notification Setup**
+
+1. **Download Pushover App**
+   - iOS: [App Store](https://apps.apple.com/app/pushover-notifications/id506088175)
+   - Android: [Google Play](https://play.google.com/store/apps/details?id=net.superblock.pushover)
+
+2. **Create Pushover Account**
+   - Sign up at [pushover.net](https://pushover.net)
+   - Note your User Key from the dashboard
+
+3. **Create Application**
+   - Go to [Create Application](https://pushover.net/apps/build)
+   - Name: "AI Crypto Bot" (or your preference)
+   - Copy the API Token/Key
+
+4. **Configure Environment**
+   ```env
+   NOTIFICATIONS_ENABLED=true
+   PUSHOVER_TOKEN=your_app_api_token_here
+   PUSHOVER_USER=your_user_key_here
+   ```
+
+5. **Test Notifications**
+   ```bash
+   python3 test_notifications.py
+   ```
 
 ## 🎛️ **Trading Strategy Details**
 
