@@ -16,7 +16,11 @@ from config import (
     GOOGLE_APPLICATION_CREDENTIALS,
     LLM_PROVIDER,
     LLM_MODEL,
-    LLM_LOCATION
+    LLM_LOCATION,
+    TRADING_STYLE,
+    TRADING_TIMEFRAME,
+    EXPECTED_HOLDING_PERIOD,
+    DECISION_INTERVAL_MINUTES
 )
 
 # Define OAuth scopes needed for Vertex AI
@@ -463,7 +467,7 @@ class LLMAnalyzer:
         }
 
     def _create_analysis_prompt(self, market_summary: Dict, trading_pair: str, additional_context: Dict = None) -> str:
-        """Create a prompt for the LLM to analyze market data"""
+        """Create a prompt for the LLM to analyze market data with trading style context"""
         # Format values safely
         price_24h = f"{market_summary['price_change_24h']:.2f}%" if market_summary['price_change_24h'] is not None else "N/A"
         price_7d = f"{market_summary['price_change_7d']:.2f}%" if market_summary['price_change_7d'] is not None else "N/A"
@@ -471,9 +475,33 @@ class LLMAnalyzer:
         ma200 = f"${market_summary['moving_average_200']:.2f}" if market_summary['moving_average_200'] is not None else "N/A"
         volatility = f"{market_summary['volatility']:.2f}%" if market_summary['volatility'] is not None else "N/A"
 
-        # Create a more concise prompt to reduce token usage
-        base_prompt = f"""Analyze {trading_pair} market data and provide a trading recommendation.
+        # Determine trading style description
+        style_descriptions = {
+            "day_trading": "Day Trading / Intraday Trading",
+            "swing_trading": "Swing Trading / Short-term Position Trading", 
+            "long_term": "Long-term Investment / Position Trading"
+        }
+        
+        timeframe_descriptions = {
+            "short_term": "Short-term (minutes to hours)",
+            "medium_term": "Medium-term (hours to days)",
+            "long_term": "Long-term (days to weeks)"
+        }
+        
+        style_desc = style_descriptions.get(TRADING_STYLE, "Day Trading")
+        timeframe_desc = timeframe_descriptions.get(TRADING_TIMEFRAME, "Short-term")
 
+        # Create enhanced prompt with trading context
+        base_prompt = f"""You are an AI trading advisor for {style_desc.upper()} operations.
+
+TRADING CONTEXT:
+- Strategy: {style_desc}
+- Timeframe: {timeframe_desc}
+- Decision Frequency: Every {DECISION_INTERVAL_MINUTES} minutes
+- Expected Holding Period: {EXPECTED_HOLDING_PERIOD}
+- Focus: {"Capitalize on intraday movements and short-term trends" if TRADING_STYLE == "day_trading" else "Medium-term trend following and momentum trading" if TRADING_STYLE == "swing_trading" else "Long-term value and growth investing"}
+
+MARKET DATA for {trading_pair}:
 Price: ${market_summary['current_price']}
 24h Change: {price_24h}
 7d Change: {price_7d}
@@ -491,10 +519,58 @@ Volatility: {volatility}"""
                 bb_width = f"{indicators.get('bollinger_width'):.2f}" if indicators.get('bollinger_width') is not None else "N/A"
 
                 base_prompt += f"""
+TECHNICAL INDICATORS:
 RSI: {rsi}
 MACD: {macd}
 Signal: {signal}
 BB Width: {bb_width}"""
+
+        # Add trading style specific instructions
+        if TRADING_STYLE == "day_trading":
+            base_prompt += """
+
+DAY TRADING ANALYSIS REQUIREMENTS:
+- Prioritize short-term momentum and trend reversals
+- Focus on 1-4 hour price movements rather than daily/weekly trends
+- Consider intraday support/resistance levels
+- Evaluate volatility for quick profit opportunities
+- Assess liquidity for fast entry/exit capability
+- Weight recent price action more heavily than long-term trends
+
+DECISION CRITERIA for Day Trading:
+- BUY: Strong short-term upward momentum, oversold conditions with reversal signals
+- SELL: Profit-taking opportunities, overbought conditions, momentum weakening
+- HOLD: Unclear short-term direction, low volatility, waiting for better entry/exit points"""
+
+        elif TRADING_STYLE == "swing_trading":
+            base_prompt += """
+
+SWING TRADING ANALYSIS REQUIREMENTS:
+- Focus on 1-7 day price movements and trend continuations
+- Identify swing highs and lows for entry/exit points
+- Consider both technical and fundamental momentum
+- Evaluate medium-term trend strength and sustainability
+- Balance short-term signals with longer-term context
+
+DECISION CRITERIA for Swing Trading:
+- BUY: Trend continuation signals, breakouts from consolidation, oversold bounces
+- SELL: Trend exhaustion signals, resistance levels, profit targets reached
+- HOLD: Consolidation phases, mixed signals, waiting for clearer direction"""
+
+        else:  # long_term
+            base_prompt += """
+
+LONG-TERM TRADING ANALYSIS REQUIREMENTS:
+- Focus on weekly and monthly trends and fundamentals
+- Consider long-term value propositions and market cycles
+- Evaluate sustainable growth patterns and adoption trends
+- Balance technical analysis with fundamental strength
+- Prioritize position building over quick profits
+
+DECISION CRITERIA for Long-term Trading:
+- BUY: Strong fundamental outlook, major trend reversals, accumulation opportunities
+- SELL: Fundamental deterioration, major trend breaks, profit realization
+- HOLD: Stable trends, minor corrections, building positions gradually"""
 
         # Add request for enhanced JSON response
         base_prompt += """
@@ -505,6 +581,11 @@ Respond with ONLY a JSON object in this format:
   "confidence": <0-100>,
   "reasoning": ["detailed reason 1", "detailed reason 2", "detailed reason 3"],
   "risk_assessment": "low|medium|high",
+  "timeframe_analysis": {
+    "short_term_trend": "bullish|bearish|neutral",
+    "momentum_strength": "strong|moderate|weak",
+    "entry_timing": "excellent|good|poor"
+  },
   "technical_indicators": {
     "rsi": {
       "value": <rsi_value>,

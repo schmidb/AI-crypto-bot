@@ -958,6 +958,15 @@
             text-transform: uppercase;
         }
 
+        #trading-style {
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        #decision-frequency {
+            font-weight: 600;
+        }
+
         .risk-low { color: #28a745; }
         .risk-medium { color: #ffc107; }
         .risk-high { color: #dc3545; }
@@ -1145,6 +1154,44 @@
                                 </span>
                             </small>
                             <div id="market-volatility">Loading...</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                Trading Style:
+                                <span class="help-icon-css" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   data-bs-html="true"
+                                   title="<strong>Trading Strategy Configuration:</strong><br/>
+                                          Your bot's trading approach and timeframe settings.<br/>
+                                          <br/>
+                                          <strong>DAY TRADING</strong>: Intraday positions (minutes to hours)<br/>
+                                          <strong>SWING TRADING</strong>: Short-term positions (hours to days)<br/>
+                                          <strong>LONG TERM</strong>: Position trading (days to weeks)<br/>
+                                          <br/>
+                                          This affects how the AI analyzes market data and makes decisions.<br/>
+                                          <em>Set in .env file as TRADING_STYLE</em>"
+                                   style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
+                                </span>
+                            </small>
+                            <div id="trading-style">Loading...</div>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                Decision Frequency:
+                                <span class="help-icon-css" 
+                                   data-bs-toggle="tooltip" 
+                                   data-bs-placement="top" 
+                                   data-bs-html="true"
+                                   title="<strong>AI Decision Frequency:</strong><br/>
+                                          How often the AI analyzes market conditions and makes trading decisions.<br/>
+                                          <br/>
+                                          More frequent decisions enable faster response to market changes.<br/>
+                                          <em>Set in .env file as DECISION_INTERVAL_MINUTES</em>"
+                                   style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
+                                </span>
+                            </small>
+                            <div id="decision-frequency">Loading...</div>
                         </div>
                     </div>
                 </div>
@@ -2109,6 +2156,25 @@
                     // Fallback: try to get volatility from recent analysis data
                     marketVolatility.textContent = 'ANALYZING...';
                     marketVolatility.className = 'volatility-unknown';
+                }
+                
+                // Update trading style
+                const tradingStyle = document.getElementById('trading-style');
+                if (data.trading_style && tradingStyle) {
+                    const styleDisplay = data.trading_style.replace('_', ' ').toUpperCase();
+                    tradingStyle.textContent = styleDisplay;
+                    tradingStyle.className = `trading-style-${data.trading_style.toLowerCase()}`;
+                } else if (tradingStyle) {
+                    tradingStyle.textContent = 'DAY TRADING';
+                    tradingStyle.className = 'trading-style-day-trading';
+                }
+                
+                // Update decision frequency
+                const decisionFreq = document.getElementById('decision-frequency');
+                if (data.decision_interval_minutes && decisionFreq) {
+                    decisionFreq.textContent = `Every ${data.decision_interval_minutes} minutes`;
+                } else if (decisionFreq) {
+                    decisionFreq.textContent = 'Every 60 minutes';
                 }
             } else {
                 // If no data available, show fallback

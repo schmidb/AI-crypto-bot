@@ -33,6 +33,11 @@ class Config:
         self.RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")
         self.SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
 
+        # Trading Style Configuration
+        self.TRADING_STYLE = os.getenv("TRADING_STYLE", "day_trading")  # day_trading, swing_trading, long_term
+        self.TRADING_TIMEFRAME = os.getenv("TRADING_TIMEFRAME", "short_term")  # short_term, medium_term, long_term
+        self.EXPECTED_HOLDING_PERIOD = os.getenv("EXPECTED_HOLDING_PERIOD", "hours")  # minutes, hours, days, weeks
+
         # Portfolio settings
         self.MAX_TRADE_PERCENTAGE = float(os.getenv("MAX_TRADE_PERCENTAGE", "25"))
 
@@ -142,6 +147,9 @@ BASE_CURRENCY = config.BASE_CURRENCY
 DECISION_INTERVAL_MINUTES = config.DECISION_INTERVAL_MINUTES
 RISK_LEVEL = config.RISK_LEVEL
 SIMULATION_MODE = config.SIMULATION_MODE
+TRADING_STYLE = config.TRADING_STYLE
+TRADING_TIMEFRAME = config.TRADING_TIMEFRAME
+EXPECTED_HOLDING_PERIOD = config.EXPECTED_HOLDING_PERIOD
 
 # Portfolio settings
 MAX_TRADE_PERCENTAGE = config.MAX_TRADE_PERCENTAGE

@@ -20,7 +20,7 @@ from utils.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
 from utils.notification_service import NotificationService
 
-from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED, SIMULATION_MODE, RISK_LEVEL, Config
+from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED, SIMULATION_MODE, RISK_LEVEL, TRADING_STYLE, TRADING_TIMEFRAME, EXPECTED_HOLDING_PERIOD, Config
 
 # Configure logging with daily rotation
 logger = get_supervisor_logger()
@@ -140,6 +140,9 @@ class TradingBot:
                 "pid": os.getpid(),
                 "trading_pairs": TRADING_PAIRS,
                 "decision_interval_minutes": DECISION_INTERVAL_MINUTES,
+                "trading_style": TRADING_STYLE,
+                "trading_timeframe": TRADING_TIMEFRAME,
+                "expected_holding_period": EXPECTED_HOLDING_PERIOD,
                 "simulation_mode": SIMULATION_MODE,
                 "risk_level": RISK_LEVEL,
                 "status": "online"
@@ -171,6 +174,9 @@ class TradingBot:
                     "startup_time": shutdown_time.isoformat(),
                     "trading_pairs": TRADING_PAIRS,
                     "decision_interval_minutes": DECISION_INTERVAL_MINUTES,
+                    "trading_style": TRADING_STYLE,
+                    "trading_timeframe": TRADING_TIMEFRAME,
+                    "expected_holding_period": EXPECTED_HOLDING_PERIOD,
                     "simulation_mode": SIMULATION_MODE,
                     "risk_level": RISK_LEVEL
                 }
