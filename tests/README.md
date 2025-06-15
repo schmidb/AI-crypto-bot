@@ -519,31 +519,55 @@ Test security measures, API key handling, and vulnerability protection.
 
 ## 🚀 **Getting Started**
 
-1. **Install Test Dependencies**:
-   ```bash
-   pip install pytest pytest-mock pytest-asyncio pytest-cov pytest-benchmark
-   ```
+### **📦 Install Dependencies**
 
-2. **Run All Tests**:
+#### **Option 1: Production + Test Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+#### **Option 2: Full Development Environment (Recommended)**
+```bash
+pip install -r requirements-dev.txt
+```
+
+#### **Option 3: Manual Test Dependencies**
+```bash
+pip install pytest pytest-mock pytest-asyncio pytest-cov pytest-benchmark
+```
+
+### **🧪 Running Tests**
+
+1. **Run All Tests**:
    ```bash
    pytest tests/
    ```
 
-3. **Run Specific Test Category**:
+2. **Run Specific Test Category**:
    ```bash
    pytest tests/unit/
    pytest tests/integration/
    pytest tests/e2e/
    ```
 
-4. **Generate Coverage Report**:
+3. **Run Tests with Coverage**:
    ```bash
    pytest --cov=. --cov-report=html tests/
    ```
 
-5. **Run Performance Tests**:
+4. **Run Performance Tests**:
    ```bash
    pytest tests/performance/ --benchmark-only
+   ```
+
+5. **Run Tests in Parallel**:
+   ```bash
+   pytest -n auto tests/  # Uses all available CPU cores
+   ```
+
+6. **Generate HTML Test Report**:
+   ```bash
+   pytest --html=reports/test_report.html tests/
    ```
 
 ---
