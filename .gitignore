@@ -69,8 +69,7 @@ tmp/
 debug_*.py
 test_dashboard.py
 
-# Temporary and test files
-test_*.py
+# Temporary and test files (but NOT tests/ directory)
 debug_*.py
 check_*.py
 fix_*.py
@@ -109,3 +108,11 @@ PROJECT_*.md
 # Credentials (should be in secure location)
 google.json
 *.json.backup
+
+# Coverage files
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Test notification script (temporary)
+test_notifications.py
