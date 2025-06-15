@@ -116,3 +116,4 @@ htmlcov/
 
 # Test notification script (temporary)
 test_notifications.py
+.coverage
