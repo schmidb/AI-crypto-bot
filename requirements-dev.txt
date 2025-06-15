@@ -44,5 +44,5 @@ line-profiler>=4.1.0        # Line-by-line profiling
 py-spy>=0.3.0               # Sampling profiler
 
 # Debugging
-pdb++>=0.10.0               # Enhanced debugger
+pdbpp>=0.10.3               # Enhanced debugger (fixed package name)
 ipdb>=0.13.0                # IPython debugger
