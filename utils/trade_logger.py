@@ -93,7 +93,7 @@ class TradeLogger:
                 except Exception as e:
                     logger.error(f"Failed to fetch current price for {product_id}: {e}")
             
-            # Create trade record with enhanced reasoning
+            # Create trade record with enhanced reasoning and fee information
             trade = {
                 "timestamp": datetime.utcnow().isoformat(),  # Use UTC time for consistency
                 "product_id": product_id,
@@ -108,8 +108,19 @@ class TradeLogger:
                 "intended_action": result.get("intended_action", result.get("action", "unknown")),
                 "skip_reason": result.get("skip_reason", None),
                 "ai_recommendation": decision.get("action", "unknown"),
-                "execution_message": result.get("execution_message", result.get("message", ""))
+                "execution_message": result.get("execution_message", result.get("message", "")),
+                # Fee information from Coinbase API
+                "total_fees": result.get("total_fees", 0),
+                "total_value_after_fees": result.get("total_value_after_fees", 0),
+                "filled_size": result.get("filled_size", 0),
+                "average_filled_price": result.get("average_filled_price", price),
+                "actual_eur_spent": result.get("actual_eur_spent", result.get("trade_amount_usd", 0)),
+                "fee_percentage": 0  # Will be calculated below
             }
+            
+            # Calculate fee percentage if we have the data
+            if trade["total_fees"] > 0 and trade["trade_amount_usd"] > 0:
+                trade["fee_percentage"] = (trade["total_fees"] / trade["trade_amount_usd"]) * 100
             
             # Add trade to history
             trades.append(trade)
@@ -118,7 +129,11 @@ class TradeLogger:
             with open(self.log_file, 'w') as f:
                 json.dump(trades, f, indent=2)
                 
-            logger.info(f"Trade logged: {trade['action']} {trade['crypto_amount']} {product_id.split('-')[0]} at ${trade['price']}")
+            # Enhanced logging message with fee information
+            log_msg = f"Trade logged: {trade['action']} {trade['crypto_amount']} {product_id.split('-')[0]} at €{trade['price']}"
+            if trade['total_fees'] > 0:
+                log_msg += f" (fees: €{trade['total_fees']:.4f}, {trade['fee_percentage']:.3f}%)"
+            logger.info(log_msg)
             
         except Exception as e:
             logger.error(f"Error logging trade: {e}")

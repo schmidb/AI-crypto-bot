@@ -50,6 +50,11 @@ class NotificationService:
             total_value = trade_data.get('total_value', 0)
             confidence = trade_data.get('confidence', 0)
             
+            # Enhanced fee information
+            total_fees = trade_data.get('total_fees', 0)
+            actual_eur_spent = trade_data.get('actual_eur_spent', total_value)
+            average_filled_price = trade_data.get('average_filled_price', price)
+            
             # Create notification message
             title = f"🤖 AI Crypto Bot - {action} Order Executed"
             
@@ -57,17 +62,27 @@ class NotificationService:
                 emoji = "🟢"
                 message = f"{emoji} BUY executed!\n\n"
                 message += f"💰 Pair: {product_id}\n"
-                message += f"💵 Amount: €{total_value:.2f}\n"
-                message += f"📊 Price: €{price:.2f}\n"
                 message += f"🪙 Quantity: {amount:.6f}\n"
+                message += f"📊 Price: €{average_filled_price:.2f}\n"
+                message += f"💵 Gross Value: €{total_value:.2f}\n"
+                if total_fees > 0:
+                    message += f"💸 Fees: €{total_fees:.4f}\n"
+                    message += f"💰 Net Spent: €{actual_eur_spent:.2f}\n"
+                    fee_percentage = (total_fees / total_value) * 100 if total_value > 0 else 0
+                    message += f"📈 Fee Rate: {fee_percentage:.3f}%\n"
                 message += f"🎯 AI Confidence: {confidence}%"
             elif action == 'SELL':
                 emoji = "🔴"
                 message = f"{emoji} SELL executed!\n\n"
                 message += f"💰 Pair: {product_id}\n"
                 message += f"🪙 Amount: {amount:.6f}\n"
-                message += f"📊 Price: €{price:.2f}\n"
-                message += f"💵 Value: €{total_value:.2f}\n"
+                message += f"📊 Price: €{average_filled_price:.2f}\n"
+                message += f"💵 Gross Value: €{total_value:.2f}\n"
+                if total_fees > 0:
+                    message += f"💸 Fees: €{total_fees:.4f}\n"
+                    message += f"💰 Net Received: €{actual_eur_spent:.2f}\n"
+                    fee_percentage = (total_fees / total_value) * 100 if total_value > 0 else 0
+                    message += f"📈 Fee Rate: {fee_percentage:.3f}%\n"
                 message += f"🎯 AI Confidence: {confidence}%"
             else:
                 message = f"Trade executed: {action} {product_id}"

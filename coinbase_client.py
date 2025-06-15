@@ -156,10 +156,17 @@ class CoinbaseClient:
             else:
                 price = response.get("price", "0") if hasattr(response, 'get') else "0"
             
-            return {"price": price}
+            # Ensure price is converted to float for consistent type handling
+            try:
+                price_float = float(price)
+                return {"price": price_float}
+            except (ValueError, TypeError):
+                logger.warning(f"Could not convert price '{price}' to float for {product_id}")
+                return {"price": 0.0}
+                
         except Exception as e:
             logger.error(f"Error getting product price for {product_id}: {e}")
-            return {"price": "0"}
+            return {"price": 0.0}
     
     def _get_precision_limits(self) -> Dict[str, int]:
         """Get precision limits for different trading pairs"""
@@ -264,29 +271,80 @@ class CoinbaseClient:
             
             notification_service = NotificationService()
             
-            # Get current price for the notification
-            price_data = self.get_product_price(product_id)
-            current_price = price_data.get('price', 0) if price_data else 0
+            # Extract fee information from order response
+            total_fees = 0.0
+            total_value_after_fees = 0.0
+            filled_size = 0.0
+            average_filled_price = 0.0
             
-            # Calculate trade details
-            if side.upper() == "BUY":
-                total_value = size  # For BUY orders, size is the fiat amount
-                crypto_amount = size / current_price if current_price > 0 else 0
+            # Handle both dict and object responses
+            if hasattr(order_response, 'total_fees'):
+                total_fees = float(order_response.total_fees) if order_response.total_fees else 0.0
+            elif isinstance(order_response, dict):
+                total_fees = float(order_response.get('total_fees', 0))
+            
+            if hasattr(order_response, 'total_value_after_fees'):
+                total_value_after_fees = float(order_response.total_value_after_fees) if order_response.total_value_after_fees else 0.0
+            elif isinstance(order_response, dict):
+                total_value_after_fees = float(order_response.get('total_value_after_fees', 0))
+            
+            if hasattr(order_response, 'filled_size'):
+                filled_size = float(order_response.filled_size) if order_response.filled_size else 0.0
+            elif isinstance(order_response, dict):
+                filled_size = float(order_response.get('filled_size', 0))
+            
+            if hasattr(order_response, 'average_filled_price'):
+                average_filled_price = float(order_response.average_filled_price) if order_response.average_filled_price else 0.0
+            elif isinstance(order_response, dict):
+                average_filled_price = float(order_response.get('average_filled_price', 0))
+            
+            # Get current price for fallback if needed
+            if average_filled_price == 0.0:
+                price_data = self.get_product_price(product_id)
+                current_price = float(price_data.get('price', 0.0)) if price_data else 0.0
             else:
-                crypto_amount = size  # For SELL orders, size is the crypto amount
-                total_value = size * current_price if current_price > 0 else 0
+                current_price = average_filled_price
             
-            # Prepare trade data for notification
+            # Calculate trade details with actual execution data
+            if side.upper() == "BUY":
+                # For BUY orders: we know the EUR amount spent and crypto received
+                total_value = float(size)  # Original EUR amount requested
+                crypto_amount = filled_size if filled_size > 0 else (total_value / current_price if current_price > 0 else 0.0)
+                actual_eur_spent = total_value_after_fees if total_value_after_fees > 0 else total_value
+            else:
+                # For SELL orders: we know the crypto amount sold
+                crypto_amount = filled_size if filled_size > 0 else float(size)
+                total_value = total_value_after_fees if total_value_after_fees > 0 else (crypto_amount * current_price if current_price > 0 else 0.0)
+                actual_eur_spent = total_value  # For sells, this is EUR received
+            
+            # Prepare enhanced trade data for notification
             trade_data = {
                 'action': side.upper(),
                 'product_id': product_id,
                 'amount': crypto_amount,
                 'price': current_price,
                 'total_value': total_value,
-                'confidence': confidence,
-                'order_id': order_response.get('order_id', 'unknown'),
-                'timestamp': datetime.now().isoformat()
+                'confidence': float(confidence),
+                'order_id': getattr(order_response, 'order_id', None) or order_response.get('order_id', 'unknown'),
+                'timestamp': datetime.now().isoformat(),
+                # Enhanced fee information
+                'total_fees': total_fees,
+                'total_value_after_fees': total_value_after_fees,
+                'filled_size': filled_size,
+                'average_filled_price': average_filled_price,
+                'actual_eur_spent': actual_eur_spent
             }
+            
+            # Log detailed trade information including fees
+            logger.info(f"Trade executed - {side} {product_id}:")
+            logger.info(f"  Crypto amount: {crypto_amount:.8f}")
+            logger.info(f"  Average price: €{current_price:.2f}")
+            logger.info(f"  Total value: €{total_value:.2f}")
+            logger.info(f"  Fees: €{total_fees:.4f}")
+            logger.info(f"  Net value after fees: €{actual_eur_spent:.2f}")
+            if total_fees > 0:
+                fee_percentage = (total_fees / total_value) * 100 if total_value > 0 else 0
+                logger.info(f"  Fee percentage: {fee_percentage:.3f}%")
             
             # Send notification
             notification_service.send_trade_notification(trade_data)
@@ -455,7 +513,7 @@ class CoinbaseClient:
             logger.error(f"Error getting order book for {product_id}: {e}")
             # Get current price as fallback
             price_data = self.get_product_price(product_id)
-            price = float(price_data.get("price", 0))
+            price = price_data.get("price", 0.0)  # Already a float from get_product_price
             
             # Return estimated values
             return {
@@ -474,11 +532,11 @@ class CoinbaseClient:
             Dict with price changes as percentages
         """
         try:
-            current_price = self.get_product_price(product_id).get('price', 0)
+            current_price = self.get_product_price(product_id).get('price', 0.0)
             if not current_price:
                 return {"1h": 0.0, "4h": 0.0, "24h": 0.0, "5d": 0.0}
             
-            current_price = float(current_price)
+            # current_price is already a float from get_product_price
             now = datetime.utcnow()
             changes = {}
             
@@ -609,7 +667,7 @@ class CoinbaseClient:
                 if currency != base_currency:
                     try:
                         price_data = self.get_product_price(f"{currency}-{base_currency}")
-                        price = float(price_data.get("price", 0))
+                        price = price_data.get("price", 0.0)  # Already a float from get_product_price
                         portfolio[currency][f"last_price_{base_currency.lower()}"] = price
                         
                         # Calculate value

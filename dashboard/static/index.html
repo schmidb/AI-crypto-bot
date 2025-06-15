@@ -1891,6 +1891,20 @@
                                                     </span>
                                                 </th>
                                                 <th>
+                                                    Fees
+                                                    <span class="help-icon-css"
+                                                           data-bs-toggle="tooltip" 
+                                                           data-bs-placement="top" 
+                                                           data-bs-html="true"
+                                                           title="<strong>Trading Fees</strong><br/>
+                                                                  Fees charged by Coinbase for the trade.<br/>
+                                                                  <br/>
+                                                                  <em>Shows both absolute amount (€) and percentage (%).<br/>
+                                                                  €0.00 (0.000%) for HOLD decisions.</em>"
+                                                           style="font-size: 0.7rem; opacity: 0.7; cursor: help;">
+                                                    </span>
+                                                </th>
+                                                <th>
                                                     Confidence
                                                     <span class="help-icon-css"
                                                            data-bs-toggle="tooltip" 
@@ -2848,7 +2862,7 @@
         function formatTechnicalIndicators(trade) {
             try {
                 if (!trade.ai_analysis || !trade.ai_analysis.technical_indicators) {
-                    return '<div class="indicator-item"><span class="text-muted">Technical indicator data not available for this trade</span></div>';
+                    return '<div class="indicator-item"><span class="text-muted">Technical indicator data not available for this trade. <br><small>This may be a HOLD decision or older trade without detailed analysis.</small></span></div>';
                 }
                 
                 const indicators = trade.ai_analysis.technical_indicators;
@@ -2856,12 +2870,18 @@
                 
                 // RSI
                 if (indicators.rsi) {
-                    const rsiColor = indicators.rsi.value > 70 ? 'text-danger' : indicators.rsi.value < 30 ? 'text-success' : 'text-warning';
+                    const rsiValue = indicators.rsi.value || 0;
+                    const rsiColor = rsiValue > 70 ? 'text-danger' : rsiValue < 30 ? 'text-success' : 'text-warning';
                     html += `
                         <div class="col-md-4">
-                            <div class="indicator-item">
-                                <strong>RSI:</strong> <span class="${rsiColor}">${indicators.rsi.value}</span>
-                                <small class="d-block text-muted">${indicators.rsi.signal} (${(indicators.rsi.weight * 100).toFixed(0)}% weight)</small>
+                            <div class="indicator-card">
+                                <div class="indicator-header">
+                                    <span class="indicator-name">RSI</span>
+                                    <span class="indicator-value ${rsiColor}">${rsiValue}</span>
+                                </div>
+                                <div class="indicator-signal">
+                                    <span class="badge ${getSignalBadgeClass(indicators.rsi.signal)}">${indicators.rsi.signal}</span>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -2869,12 +2889,21 @@
                 
                 // MACD
                 if (indicators.macd) {
-                    const macdColor = indicators.macd.signal === 'bullish' ? 'text-success' : indicators.macd.signal === 'bearish' ? 'text-danger' : 'text-warning';
+                    const macdSignal = indicators.macd.signal || 'neutral';
                     html += `
                         <div class="col-md-4">
-                            <div class="indicator-item">
-                                <strong>MACD:</strong> <span class="${macdColor}">${indicators.macd.signal}</span>
-                                <small class="d-block text-muted">Line: ${indicators.macd.macd_line}, Signal: ${indicators.macd.signal_line}</small>
+                            <div class="indicator-card">
+                                <div class="indicator-header">
+                                    <span class="indicator-name">MACD</span>
+                                    <span class="indicator-value">${(indicators.macd.macd_line || 0).toFixed(3)}</span>
+                                </div>
+                                <div class="indicator-signal">
+                                    <span class="badge ${getSignalBadgeClass(macdSignal)}">${macdSignal}</span>
+                                </div>
+                                <div class="indicator-details">
+                                    <small>Signal: ${(indicators.macd.signal_line || 0).toFixed(3)}</small><br>
+                                    <small>Histogram: ${(indicators.macd.histogram || 0).toFixed(3)}</small>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -2882,11 +2911,16 @@
                 
                 // Bollinger Bands
                 if (indicators.bollinger_bands) {
+                    const bbSignal = indicators.bollinger_bands.signal || 'normal';
                     html += `
                         <div class="col-md-4">
-                            <div class="indicator-item">
-                                <strong>Bollinger:</strong> <span class="text-info">${indicators.bollinger_bands.signal}</span>
-                                <small class="d-block text-muted">${(indicators.bollinger_bands.weight * 100).toFixed(0)}% weight</small>
+                            <div class="indicator-card">
+                                <div class="indicator-header">
+                                    <span class="indicator-name">Bollinger Bands</span>
+                                </div>
+                                <div class="indicator-signal">
+                                    <span class="badge ${getSignalBadgeClass(bbSignal)}">${bbSignal}</span>
+                                </div>
                             </div>
                         </div>
                     `;
@@ -2897,7 +2931,7 @@
                 
             } catch (error) {
                 console.error('Error formatting technical indicators:', error);
-                return '<div class="indicator-item"><span class="text-muted">Technical indicator formatting error</span></div>';
+                return '<div class="indicator-item"><span class="text-muted">Error loading technical indicators</span></div>';
             }
         }
         
@@ -2961,27 +2995,28 @@
             try {
                 let html = '<div class="market-context-details">';
                 
-                // Market Data
-                if (trade.market_data) {
-                    const data = trade.market_data;
-                    html += `
-                        <div class="context-item">
-                            <strong>Price:</strong> €${data.price ? parseFloat(data.price).toFixed(2) : 'N/A'}
-                        </div>
-                    `;
-                    
-                    if (data.price_changes) {
-                        html += '<div class="context-item"><strong>Price Changes:</strong><br>';
-                        Object.entries(data.price_changes).forEach(([period, change]) => {
-                            const changeColor = change > 0 ? 'text-success' : change < 0 ? 'text-danger' : 'text-muted';
-                            const changeIcon = change > 0 ? 'fa-arrow-up' : change < 0 ? 'fa-arrow-down' : 'fa-minus';
-                            html += `<small class="${changeColor}"><i class="fas ${changeIcon} me-1"></i>${period}: ${change > 0 ? '+' : ''}${change}%</small> `;
-                        });
-                        html += '</div>';
-                    }
+                // Basic trade information always available
+                html += `
+                    <div class="context-item">
+                        <strong>Trade Price:</strong> €${parseFloat(trade.price || 0).toFixed(2)}
+                    </div>
+                    <div class="context-item">
+                        <strong>Product:</strong> ${trade.product_id}
+                    </div>
+                `;
+                
+                // Market Data from detailed analysis
+                if (trade.market_data && trade.market_data.price_changes) {
+                    html += '<div class="context-item"><strong>Price Changes:</strong><br>';
+                    Object.entries(trade.market_data.price_changes).forEach(([period, change]) => {
+                        const changeColor = change > 0 ? 'text-success' : change < 0 ? 'text-danger' : 'text-muted';
+                        const changeIcon = change > 0 ? 'fa-arrow-up' : change < 0 ? 'fa-arrow-down' : 'fa-minus';
+                        html += `<small class="${changeColor}"><i class="fas ${changeIcon} me-1"></i>${period}: ${change > 0 ? '+' : ''}${change}%</small> `;
+                    });
+                    html += '</div>';
                 }
                 
-                // Market Conditions
+                // Market Conditions from AI analysis
                 if (trade.ai_analysis && trade.ai_analysis.market_conditions) {
                     const conditions = trade.ai_analysis.market_conditions;
                     html += `
@@ -2990,6 +3025,27 @@
                             <span class="badge bg-info">${conditions.trend}</span>
                             <span class="badge bg-secondary">${conditions.volatility} volatility</span>
                             <span class="badge bg-outline-secondary">${conditions.volume} volume</span>
+                        </div>
+                    `;
+                } else {
+                    // Fallback for trades without detailed analysis
+                    html += `
+                        <div class="context-item">
+                            <strong>Market Analysis:</strong> 
+                            <span class="text-muted">Detailed market conditions not available for this trade</span>
+                            <br><small>This may be a HOLD decision or older trade without comprehensive analysis.</small>
+                        </div>
+                    `;
+                }
+                
+                // Risk Assessment
+                if (trade.ai_analysis && trade.ai_analysis.risk_assessment) {
+                    const riskColor = trade.ai_analysis.risk_assessment === 'high' ? 'bg-danger' : 
+                                     trade.ai_analysis.risk_assessment === 'medium' ? 'bg-warning' : 'bg-success';
+                    html += `
+                        <div class="context-item">
+                            <strong>Risk Assessment:</strong> 
+                            <span class="badge ${riskColor}">${trade.ai_analysis.risk_assessment}</span>
                         </div>
                     `;
                 }
@@ -3010,7 +3066,7 @@
                 
             } catch (error) {
                 console.error('Error formatting market context:', error);
-                return '<div class="context-item"><span class="text-muted">Market context formatting error</span></div>';
+                return '<div class="context-item"><span class="text-muted">Market context not available</span></div>';
             }
         }
 
@@ -3154,6 +3210,50 @@
             }
         }
 
+        // Function to load detailed trade analysis
+        async function loadDetailedTradeAnalysis(trade) {
+            try {
+                // Generate filename based on trade timestamp and product
+                const tradeTime = new Date(trade.timestamp);
+                const year = tradeTime.getFullYear();
+                const month = String(tradeTime.getMonth() + 1).padStart(2, '0');
+                const day = String(tradeTime.getDate()).padStart(2, '0');
+                const hour = String(tradeTime.getHours()).padStart(2, '0');
+                const minute = String(tradeTime.getMinutes()).padStart(2, '0');
+                const second = String(tradeTime.getSeconds()).padStart(2, '0');
+                
+                // Use the product_id from the trade to ensure correct currency
+                const filename = `${trade.product_id.replace('-', '_')}_${year}${month}${day}_${hour}${minute}${second}.json`;
+                
+                console.log(`Attempting to load detailed analysis: ${filename}`);
+                
+                const detailedData = await loadData(`/crypto-bot/data/${filename}`);
+                
+                if (detailedData && detailedData.ai_analysis) {
+                    console.log(`Successfully loaded detailed analysis for ${filename}`);
+                    // Merge detailed data with trade data
+                    return {
+                        ...trade,
+                        ai_analysis: detailedData.ai_analysis,
+                        bot_decision_logic: detailedData.bot_decision_logic,
+                        market_data: detailedData.market_data || {
+                            price: trade.price,
+                            product_id: trade.product_id
+                        }
+                    };
+                }
+                
+                console.log(`No detailed analysis found for ${filename}, using basic trade data`);
+                // If no detailed file found, return the trade data itself
+                return trade;
+                
+            } catch (error) {
+                console.warn(`Could not load detailed analysis for trade ${trade.timestamp}:`, error.message);
+                // Return the original trade data if detailed analysis fails to load
+                return trade;
+            }
+        }
+
         // Function to update trade history with filtering
         async function updateTradeHistory() {
             const data = await loadData('/crypto-bot/data/trades/trade_history.json');
@@ -3213,8 +3313,8 @@
                 });
 
                 // Generate enhanced trade history HTML with detailed information
-                const tradeHistoryHtml = filteredTrades
-                    .map((trade, index) => {
+                const tradeHistoryHtml = await Promise.all(filteredTrades
+                    .map(async (trade, index) => {
                         const tradeTime = new Date(trade.timestamp);
                         const actionClass = trade.action === 'BUY' ? 'text-success' : 
                                           trade.action === 'SELL' ? 'text-danger' : 'text-secondary';
@@ -3224,8 +3324,35 @@
                         // Generate unique ID for expandable content
                         const expandId = `trade-details-${index}`;
                         
+                        // Calculate total trade amount and fees
+                        let tradeTotal = 0;
+                        let feeAmount = 0;
+                        let feePercentage = 0;
+                        
+                        if (trade.action !== 'HOLD' && trade.crypto_amount && trade.price) {
+                            tradeTotal = parseFloat(trade.crypto_amount) * parseFloat(trade.price);
+                        }
+                        
+                        // Get fee information from enhanced trade data
+                        if (trade.total_fees) {
+                            feeAmount = parseFloat(trade.total_fees);
+                            if (trade.fee_percentage) {
+                                feePercentage = parseFloat(trade.fee_percentage);
+                            } else if (tradeTotal > 0) {
+                                feePercentage = (feeAmount / tradeTotal) * 100;
+                            }
+                        }
+                        
+                        // Format fee display
+                        const feeDisplay = feeAmount > 0 ? 
+                            `€${feeAmount.toFixed(4)}<br><small class="text-muted">(${feePercentage.toFixed(3)}%)</small>` : 
+                            `€0.00<br><small class="text-muted">(0.000%)</small>`;
+                        
+                        // Load detailed analysis for this trade
+                        const detailedTrade = await loadDetailedTradeAnalysis(trade);
+                        
                         // Prepare detailed information
-                        const detailsHtml = generateTradeDetails(trade, tradeTime);
+                        const detailsHtml = generateTradeDetails(detailedTrade, tradeTime);
                         
                         return `
                         <tr class="trade-row">
@@ -3236,7 +3363,8 @@
                             <td>${trade.product_id.split('-')[0]}</td>
                             <td>${parseFloat(trade.crypto_amount || 0).toFixed(8)}</td>
                             <td>€${parseFloat(trade.price).toFixed(2)}</td>
-                            <td>€${parseFloat(trade.trade_amount_usd || 0).toFixed(2)}</td>
+                            <td>€${tradeTotal.toFixed(2)}</td>
+                            <td>${feeDisplay}</td>
                             <td>${(trade.confidence || 0)}%</td>
                             <td>
                                 <div class="reasoning-container">
@@ -3252,19 +3380,19 @@
                             </td>
                         </tr>
                         <tr class="trade-details-row" id="${expandId}" style="display: none;">
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="trade-details-content">
                                     ${detailsHtml}
                                 </div>
                             </td>
                         </tr>
-                    `})
-                    .join('');
+                    `}))
+                    .then(results => results.join(''));
                 
                 const tradeHistoryElement = document.getElementById('trade-history-data');
                 
                 if (tradeHistoryElement) {
-                    tradeHistoryElement.innerHTML = tradeHistoryHtml;
+                    tradeHistoryElement.innerHTML = await tradeHistoryHtml;
                 } else {
                     console.error('Trade history element not found');
                 }
@@ -3272,7 +3400,7 @@
                 console.error('Trade history data not loaded or invalid format');
                 const tradeHistoryElement = document.getElementById('trade-history-data');
                 if (tradeHistoryElement) {
-                    tradeHistoryElement.innerHTML = '<tr><td colspan="8">No trade history available</td></tr>';
+                    tradeHistoryElement.innerHTML = '<tr><td colspan="9">No trade history available</td></tr>';
                 }
             }
         }
@@ -3325,9 +3453,35 @@
                                     <span class="detail-value">${(trade.crypto_amount || 0).toFixed(6)}</span>
                                 </div>
                                 <div class="detail-item">
-                                    <span class="detail-label">EUR Amount:</span>
-                                    <span class="detail-value">€${(trade.trade_amount_usd || 0).toFixed(2)}</span>
+                                    <span class="detail-label">Gross EUR Amount:</span>
+                                    <span class="detail-value">€${(trade.action !== 'HOLD' && trade.crypto_amount && trade.price ? (parseFloat(trade.crypto_amount) * parseFloat(trade.price)).toFixed(2) : '0.00')}</span>
                                 </div>
+                                ${trade.total_fees ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Trading Fees:</span>
+                                    <span class="detail-value text-warning">€${parseFloat(trade.total_fees).toFixed(4)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Fee Percentage:</span>
+                                    <span class="detail-value text-warning">${(trade.fee_percentage || 0).toFixed(3)}%</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Net EUR Amount:</span>
+                                    <span class="detail-value text-success">€${(trade.actual_eur_spent || trade.total_value_after_fees || 0).toFixed(2)}</span>
+                                </div>
+                                ${trade.average_filled_price && parseFloat(trade.average_filled_price) !== parseFloat(trade.price || 0) ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Actual Fill Price:</span>
+                                    <span class="detail-value">€${parseFloat(trade.average_filled_price).toFixed(2)}</span>
+                                </div>
+                                ` : ''}
+                                ${trade.filled_size && parseFloat(trade.filled_size) !== parseFloat(trade.crypto_amount || 0) ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Actual Fill Size:</span>
+                                    <span class="detail-value">${parseFloat(trade.filled_size).toFixed(6)}</span>
+                                </div>
+                                ` : ''}
+                                ` : ''}
                                 ${trade.skip_reason ? `
                                 <div class="detail-item">
                                     <span class="detail-label">Skip Reason:</span>
@@ -3392,6 +3546,19 @@
             `;
             
             return detailsHtml;
+        }
+
+        // Function to get signal badge class
+        function getSignalBadgeClass(signal) {
+            switch(signal?.toLowerCase()) {
+                case 'bullish': return 'bg-success';
+                case 'bearish': return 'bg-danger';
+                case 'neutral': return 'bg-secondary';
+                case 'normal': return 'bg-info';
+                case 'overbought': return 'bg-warning';
+                case 'oversold': return 'bg-primary';
+                default: return 'bg-secondary';
+            }
         }
 
         // Function to get status badge class
