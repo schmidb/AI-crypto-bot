@@ -339,7 +339,7 @@ class TestMarketDataOperations:
             client = CoinbaseClient(api_key="test-key", api_secret="test-secret")
             price_data = client.get_product_price("BTC-EUR")
             
-            assert price_data == {"price": "50000.00"}
+            assert price_data == {"price": 50000.0}
             mock_client.get_product.assert_called_once_with(product_id="BTC-EUR")
     
     def test_get_product_price_with_dict_response(self):
@@ -355,7 +355,7 @@ class TestMarketDataOperations:
             client = CoinbaseClient(api_key="test-key", api_secret="test-secret")
             price_data = client.get_product_price("ETH-EUR")
             
-            assert price_data == {"price": "3000.50"}
+            assert price_data == {"price": 3000.5}
     
     def test_get_product_price_with_error(self):
         """Test product price retrieval with API error."""
@@ -367,7 +367,7 @@ class TestMarketDataOperations:
             client = CoinbaseClient(api_key="test-key", api_secret="test-secret")
             price_data = client.get_product_price("BTC-EUR")
             
-            assert price_data == {"price": "0"}
+            assert price_data == {"price": 0.0}
     
     def test_get_market_data_success(self):
         """Test successful market data retrieval."""
@@ -706,7 +706,7 @@ class TestIntegrationScenarios:
                 
                 # 2. Get current price
                 price_data = client.get_product_price("BTC-EUR")
-                assert price_data["price"] == "50000.0"
+                assert price_data["price"] == 50000.0
                 
                 # 3. Place order
                 order_result = client.place_market_order("BTC-EUR", "BUY", 100.0, 75.0)
