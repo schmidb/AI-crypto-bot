@@ -1014,19 +1014,42 @@ class TradingStrategy:
                 if eur_balance < min_eur_required:
                     return "HOLD", f"insufficient_eur_balance ({self.config.format_currency(eur_balance)} < {self.config.format_currency(min_eur_required)})"
             
-            # Safety check 2: Minimum crypto holding for SELL orders
+            # Safety check 2: CRITICAL FIX - Minimum crypto holding for SELL orders
             elif decision == "SELL":
                 portfolio_value = self._calculate_portfolio_value()
                 if portfolio_value > 0:
                     asset_amount = self.portfolio.get(asset, {}).get('amount', 0)
                     asset_price = self.portfolio.get(asset, {}).get(f'last_price_{self.config.BASE_CURRENCY.lower()}', 0)
                     asset_value = asset_amount * asset_price
-                    asset_allocation = (asset_value / portfolio_value) * 100
+                    current_allocation = (asset_value / portfolio_value) * 100
                     
                     min_allocation = 3.0  # Minimum 3% allocation to maintain diversification
                     
-                    if asset_allocation < min_allocation:
-                        return "HOLD", f"minimum_allocation_protection ({asset_allocation:.1f}% < {min_allocation}%)"
+                    # Calculate the proposed trade amount to check post-trade allocation
+                    # Use the same logic as the main trading function
+                    dynamic_multiplier = self._calculate_dynamic_position_size(decision, confidence, product_id)
+                    risk_multiplier = self._get_risk_multiplier()
+                    final_multiplier = dynamic_multiplier * risk_multiplier
+                    
+                    # Calculate base trade amount (30 EUR default)
+                    base_trade_amount = 30.0
+                    adjusted_trade_amount = base_trade_amount * final_multiplier
+                    
+                    # Calculate how much crypto this would sell
+                    crypto_to_sell = adjusted_trade_amount / asset_price if asset_price > 0 else 0
+                    
+                    # Calculate remaining crypto after sale
+                    remaining_crypto = max(0, asset_amount - crypto_to_sell)
+                    remaining_value = remaining_crypto * asset_price
+                    post_trade_allocation = (remaining_value / portfolio_value) * 100
+                    
+                    # CRITICAL SAFETY CHECK: Prevent sales that would drop below minimum allocation
+                    if post_trade_allocation < min_allocation:
+                        logger.warning(f"BLOCKED SALE: {asset} would drop from {current_allocation:.1f}% to {post_trade_allocation:.1f}% (below {min_allocation}% minimum)")
+                        return "HOLD", f"minimum_allocation_protection (post-trade: {post_trade_allocation:.1f}% < {min_allocation}%)"
+                    
+                    # Log the safety check for monitoring
+                    logger.info(f"SAFETY CHECK PASSED: {asset} {current_allocation:.1f}% → {post_trade_allocation:.1f}% (above {min_allocation}% minimum)")
             
             # Safety check 3: Maximum EUR allocation (don't hold too much cash)
             if decision == "SELL":
