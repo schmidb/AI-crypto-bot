@@ -271,32 +271,84 @@ class CoinbaseClient:
             
             notification_service = NotificationService()
             
+            # Debug: Log the actual API response structure
+            logger.info(f"DEBUG: Order response type: {type(order_response)}")
+            if isinstance(order_response, dict):
+                logger.info(f"DEBUG: Order response keys: {list(order_response.keys())}")
+                logger.info(f"DEBUG: Order response content: {order_response}")
+            else:
+                logger.info(f"DEBUG: Order response attributes: {dir(order_response)}")
+                logger.info(f"DEBUG: Order response content: {order_response}")
+            
             # Extract fee information from order response
             total_fees = 0.0
             total_value_after_fees = 0.0
             filled_size = 0.0
             average_filled_price = 0.0
             
-            # Handle both dict and object responses
-            if hasattr(order_response, 'total_fees'):
-                total_fees = float(order_response.total_fees) if order_response.total_fees else 0.0
-            elif isinstance(order_response, dict):
-                total_fees = float(order_response.get('total_fees', 0))
-            
-            if hasattr(order_response, 'total_value_after_fees'):
-                total_value_after_fees = float(order_response.total_value_after_fees) if order_response.total_value_after_fees else 0.0
-            elif isinstance(order_response, dict):
-                total_value_after_fees = float(order_response.get('total_value_after_fees', 0))
-            
-            if hasattr(order_response, 'filled_size'):
-                filled_size = float(order_response.filled_size) if order_response.filled_size else 0.0
-            elif isinstance(order_response, dict):
-                filled_size = float(order_response.get('filled_size', 0))
-            
-            if hasattr(order_response, 'average_filled_price'):
-                average_filled_price = float(order_response.average_filled_price) if order_response.average_filled_price else 0.0
-            elif isinstance(order_response, dict):
-                average_filled_price = float(order_response.get('average_filled_price', 0))
+            # Handle both dict and object responses with comprehensive field checking
+            if isinstance(order_response, dict):
+                # Check various possible fee field names
+                total_fees = float(order_response.get('total_fees', 0)) or \
+                           float(order_response.get('fees', 0)) or \
+                           float(order_response.get('fee', 0)) or \
+                           float(order_response.get('commission', 0))
+                
+                total_value_after_fees = float(order_response.get('total_value_after_fees', 0)) or \
+                                       float(order_response.get('net_proceeds', 0)) or \
+                                       float(order_response.get('settled_total', 0))
+                
+                filled_size = float(order_response.get('filled_size', 0)) or \
+                            float(order_response.get('executed_size', 0)) or \
+                            float(order_response.get('size', 0))
+                
+                average_filled_price = float(order_response.get('average_filled_price', 0)) or \
+                                     float(order_response.get('executed_price', 0)) or \
+                                     float(order_response.get('price', 0))
+                
+                # Check for fills array (common in Coinbase Advanced Trade)
+                if 'fills' in order_response and order_response['fills']:
+                    fills = order_response['fills']
+                    if isinstance(fills, list) and len(fills) > 0:
+                        # Calculate from fills
+                        total_fill_fees = 0.0
+                        total_fill_size = 0.0
+                        total_fill_value = 0.0
+                        
+                        for fill in fills:
+                            if isinstance(fill, dict):
+                                fill_fee = float(fill.get('commission', 0)) or float(fill.get('fee', 0))
+                                fill_size = float(fill.get('size', 0))
+                                fill_price = float(fill.get('price', 0))
+                                
+                                total_fill_fees += fill_fee
+                                total_fill_size += fill_size
+                                total_fill_value += fill_size * fill_price
+                        
+                        if total_fill_fees > 0:
+                            total_fees = total_fill_fees
+                        if total_fill_size > 0:
+                            filled_size = total_fill_size
+                            average_filled_price = total_fill_value / total_fill_size if total_fill_size > 0 else 0
+                
+            else:
+                # Handle object responses
+                total_fees = float(getattr(order_response, 'total_fees', 0)) or \
+                           float(getattr(order_response, 'fees', 0)) or \
+                           float(getattr(order_response, 'fee', 0)) or \
+                           float(getattr(order_response, 'commission', 0))
+                
+                total_value_after_fees = float(getattr(order_response, 'total_value_after_fees', 0)) or \
+                                       float(getattr(order_response, 'net_proceeds', 0)) or \
+                                       float(getattr(order_response, 'settled_total', 0))
+                
+                filled_size = float(getattr(order_response, 'filled_size', 0)) or \
+                            float(getattr(order_response, 'executed_size', 0)) or \
+                            float(getattr(order_response, 'size', 0))
+                
+                average_filled_price = float(getattr(order_response, 'average_filled_price', 0)) or \
+                                     float(getattr(order_response, 'executed_price', 0)) or \
+                                     float(getattr(order_response, 'price', 0))
             
             # Get current price for fallback if needed
             if average_filled_price == 0.0:
@@ -317,6 +369,31 @@ class CoinbaseClient:
                 total_value = total_value_after_fees if total_value_after_fees > 0 else (crypto_amount * current_price if current_price > 0 else 0.0)
                 actual_eur_spent = total_value  # For sells, this is EUR received
             
+            # If no fees were extracted from API response, calculate estimated fees
+            if total_fees == 0.0 and total_value > 0:
+                # Coinbase Advanced Trade fee structure (approximate)
+                # Taker fee is typically 0.6% for retail, but can vary
+                # This is a fallback calculation
+                estimated_fee_rate = 0.006  # 0.6%
+                total_fees = total_value * estimated_fee_rate
+                logger.warning(f"No fee information in API response, using estimated fee: €{total_fees:.4f} ({estimated_fee_rate*100:.1f}%)")
+                
+                # Adjust actual amounts based on estimated fees
+                if side.upper() == "BUY":
+                    # For BUY: fees reduce the crypto amount received
+                    actual_eur_spent = total_value
+                    crypto_amount = (total_value - total_fees) / current_price if current_price > 0 else crypto_amount
+                else:
+                    # For SELL: fees reduce the EUR amount received
+                    actual_eur_spent = total_value - total_fees
+            
+            # Log extracted fee information for debugging
+            logger.info(f"DEBUG: Extracted fee information:")
+            logger.info(f"  total_fees: €{total_fees:.4f}")
+            logger.info(f"  total_value_after_fees: €{total_value_after_fees:.4f}")
+            logger.info(f"  filled_size: {filled_size:.8f}")
+            logger.info(f"  average_filled_price: €{average_filled_price:.2f}")
+            
             # Prepare enhanced trade data for notification
             trade_data = {
                 'action': side.upper(),
@@ -332,7 +409,8 @@ class CoinbaseClient:
                 'total_value_after_fees': total_value_after_fees,
                 'filled_size': filled_size,
                 'average_filled_price': average_filled_price,
-                'actual_eur_spent': actual_eur_spent
+                'actual_eur_spent': actual_eur_spent,
+                'fee_percentage': (total_fees / total_value * 100) if total_value > 0 else 0
             }
             
             # Log detailed trade information including fees
@@ -345,9 +423,26 @@ class CoinbaseClient:
             if total_fees > 0:
                 fee_percentage = (total_fees / total_value) * 100 if total_value > 0 else 0
                 logger.info(f"  Fee percentage: {fee_percentage:.3f}%")
+            else:
+                logger.warning(f"  No fee information available - this may indicate an API response parsing issue")
             
             # Send notification
             notification_service.send_trade_notification(trade_data)
+            
+            # Return enhanced result with fee information
+            return {
+                "success": True,
+                "message": f"{side.upper()} order executed: {crypto_amount:.8f} {product_id.split('-')[0]} for €{total_value:.2f}",
+                "executed_amount": crypto_amount,
+                "executed_price": current_price,
+                "fees": total_fees,
+                "fee_percentage": (total_fees / total_value * 100) if total_value > 0 else 0,
+                "total_value": total_value,
+                "actual_eur_spent": actual_eur_spent,
+                "order_id": trade_data['order_id'],
+                "filled_size": filled_size,
+                "average_filled_price": average_filled_price
+            }
             
         except Exception as e:
             logger.error(f"Error sending trade notification: {e}")
