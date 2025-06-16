@@ -708,7 +708,14 @@ class TradingBot:
                             'trade_executed': True,
                             'crypto_amount': crypto_amount,
                             'trade_amount_base': trade_amount_base,
-                            'order_id': order_result.get('order_id')
+                            'order_id': order_result.get('order_id'),
+                            # Add fee information from Coinbase client
+                            'total_fees': order_result.get('fees', 0),
+                            'fee_percentage': order_result.get('fee_percentage', 0),
+                            'total_value_after_fees': order_result.get('actual_eur_spent', 0),
+                            'filled_size': order_result.get('filled_size', crypto_amount),
+                            'average_filled_price': order_result.get('average_filled_price', 0),
+                            'actual_eur_spent': order_result.get('actual_eur_spent', trade_amount_base)
                         })
                         logger.info(f"BUY order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
                         
@@ -809,7 +816,14 @@ class TradingBot:
                             'trade_executed': True,
                             'crypto_amount': crypto_amount,
                             'trade_amount_base': trade_amount_base,
-                            'order_id': order_result.get('order_id')
+                            'order_id': order_result.get('order_id'),
+                            # Add fee information from Coinbase client
+                            'total_fees': order_result.get('fees', 0),
+                            'fee_percentage': order_result.get('fee_percentage', 0),
+                            'total_value_after_fees': order_result.get('actual_eur_spent', 0),
+                            'filled_size': order_result.get('filled_size', crypto_amount),
+                            'average_filled_price': order_result.get('average_filled_price', 0),
+                            'actual_eur_spent': order_result.get('actual_eur_spent', trade_amount_base)
                         })
                         logger.info(f"SELL order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
                         
