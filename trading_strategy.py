@@ -700,13 +700,27 @@ class TradingStrategy:
                     "timestamp": datetime.utcnow().isoformat()
                 }
             
-            # 2. Use LLM analyzer to make decisions
+            # 2. Calculate technical indicators optimized for trading style
+            from config import TRADING_STYLE
+            indicators = self.data_collector.calculate_indicators(historical_data, TRADING_STYLE)
+            logger.info(f"Calculated indicators for {TRADING_STYLE}: {list(indicators.keys())}")
+            
+            # 3. Use LLM analyzer to make decisions
             logger.info(f"Analyzing market data with LLM for {product_id}")
             start_time = datetime.utcnow()
+            
+            # Create additional context with calculated indicators
+            additional_context = {
+                "indicators": indicators,
+                "trading_style": TRADING_STYLE,
+                "market_data": current_market_data
+            }
+            
             analysis_result = self.llm_analyzer.analyze_market_data(
                 market_data=historical_data,
                 current_price=current_price,
-                trading_pair=product_id
+                trading_pair=product_id,
+                additional_context=additional_context
             )
             analysis_duration = (datetime.utcnow() - start_time).total_seconds() * 1000
             

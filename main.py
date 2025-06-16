@@ -944,102 +944,14 @@ class TradingBot:
         # Schedule web server sync every 30 minutes (only sync point)
         schedule.every(30).minutes.do(self.sync_to_webserver)
         
-        # Start a simple API server for dashboard interactions
-        import threading
-        api_thread = threading.Thread(target=self._start_api_server)
-        api_thread.daemon = True
-        api_thread.start()
+
         
         # Keep the script running
         while True:
             schedule.run_pending()
             time.sleep(1)
             
-    def _start_api_server(self):
-        """Start a simple API server for dashboard interactions"""
-        import http.server
-        import socketserver
-        import json
-        import urllib.parse
-        
-        # Define a function that will be accessible to the handler
-        def handle_refresh_portfolio():
-            try:
-                # Refresh portfolio from Coinbase
-                result = self.trading_strategy.refresh_portfolio_from_coinbase()
-                
-                # Update local dashboard data only
-                try:
-                    # Get current portfolio data
-                    portfolio = self.trading_strategy.portfolio
-                    
-                    # Create minimal dashboard data
-                    dashboard_data = {
-                        "status": "running",
-                        "timestamp": datetime.now().isoformat()
-                    }
-                    
-                    # Update the local dashboard
-                    self.dashboard_updater.update_dashboard(dashboard_data, portfolio)
-                    logger.info("Local dashboard updated with refreshed portfolio data")
-                except Exception as e:
-                    logger.error(f"Error updating local dashboard after portfolio refresh: {e}")
-                
-                return result
-            except Exception as e:
-                logger.error(f"Error in handle_refresh_portfolio: {e}")
-                return {"status": "error", "message": str(e)}
 
-        class APIHandler(http.server.BaseHTTPRequestHandler):
-            def do_POST(self):
-                try:
-                    # Get the path
-                    parsed_path = urllib.parse.urlparse(self.path)
-                    
-                    # Handle refresh portfolio endpoint
-                    if parsed_path.path == '/api/refresh_portfolio':
-                        # Call the refresh portfolio function directly
-                        result = handle_refresh_portfolio()
-                        
-                        # Send response
-                        self.send_response(200)
-                        self.send_header('Content-Type', 'application/json')
-                        self.send_header('Access-Control-Allow-Origin', '*')  # Allow CORS
-                        self.end_headers()
-                        self.wfile.write(json.dumps(result).encode())
-                    
-                    else:
-                        self.send_response(404)
-                        self.send_header('Content-Type', 'application/json')
-                        self.send_header('Access-Control-Allow-Origin', '*')  # Allow CORS
-                        self.end_headers()
-                        self.wfile.write(json.dumps({"status": "error", "message": "Endpoint not found"}).encode())
-                except Exception as e:
-                    self.send_response(500)
-                    self.send_header('Content-Type', 'application/json')
-                    self.send_header('Access-Control-Allow-Origin', '*')  # Allow CORS
-                    self.end_headers()
-                    self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode())
-            
-            def do_OPTIONS(self):
-                # Handle CORS preflight requests
-                self.send_response(200)
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-                self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-                self.end_headers()
-            
-            def log_message(self, format, *args):
-                # Use our logger instead of printing to stderr
-                logger.info(f"API: {format % args}")
-
-        # Create server
-        port = 5000
-        handler = APIHandler
-        httpd = socketserver.TCPServer(("", port), handler)
-        
-        logger.info(f"API server started on port {port}")
-        httpd.serve_forever()
             
     def update_local_dashboard(self):
         """Update local dashboard data only (no web server sync)"""

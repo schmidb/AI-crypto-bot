@@ -425,7 +425,6 @@ python3 deploy_dashboard.py
 - Configure security groups:
   - SSH access (port 22)
   - HTTP access (port 80) for dashboard
-  - API access (port 5000) for portfolio refresh
 
 **2. Connect and Setup**
 ```bash
@@ -530,12 +529,6 @@ gcloud compute firewall-rules create allow-http-crypto-bot \
     --allow tcp:80 \
     --source-ranges 0.0.0.0/0 \
     --description "Allow HTTP access to crypto bot dashboard"
-
-# Allow API access for portfolio refresh
-gcloud compute firewall-rules create allow-api-crypto-bot \
-    --allow tcp:5000 \
-    --source-ranges 0.0.0.0/0 \
-    --description "Allow API access for portfolio refresh"
 ```
 
 ## 📞 **Support & Troubleshooting**

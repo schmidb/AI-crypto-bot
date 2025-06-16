@@ -509,21 +509,49 @@ MA50: {ma50}
 MA200: {ma200}
 Volatility: {volatility}"""
 
-        # Add technical indicators if available
+        # Add optimized technical indicators if available
         if additional_context and "indicators" in additional_context:
             indicators = additional_context["indicators"]
             if indicators:
+                # Get trading style specific indicator info
+                metadata = indicators.get('_metadata', {})
+                bb_timeframe = metadata.get('bb_timeframe_hours', 20)
+                trading_style = metadata.get('trading_style', 'unknown')
+                
                 rsi = f"{indicators.get('rsi'):.1f}" if indicators.get('rsi') is not None else "N/A"
-                macd = f"{indicators.get('macd_line'):.2f}" if indicators.get('macd_line') is not None else "N/A"
-                signal = f"{indicators.get('macd_signal'):.2f}" if indicators.get('macd_signal') is not None else "N/A"
-                bb_width = f"{indicators.get('bollinger_width'):.2f}" if indicators.get('bollinger_width') is not None else "N/A"
+                macd = f"{indicators.get('macd'):.4f}" if indicators.get('macd') is not None else "N/A"
+                signal = f"{indicators.get('macd_signal'):.4f}" if indicators.get('macd_signal') is not None else "N/A"
+                histogram = f"{indicators.get('macd_histogram'):.4f}" if indicators.get('macd_histogram') is not None else "N/A"
+                
+                bb_upper = f"${indicators.get('bb_upper'):.2f}" if indicators.get('bb_upper') is not None else "N/A"
+                bb_middle = f"${indicators.get('bb_middle'):.2f}" if indicators.get('bb_middle') is not None else "N/A"
+                bb_lower = f"${indicators.get('bb_lower'):.2f}" if indicators.get('bb_lower') is not None else "N/A"
+                bb_width = f"{indicators.get('bb_width'):.2f}%" if indicators.get('bb_width') is not None else "N/A"
+                bb_position = f"{indicators.get('bb_position'):.2f}" if indicators.get('bb_position') is not None else "N/A"
 
                 base_prompt += f"""
-TECHNICAL INDICATORS:
-RSI: {rsi}
-MACD: {macd}
-Signal: {signal}
-BB Width: {bb_width}"""
+
+OPTIMIZED TECHNICAL INDICATORS (for {trading_style.upper()}):
+RSI (14): {rsi}
+MACD: {macd} | Signal: {signal} | Histogram: {histogram}
+Bollinger Bands ({bb_timeframe}h timeframe):
+  - Upper: {bb_upper}
+  - Middle: {bb_middle}  
+  - Lower: {bb_lower}
+  - Width: {bb_width} (volatility measure)
+  - Position: {bb_position} (0=lower band, 1=upper band, 0.5=middle)"""
+
+                # Add day trading specific indicators
+                if TRADING_STYLE == "day_trading":
+                    if 'stoch_rsi' in indicators:
+                        stoch_rsi = f"{indicators.get('stoch_rsi'):.1f}" if indicators.get('stoch_rsi') is not None else "N/A"
+                        base_prompt += f"""
+Stochastic RSI: {stoch_rsi} (day trading momentum)"""
+                    
+                    if 'vwap' in indicators:
+                        vwap = f"${indicators.get('vwap'):.2f}" if indicators.get('vwap') is not None else "N/A"
+                        base_prompt += f"""
+VWAP: {vwap} (volume-weighted average price)"""
 
         # Add trading style specific instructions
         if TRADING_STYLE == "day_trading":
@@ -532,14 +560,24 @@ BB Width: {bb_width}"""
 DAY TRADING ANALYSIS REQUIREMENTS:
 - Prioritize short-term momentum and trend reversals
 - Focus on 1-4 hour price movements rather than daily/weekly trends
+- **CRITICAL**: Bollinger Bands are now calculated on 4-hour timeframe (optimal for day trading)
 - Consider intraday support/resistance levels
 - Evaluate volatility for quick profit opportunities
 - Assess liquidity for fast entry/exit capability
 - Weight recent price action more heavily than long-term trends
+- Use BB position: <0.2 = oversold, >0.8 = overbought, 0.4-0.6 = neutral zone
+
+BOLLINGER BANDS INTERPRETATION (4-hour timeframe):
+- BB Position < 0.2: Strong oversold, potential BUY signal
+- BB Position > 0.8: Strong overbought, potential SELL signal  
+- BB Width > 4%: High volatility, good for breakout trades
+- BB Width < 2%: Low volatility, expect breakout soon
+- Price touching upper band + high RSI (>70): Strong SELL signal
+- Price touching lower band + low RSI (<30): Strong BUY signal
 
 DECISION CRITERIA for Day Trading:
-- BUY: Strong short-term upward momentum, oversold conditions with reversal signals
-- SELL: Profit-taking opportunities, overbought conditions, momentum weakening
+- BUY: Strong short-term upward momentum, oversold conditions with reversal signals, BB position < 0.3
+- SELL: Profit-taking opportunities, overbought conditions, momentum weakening, BB position > 0.7
 - HOLD: Unclear short-term direction, low volatility, waiting for better entry/exit points"""
 
         elif TRADING_STYLE == "swing_trading":
@@ -551,6 +589,7 @@ SWING TRADING ANALYSIS REQUIREMENTS:
 - Consider both technical and fundamental momentum
 - Evaluate medium-term trend strength and sustainability
 - Balance short-term signals with longer-term context
+- Bollinger Bands calculated on 20-hour timeframe (standard for swing trading)
 
 DECISION CRITERIA for Swing Trading:
 - BUY: Trend continuation signals, breakouts from consolidation, oversold bounces
@@ -566,6 +605,7 @@ LONG-TERM TRADING ANALYSIS REQUIREMENTS:
 - Evaluate sustainable growth patterns and adoption trends
 - Balance technical analysis with fundamental strength
 - Prioritize position building over quick profits
+- Bollinger Bands calculated on 50-hour timeframe (smoothed for long-term)
 
 DECISION CRITERIA for Long-term Trading:
 - BUY: Strong fundamental outlook, major trend reversals, accumulation opportunities
@@ -601,6 +641,8 @@ Respond with ONLY a JSON object in this format:
     },
     "bollinger_bands": {
       "signal": "breakout_upper|breakout_lower|squeeze|normal",
+      "position": <bb_position_value>,
+      "timeframe_hours": <bb_timeframe>,
       "weight": 0.3
     }
   },

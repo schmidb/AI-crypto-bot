@@ -50,20 +50,21 @@ async function updateBotStatus() {
     if (!uptimeElement) return;
     
     try {
+        // Try to fetch bot startup data
         const response = await fetch('./data/cache/bot_startup.json');
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
         
         if (data && data.status !== 'offline') {
             // Calculate session uptime
-            const startTime = new Date(data.startup_time + 'Z');
+            const startTime = new Date(data.startup_time + (data.startup_time.includes('Z') ? '' : 'Z'));
             const sessionSeconds = Math.floor((new Date() - startTime) / 1000);
             
             uptimeElement.innerHTML = `<i class="fas fa-history me-1"></i>Session: ${formatUptime(sessionSeconds)}`;
         } else {
             // Bot is offline
             if (data && data.shutdown_time) {
-                const shutdownTime = new Date(data.shutdown_time + 'Z');
+                const shutdownTime = new Date(data.shutdown_time + (data.shutdown_time.includes('Z') ? '' : 'Z'));
                 uptimeElement.innerHTML = 
                     '<i class="fas fa-power-off me-1"></i>Stopped: ' + 
                     formatUTCTime(shutdownTime);
@@ -74,8 +75,9 @@ async function updateBotStatus() {
         }
     } catch (error) {
         console.error('Error updating bot status:', error);
+        // Fallback: show a simple uptime message
         uptimeElement.innerHTML = 
-            '<i class="fas fa-exclamation-triangle me-1"></i>Status: Unknown';
+            '<i class="fas fa-clock me-1"></i>Dashboard Active';
     }
 }
 

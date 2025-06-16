@@ -109,7 +109,7 @@ class WebServerSync:
             logger.error(f"Error syncing data files: {e}")
     
     def _sync_market_data(self) -> None:
-        """Sync latest decision files directly (no separate market_data folder)"""
+        """Sync latest decision files and detailed analysis files"""
         try:
             data_dir = os.path.abspath("data")
             web_data_dir = f"{self.web_path}/data"
@@ -135,8 +135,39 @@ class WebServerSync:
             
             logger.info("Latest decision files synced directly")
             
+            # Sync all detailed analysis files for trade history
+            self._sync_detailed_analysis_files()
+            
         except Exception as e:
             logger.error(f"Error syncing latest decision files: {e}")
+    
+    def _sync_detailed_analysis_files(self) -> None:
+        """Sync all detailed analysis files for trade history access"""
+        try:
+            data_dir = os.path.abspath("data")
+            web_data_dir = f"{self.web_path}/data"
+            
+            # Find all detailed analysis files (timestamped JSON files)
+            pattern = f"{data_dir}/*_{config.BASE_CURRENCY}_*.json"
+            analysis_files = glob.glob(pattern)
+            
+            # Filter to only include files that match the expected naming pattern
+            # Format: ASSET_CURRENCY_YYYYMMDD_HHMMSS.json
+            import re
+            timestamp_pattern = re.compile(r'.*_[A-Z]{3}_\d{8}_\d{6}\.json$')
+            valid_files = [f for f in analysis_files if timestamp_pattern.match(f)]
+            
+            synced_count = 0
+            for analysis_file in valid_files:
+                filename = os.path.basename(analysis_file)
+                dest_file = f"{web_data_dir}/{filename}"
+                self._ensure_hard_link(analysis_file, dest_file)
+                synced_count += 1
+            
+            logger.info(f"Synced {synced_count} detailed analysis files for trade history")
+            
+        except Exception as e:
+            logger.error(f"Error syncing detailed analysis files: {e}")
     
     def _sync_static_files(self) -> None:
         """Sync static HTML, CSS, JS files using hard links"""

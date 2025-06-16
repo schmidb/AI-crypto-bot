@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Header Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="dashboard/static/shared-header.css">
+</head>
+<body>
+    <div id="shared-header"></div>
+    
+    <div class="container mt-4">
+        <h1>Header Test Page</h1>
+        <p>This page tests if the shared header loads correctly with session time.</p>
+        
+        <div class="alert alert-info">
+            <h5>Debug Information:</h5>
+            <div id="debug-info">Loading...</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="dashboard/static/shared-header.js"></script>
+    <script>
+        // Load shared header and initialize
+        async function loadSharedHeader() {
+            try {
+                console.log('Loading shared header...');
+                const response = await fetch('dashboard/static/shared-header.html');
+                if (!response.ok) throw new Error('Failed to load header');
+                const html = await response.text();
+                document.getElementById('shared-header').innerHTML = html;
+                
+                console.log('Header HTML loaded, initializing...');
+                // Small delay to ensure DOM is ready
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                // Initialize header functionality
+                if (typeof initializeHeader === 'function') {
+                    console.log('Calling initializeHeader...');
+                    initializeHeader('test');
+                    
+                    // Update debug info
+                    document.getElementById('debug-info').innerHTML = `
+                        <strong>✅ Header loaded successfully!</strong><br>
+                        - initializeHeader function: Available<br>
+                        - Clock element: ${document.getElementById('live-clock') ? 'Found' : 'Not found'}<br>
+                        - Uptime element: ${document.getElementById('bot-uptime') ? 'Found' : 'Not found'}<br>
+                        - Current time: ${new Date().toISOString()}
+                    `;
+                } else {
+                    console.error('initializeHeader function not found!');
+                    document.getElementById('debug-info').innerHTML = `
+                        <strong>❌ Header initialization failed!</strong><br>
+                        - initializeHeader function: Not available<br>
+                        - Error: Function not loaded from shared-header.js
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading header:', error);
+                document.getElementById('debug-info').innerHTML = `
+                    <strong>❌ Header loading failed!</strong><br>
+                    - Error: ${error.message}<br>
+                    - Check if shared-header.html and shared-header.js are accessible
+                `;
+            }
+        }
+        
+        // Load header when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadSharedHeader);
+        } else {
+            loadSharedHeader();
+        }
+        
+        // Test bot status loading
+        async function testBotStatus() {
+            try {
+                const response = await fetch('./data/cache/bot_startup.json');
+                const data = await response.json();
+                console.log('Bot startup data:', data);
+                
+                const debugInfo = document.getElementById('debug-info');
+                debugInfo.innerHTML += `<br><br><strong>Bot Status Test:</strong><br>
+                    - Bot startup file: Accessible<br>
+                    - Bot status: ${data.status}<br>
+                    - Startup time: ${data.startup_time}<br>
+                    - Session duration: ${Math.floor((new Date() - new Date(data.startup_time)) / 1000)} seconds
+                `;
+            } catch (error) {
+                console.error('Bot status test failed:', error);
+                const debugInfo = document.getElementById('debug-info');
+                debugInfo.innerHTML += `<br><br><strong>Bot Status Test:</strong><br>
+                    - Error: ${error.message}
+                `;
+            }
+        }
+        
+        // Run bot status test after 2 seconds
+        setTimeout(testBotStatus, 2000);
+    </script>
+</body>
+</html>

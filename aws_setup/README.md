@@ -85,21 +85,18 @@ python bot_manager.py systemctl-stop     # Explicit stop
 python bot_manager.py status             # Check uptime
 ```
 
-### 7. Configure Security Group for API Access
+### 7. Access Your Dashboard
 
-To ensure the "Refresh Portfolio from Coinbase" functionality works correctly, you need to configure your EC2 security group to allow traffic on port 5000:
+Your bot dashboard will be available at:
+```
+http://your-ec2-ip/crypto-bot/
+```
 
-1. **Navigate to EC2 > Security Groups in AWS Console**
-2. **Select the security group associated with your instance**
-3. **Click "Edit inbound rules"**
-4. **Add a new rule:**
-   - Type: Custom TCP
-   - Port range: 5000
-   - Source: 0.0.0.0/0 (to allow from anywhere, or restrict as needed)
-   - Description: API server for dashboard
-5. **Click "Save rules"**
-
-This allows the dashboard to communicate with the API server running on port 5000, enabling portfolio refresh functionality.
+The dashboard provides:
+- Real-time portfolio tracking
+- AI analysis and trading decisions
+- Performance metrics and logs
+- Live market data and trends
 
 ## Uptime Management
 
