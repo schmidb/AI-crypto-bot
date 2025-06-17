@@ -5,6 +5,14 @@ import datetime
 from typing import Dict, List, Any
 import pandas as pd
 
+# Import performance tracking components
+try:
+    from utils.performance_dashboard_updater import PerformanceDashboardUpdater
+    PERFORMANCE_TRACKING_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_TRACKING_AVAILABLE = False
+    logger.warning("Performance tracking not available - dashboard will not include performance data")
+
 logger = logging.getLogger(__name__)
 
 class DashboardUpdater:
@@ -16,7 +24,18 @@ class DashboardUpdater:
         os.makedirs("data/portfolio", exist_ok=True)
         os.makedirs("data/cache", exist_ok=True)
         os.makedirs("data/config", exist_ok=True)
+        os.makedirs("data/dashboard", exist_ok=True)  # For performance data
         os.makedirs("dashboard/images", exist_ok=True)
+        
+        # Initialize performance dashboard updater if available
+        self.performance_updater = None
+        if PERFORMANCE_TRACKING_AVAILABLE:
+            try:
+                self.performance_updater = PerformanceDashboardUpdater()
+                logger.info("Performance dashboard updater initialized")
+            except Exception as e:
+                logger.error(f"Failed to initialize performance dashboard updater: {e}")
+                self.performance_updater = None
     
     def update_dashboard(self, trading_data: Dict[str, Any], portfolio: Dict[str, Any]) -> None:
         """Update local dashboard data files only"""
@@ -28,6 +47,7 @@ class DashboardUpdater:
             self._update_detailed_config_data()
             self._update_latest_decisions(trading_data)
             self._update_logs_data()
+            self._update_performance_data(portfolio)  # Add performance data update
             self._update_timestamp()
             logger.info("Local dashboard data updated successfully")
         except Exception as e:
@@ -404,6 +424,49 @@ class DashboardUpdater:
         except Exception as e:
             logger.error(f"Error reading latest decisions: {e}")
         return '2000-01-01T00:00:00'
+    
+    def _update_performance_data(self, portfolio: Dict[str, Any]) -> None:
+        """Update performance tracking data for dashboard"""
+        try:
+            if not self.performance_updater:
+                logger.debug("Performance updater not available, skipping performance data update")
+                return
+            
+            # Check if performance data is available
+            if not self.performance_updater.is_data_available():
+                logger.debug("Performance data not available yet, skipping update")
+                return
+            
+            # Update performance data
+            success = self.performance_updater.update_performance_data()
+            
+            if success:
+                logger.info("Performance dashboard data updated successfully")
+            else:
+                logger.warning("Failed to update performance dashboard data")
+                
+        except Exception as e:
+            logger.error(f"Error updating performance data: {e}")
+    
+    def get_performance_data_for_period(self, period: str = "30d") -> Dict[str, Any]:
+        """
+        Get performance data for specific period (for API endpoints)
+        
+        Args:
+            period: Time period ("7d", "30d", "90d", "1y", "all")
+            
+        Returns:
+            Dict containing performance data
+        """
+        try:
+            if not self.performance_updater:
+                return {"error": "Performance tracking not available"}
+            
+            return self.performance_updater.get_performance_data_for_period(period)
+            
+        except Exception as e:
+            logger.error(f"Error getting performance data for period {period}: {e}")
+            return {"error": str(e)}
     
     # Dummy methods to handle old chart generation calls gracefully
     def _generate_portfolio_value_chart(self, portfolio: Dict[str, Any]) -> None:

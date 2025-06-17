@@ -347,6 +347,61 @@
             </div>
         </div>
 
+        <!-- Performance Tracking Metrics (NEW) -->
+        <div class="performance-metrics-section">
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <h5 class="text-muted mb-3">
+                        <i class="fas fa-chart-line me-2"></i>Advanced Performance Analytics
+                    </h5>
+                </div>
+            </div>
+            <div class="row g-4 mb-4">
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="metric-card">
+                        <div class="metric-value" id="total-return-value">+0.00%</div>
+                        <div class="metric-label">Total Return</div>
+                        <div class="metric-change" id="total-return-period">Since inception</div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="metric-card success">
+                        <div class="metric-value" id="current-value">€0.00</div>
+                        <div class="metric-label">Current Value</div>
+                        <div class="metric-change" id="current-value-change">Portfolio</div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="metric-card warning">
+                        <div class="metric-value" id="sharpe-ratio">0.00</div>
+                        <div class="metric-label">Sharpe Ratio</div>
+                        <div class="metric-change" id="sharpe-info">Risk-adjusted</div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="metric-card danger">
+                        <div class="metric-value" id="max-drawdown">-0.00%</div>
+                        <div class="metric-label">Max Drawdown</div>
+                        <div class="metric-change" id="drawdown-info">Peak to trough</div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="metric-card">
+                        <div class="metric-value" id="volatility">0.0%</div>
+                        <div class="metric-label">Volatility</div>
+                        <div class="metric-change" id="volatility-info">Annualized</div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+                    <div class="metric-card success">
+                        <div class="metric-value" id="annualized-return">+0.0%</div>
+                        <div class="metric-label">Annualized Return</div>
+                        <div class="metric-change" id="annualized-info">CAGR</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Time Range Selector -->
         <div class="time-range-selector">
             <div class="d-flex justify-content-center gap-2">
@@ -746,6 +801,7 @@
         let currentChartType = 'line'; // Add chart type tracking
         let portfolioData = [];
         let tradesData = [];
+        let performanceTrackingData = null;  // NEW: Store performance tracking data
         
         // Chart.js default configuration
         Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
@@ -878,8 +934,112 @@
             };
         }
 
+        // NEW: Update performance charts with tracking data
+        function updatePerformanceCharts(performanceData) {
+            try {
+                if (!performanceData || performanceData.error) {
+                    console.log('Performance tracking data not available:', performanceData?.error || 'No data');
+                    showPerformanceTrackingUnavailable();
+                    return;
+                }
+
+                console.log('Updating performance charts with tracking data');
+
+                // Update performance metrics cards
+                updatePerformanceMetricsCards(performanceData);
+
+                // Update performance charts
+                if (performanceData.chart_data) {
+                    updatePortfolioValueChart(performanceData.chart_data.portfolio_value);
+                    updateReturnsChart(performanceData.chart_data.daily_returns);
+                    updateDrawdownChart(performanceData.chart_data.drawdown);
+                }
+
+                // Update period selector with performance data
+                updatePeriodSelector(performanceData.period_data);
+
+            } catch (error) {
+                console.error('Error updating performance charts:', error);
+                showPerformanceTrackingUnavailable();
+            }
+        }
+
+        // NEW: Update performance metrics cards
+        function updatePerformanceMetricsCards(performanceData) {
+            try {
+                const metrics = performanceData.metrics_summary;
+                if (!metrics || metrics.error) {
+                    console.log('Performance metrics not available');
+                    return;
+                }
+
+                // Update total return card
+                const totalReturnElement = document.getElementById('total-return-value');
+                if (totalReturnElement) {
+                    const totalReturn = metrics.total_return || 0;
+                    totalReturnElement.textContent = `${totalReturn >= 0 ? '+' : ''}${totalReturn.toFixed(2)}%`;
+                    totalReturnElement.className = `metric-value ${totalReturn >= 0 ? 'text-success' : 'text-danger'}`;
+                }
+
+                // Update current value card
+                const currentValueElement = document.getElementById('current-value');
+                if (currentValueElement) {
+                    currentValueElement.textContent = `€${(metrics.current_value || 0).toFixed(2)}`;
+                }
+
+                // Update Sharpe ratio card
+                const sharpeRatioElement = document.getElementById('sharpe-ratio');
+                if (sharpeRatioElement) {
+                    const sharpeRatio = metrics.sharpe_ratio || 0;
+                    sharpeRatioElement.textContent = sharpeRatio.toFixed(2);
+                    sharpeRatioElement.className = `metric-value ${sharpeRatio >= 1 ? 'text-success' : sharpeRatio >= 0 ? 'text-warning' : 'text-danger'}`;
+                }
+
+                // Update max drawdown card
+                const maxDrawdownElement = document.getElementById('max-drawdown');
+                if (maxDrawdownElement) {
+                    const maxDrawdown = metrics.max_drawdown || 0;
+                    maxDrawdownElement.textContent = `-${maxDrawdown.toFixed(2)}%`;
+                    maxDrawdownElement.className = `metric-value ${maxDrawdown <= 5 ? 'text-success' : maxDrawdown <= 15 ? 'text-warning' : 'text-danger'}`;
+                }
+
+                // Update volatility card
+                const volatilityElement = document.getElementById('volatility');
+                if (volatilityElement) {
+                    const volatility = (metrics.volatility || 0) * 100; // Convert to percentage
+                    volatilityElement.textContent = `${volatility.toFixed(1)}%`;
+                }
+
+                // Update annualized return card
+                const annualizedReturnElement = document.getElementById('annualized-return');
+                if (annualizedReturnElement) {
+                    const annualizedReturn = metrics.annualized_return || 0;
+                    annualizedReturnElement.textContent = `${annualizedReturn >= 0 ? '+' : ''}${annualizedReturn.toFixed(1)}%`;
+                    annualizedReturnElement.className = `metric-value ${annualizedReturn >= 0 ? 'text-success' : 'text-danger'}`;
+                }
+
+            } catch (error) {
+                console.error('Error updating performance metrics cards:', error);
+            }
+        }
+
+        // NEW: Show performance tracking unavailable message
+        function showPerformanceTrackingUnavailable() {
+            // Add a notice that performance tracking is not yet available
+            const performanceSection = document.querySelector('.performance-metrics-section');
+            if (performanceSection) {
+                performanceSection.innerHTML = `
+                    <div class="alert alert-info">
+                        <h5><i class="fas fa-info-circle"></i> Performance Tracking</h5>
+                        <p>Advanced performance tracking is not yet available. The system needs at least 2 portfolio snapshots to calculate performance metrics.</p>
+                        <p><strong>Note:</strong> Performance tracking will automatically start once the bot has been running and taking portfolio snapshots.</p>
+                    </div>
+                `;
+            }
+        }
+
         // Update key metrics display
-        function updateKeyMetrics(portfolio, trades, portfolioHistory) {
+        function updateKeyMetrics(portfolio, trades, portfolioHistory, performanceData = null) {
             // Set default values
             let currentValue = 0;
             let initialValue = 0;
@@ -1489,6 +1649,10 @@
                 const portfolio = await loadData('/crypto-bot/data/portfolio/portfolio.json');
                 console.log('Portfolio data loaded:', portfolio ? 'Success' : 'Failed');
                 
+                // Load performance tracking data (NEW)
+                const performanceData = await loadData('/crypto-bot/data/dashboard/performance_data.json');
+                console.log('Performance data loaded:', performanceData ? 'Success' : 'Failed');
+                
                 // Load portfolio history
                 const portfolioHistoryCSV = await loadData('/crypto-bot/data/portfolio/portfolio_history.csv');
                 let portfolioHistory = [];
@@ -1511,9 +1675,11 @@
                 // Store data globally
                 portfolioData = portfolioHistory || [];
                 tradesData = trades || [];
+                performanceTrackingData = performanceData || null;  // Store performance data globally
                 
-                // Update all displays
-                updateKeyMetrics(portfolio, trades, portfolioHistory);
+                // Update all displays with performance data integration
+                updateKeyMetrics(portfolio, trades, portfolioHistory, performanceData);
+                updatePerformanceCharts(performanceData);  // NEW: Update performance charts
                 updateRecentTradesTable(trades);
                 updateAIAnalysis(trades);
                 
