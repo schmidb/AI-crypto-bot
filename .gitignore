@@ -114,6 +114,5 @@ google.json
 htmlcov/
 .pytest_cache/
 
-# Test notification script (temporary)
-test_notifications.py
+# Test notification script is kept as utility
 .coverage
