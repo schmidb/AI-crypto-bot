@@ -41,11 +41,11 @@ Test security measures, API key handling, and vulnerability protection.
 
 ```
 Phase 1 (Critical Components):     ████████████████████ 100% (5/5)
-Phase 2 (Core Functionality):     ░░░░░░░░░░░░░░░░░░░░  0% (0/5)
-Phase 3 (Integration & E2E):      ░░░░░░░░░░░░░░░░░░░░  0% (0/5)
+Phase 2 (Core Functionality):     ░░░░░░░░░░░░░░░░░░░░  0% (0/7)
+Phase 3 (Integration & E2E):      ░░░░░░░░░░░░░░░░░░░░  0% (0/6)
 Phase 4 (Specialized Testing):    ░░░░░░░░░░░░░░░░░░░░  0% (0/7)
 
-Overall Test Suite Progress:       ██████████░░░░░░░░░░ 22.7% (5/22)
+Overall Test Suite Progress:       ████████░░░░░░░░░░░░ 20.0% (5/25)
 ```
 
 ### **✅ Completed Test Modules**
@@ -110,6 +110,8 @@ All critical components now have comprehensive test coverage with **123 passing 
 - **📋 Dashboard Updater** (`test_dashboard_updater.py`)
 - **📋 Notification Service** (`test_notification_service.py`)
 - **📋 Trade Logger** (`test_trade_logger.py`)
+- **📋 Performance Tracker** (`test_performance_tracker.py`) - **NEW**
+- **📋 Performance Calculator** (`test_performance_calculator.py`) - **NEW**
 
 ### **🎯 Quality Metrics**
 - **Code Coverage Target**: 90%+ for unit tests
@@ -309,7 +311,105 @@ All critical components now have comprehensive test coverage with **123 passing 
   - [ ] Test backup and recovery
   - [ ] Test log parsing
 
-#### **9. Notification Service (`test_notification_service.py`)**
+#### **9. Performance Tracker (`test_performance_tracker.py`)** - **NEW**
+- [ ] **Performance Tracker Initialization**
+  - [ ] Test performance tracker initialization with defaults
+  - [ ] Test performance tracker creates directory structure
+  - [ ] Test performance tracker loads existing configuration
+  - [ ] Test performance tracker handles corrupted configuration
+  - [ ] Test performance tracker with custom config path
+
+- [ ] **Portfolio Snapshots**
+  - [ ] Test take portfolio snapshot basic functionality
+  - [ ] Test take portfolio snapshot with trade data
+  - [ ] Test snapshot frequency (daily/hourly/on_restart)
+  - [ ] Test snapshot deduplication logic
+  - [ ] Test snapshot data validation and integrity
+  - [ ] Test snapshot storage and retrieval
+  - [ ] Test snapshot with missing data handling
+
+- [ ] **Performance Initialization**
+  - [ ] Test initialize tracking with valid portfolio
+  - [ ] Test initialize tracking with custom start date
+  - [ ] Test initialize tracking error handling
+  - [ ] Test tracking state persistence across restarts
+  - [ ] Test multiple initialization attempts
+
+- [ ] **Performance Reset Management**
+  - [ ] Test reset performance tracking functionality
+  - [ ] Test reset preserves historical data
+  - [ ] Test reset with custom reason logging
+  - [ ] Test multiple reset periods handling
+  - [ ] Test reset validation and confirmation
+
+- [ ] **Performance Data Retrieval**
+  - [ ] Test get performance summary for different periods
+  - [ ] Test get performance summary with no data
+  - [ ] Test get performance summary with corrupted data
+  - [ ] Test performance data filtering by date ranges
+  - [ ] Test performance data aggregation
+
+- [ ] **Error Handling and Edge Cases**
+  - [ ] Test performance tracker with corrupted snapshot file
+  - [ ] Test performance tracker with missing configuration
+  - [ ] Test performance tracker with invalid date ranges
+  - [ ] Test performance tracker with disk space issues
+  - [ ] Test performance tracker concurrent access safety
+
+#### **10. Performance Calculator (`test_performance_calculator.py`)** - **NEW**
+- [ ] **Return Calculations**
+  - [ ] Test total return calculation with positive returns
+  - [ ] Test total return calculation with negative returns
+  - [ ] Test total return calculation with deposits/withdrawals
+  - [ ] Test annualized return calculation
+  - [ ] Test compound annual growth rate (CAGR)
+  - [ ] Test return calculation edge cases (zero/negative initial values)
+
+- [ ] **Trading vs Market Performance Separation**
+  - [ ] Test trading performance calculation from trade history
+  - [ ] Test market performance calculation from price changes
+  - [ ] Test combined performance validation
+  - [ ] Test performance separation with complex scenarios
+  - [ ] Test performance calculation with missing trade data
+
+- [ ] **Risk Metrics**
+  - [ ] Test Sharpe ratio calculation
+  - [ ] Test maximum drawdown calculation
+  - [ ] Test volatility calculation (standard deviation)
+  - [ ] Test risk-adjusted returns
+  - [ ] Test downside deviation and Sortino ratio
+  - [ ] Test Value at Risk (VaR) calculation
+
+- [ ] **Trading Metrics**
+  - [ ] Test win rate calculation
+  - [ ] Test average trade return calculation
+  - [ ] Test profit factor calculation
+  - [ ] Test trading frequency metrics
+  - [ ] Test trade size distribution analysis
+  - [ ] Test holding period analysis
+
+- [ ] **Performance Comparison**
+  - [ ] Test trading vs market performance comparison
+  - [ ] Test period-over-period performance comparison
+  - [ ] Test benchmark comparison functionality
+  - [ ] Test relative performance metrics
+  - [ ] Test performance attribution analysis
+
+- [ ] **Advanced Analytics**
+  - [ ] Test alpha and beta calculation vs benchmarks
+  - [ ] Test information ratio calculation
+  - [ ] Test Calmar ratio calculation
+  - [ ] Test rolling performance metrics
+  - [ ] Test performance consistency metrics
+
+- [ ] **Error Handling and Validation**
+  - [ ] Test calculation with insufficient data
+  - [ ] Test calculation with invalid date ranges
+  - [ ] Test calculation with corrupted trade history
+  - [ ] Test calculation performance with large datasets
+  - [ ] Test calculation accuracy and precision
+
+#### **11. Notification Service (`test_notification_service.py`)**
 - [ ] **Notification Delivery**
   - [ ] Test Pushover integration
   - [ ] Test trade execution notifications
@@ -324,7 +424,7 @@ All critical components now have comprehensive test coverage with **123 passing 
   - [ ] Test message truncation
   - [ ] Test error message handling
 
-#### **10. Dashboard Updater (`test_dashboard_updater.py`)**
+#### **12. Dashboard Updater (`test_dashboard_updater.py`)**
 - [ ] **Data Updates**
   - [ ] Test portfolio data updates
   - [ ] Test market data updates
@@ -339,7 +439,7 @@ All critical components now have comprehensive test coverage with **123 passing 
   - [ ] Test error recovery
   - [ ] Test data validation
 
-#### **11. Web Server Sync (`test_webserver_sync.py`)**
+#### **13. Web Server Sync (`test_webserver_sync.py`)**
 - [ ] **File Synchronization**
   - [ ] Test dashboard file deployment
   - [ ] Test hard link creation
@@ -416,9 +516,45 @@ All critical components now have comprehensive test coverage with **123 passing 
   - [ ] Test error state handling
   - [ ] Test offline mode
 
+#### **16. Performance Tracking Integration (`test_performance_integration.py`)** - **NEW**
+- [ ] **Performance Tracking with Trading**
+  - [ ] Test performance tracking during live trading
+  - [ ] Test performance tracking with simulated trades
+  - [ ] Test performance tracking across multiple trading sessions
+  - [ ] Test performance tracking with portfolio rebalancing
+  - [ ] Test performance tracking with different market conditions
+
+- [ ] **Performance Tracking Across Restarts**
+  - [ ] Test performance data persistence across bot restarts
+  - [ ] Test performance tracking continuity after crashes
+  - [ ] Test performance tracking with configuration changes
+  - [ ] Test performance tracking with system updates
+  - [ ] Test performance tracking data recovery
+
+- [ ] **Performance Dashboard Integration**
+  - [ ] Test performance data display in dashboard
+  - [ ] Test performance chart rendering
+  - [ ] Test performance metrics real-time updates
+  - [ ] Test performance period selector functionality
+  - [ ] Test performance data export from dashboard
+
+- [ ] **Performance Data Consistency**
+  - [ ] Test performance data consistency across components
+  - [ ] Test performance calculation accuracy with live data
+  - [ ] Test performance data synchronization
+  - [ ] Test performance data validation and integrity
+  - [ ] Test performance data backup and recovery
+
+- [ ] **Performance Tracking End-to-End**
+  - [ ] Test complete performance tracking lifecycle
+  - [ ] Test performance tracking with deposits/withdrawals
+  - [ ] Test performance tracking with multiple reset periods
+  - [ ] Test performance tracking data export/import
+  - [ ] Test performance tracking with external data sources
+
 ### **🚀 End-to-End Tests**
 
-#### **16. Complete Trading Workflow (`test_e2e_trading.py`)**
+#### **17. Complete Trading Workflow (`test_e2e_trading.py`)**
 - [ ] **Full Trading Cycle**
   - [ ] Test complete BUY decision and execution
   - [ ] Test complete SELL decision and execution
@@ -433,7 +569,7 @@ All critical components now have comprehensive test coverage with **123 passing 
   - [ ] Test simulation data integrity
   - [ ] Test simulation reporting
 
-#### **17. Bot Lifecycle (`test_e2e_lifecycle.py`)**
+#### **18. Bot Lifecycle (`test_e2e_lifecycle.py`)**
 - [ ] **Startup to Shutdown**
   - [ ] Test complete bot lifecycle
   - [ ] Test configuration loading
@@ -450,7 +586,7 @@ All critical components now have comprehensive test coverage with **123 passing 
 
 ### **⚡ Performance Tests**
 
-#### **18. Performance Testing (`test_performance.py`)**
+#### **19. Performance Testing (`test_performance.py`)**
 - [ ] **Response Times**
   - [ ] Test API response times
   - [ ] Test decision-making speed
@@ -474,7 +610,7 @@ All critical components now have comprehensive test coverage with **123 passing 
 
 ### **🔒 Security Tests**
 
-#### **19. Security Testing (`test_security.py`)**
+#### **20. Security Testing (`test_security.py`)**
 - [ ] **Credential Security**
   - [ ] Test API key protection
   - [ ] Test credential encryption
@@ -498,7 +634,7 @@ All critical components now have comprehensive test coverage with **123 passing 
 
 ### **🧪 Specialized Tests**
 
-#### **20. Risk Management Testing (`test_risk_management.py`)**
+#### **21. Risk Management Testing (`test_risk_management.py`)**
 - [ ] **Safety Limits**
   - [ ] Test minimum balance enforcement
   - [ ] Test maximum position size limits
@@ -513,7 +649,7 @@ All critical components now have comprehensive test coverage with **123 passing 
   - [ ] Test data corruption scenarios
   - [ ] Test concurrent operation conflicts
 
-#### **21. AI/ML Testing (`test_ai_ml.py`)**
+#### **22. AI/ML Testing (`test_ai_ml.py`)**
 - [ ] **Model Performance**
   - [ ] Test prediction accuracy
   - [ ] Test confidence score reliability
@@ -528,7 +664,7 @@ All critical components now have comprehensive test coverage with **123 passing 
   - [ ] Test data preprocessing
   - [ ] Test model validation
 
-#### **22. Deployment Testing (`test_deployment.py`)**
+#### **23. Deployment Testing (`test_deployment.py`)**
 - [ ] **Cloud Deployment**
   - [ ] Test AWS EC2 deployment
   - [ ] Test Google Cloud deployment
@@ -671,6 +807,8 @@ pip install pytest pytest-mock pytest-asyncio pytest-cov pytest-benchmark
 3. 📋 **Trade logger tests** - **PENDING**
 4. 📋 **Notification service tests** - **PENDING**
 5. 📋 **Dashboard updater tests** - **PENDING**
+6. 📋 **Performance tracker tests** - **PENDING** - **NEW**
+7. 📋 **Performance calculator tests** - **PENDING** - **NEW**
 
 ### **Phase 3: Integration & E2E** (Medium Priority) - **0% Complete**
 1. 📋 **API integration tests** - **PENDING**
@@ -678,6 +816,7 @@ pip install pytest pytest-mock pytest-asyncio pytest-cov pytest-benchmark
 3. 📋 **Complete trading workflow tests** - **PENDING**
 4. 📋 **Bot lifecycle tests** - **PENDING**
 5. 📋 **Dashboard integration tests** - **PENDING**
+6. 📋 **Performance tracking integration tests** - **PENDING** - **NEW**
 
 ### **Phase 4: Specialized Testing** (Lower Priority) - **0% Complete**
 1. 📋 **Performance tests** - **PENDING**
