@@ -92,13 +92,13 @@ class LLMAnalyzer:
         Returns:
             Dictionary with trading decision and analysis
         """
-        # Prepare market data summary
-        market_summary = self._prepare_market_summary(market_data, current_price, trading_pair)
-
-        # Prepare prompt for LLM
-        prompt = self._create_analysis_prompt(market_summary, trading_pair, additional_context)
-
         try:
+            # Prepare market data summary
+            market_summary = self._prepare_market_summary(market_data, current_price, trading_pair)
+
+            # Prepare prompt for LLM
+            prompt = self._create_analysis_prompt(market_summary, trading_pair, additional_context)
+
             # Call Vertex AI
             analysis_result = self._call_vertex_ai(prompt)
             

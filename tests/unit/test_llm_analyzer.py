@@ -345,19 +345,33 @@ class TestDataProcessing:
             "current_price": 50000.0,
             "price_change_24h": 2.5,
             "price_change_7d": 5.0,
-            "moving_average_50": 49500.0,  # Add missing field
-            "moving_average_200": 48000.0,  # Add missing field
+            "moving_average_50": 49500.0,
+            "moving_average_200": 48000.0,
             "volatility": 2.5,
-            "recent_high": 51000.0,  # Add missing field
-            "recent_low": 49000.0,   # Add missing field
+            "recent_high": 51000.0,
+            "recent_low": 49000.0,
             "latest_volume": 1000000,
             "average_volume_7d": 900000,
             "trading_pair": "BTC-EUR"
         }
         
+        # Use the correct additional_context structure that the method expects
         additional_context = {
-            "portfolio_allocation": {"BTC": 0.3},
-            "recent_performance": "positive"
+            "indicators": {
+                "rsi": 65.5,
+                "macd": 0.0123,
+                "macd_signal": 0.0098,
+                "macd_histogram": 0.0025,
+                "bb_upper": 52000.0,
+                "bb_middle": 50000.0,
+                "bb_lower": 48000.0,
+                "bb_width": 8.0,
+                "bb_position": 0.5,
+                "_metadata": {
+                    "bb_timeframe_hours": 4,
+                    "trading_style": "day_trading"
+                }
+            }
         }
         
         prompt = analyzer._create_analysis_prompt(
@@ -366,9 +380,10 @@ class TestDataProcessing:
             additional_context=additional_context
         )
         
-        # Verify additional context is included
-        assert "portfolio_allocation" in prompt
-        assert "recent_performance" in prompt
+        # Verify additional context indicators are included
+        assert "65.5" in prompt  # RSI value
+        assert "0.0123" in prompt  # MACD value
+        assert "$52000.00" in prompt  # BB upper
 
 
 class TestResponseParsing:
@@ -477,8 +492,21 @@ class TestTradingDecisionMaking:
             "product_id": "BTC-EUR",
             "current_price": 50000.0,
             "indicators": {
-                "rsi": 30,  # Oversold
-                "macd_signal": "bullish"
+                "rsi": {
+                    "value": 30,
+                    "signal": "oversold"
+                },
+                "macd": {
+                    "value": 100,
+                    "signal": "bullish",
+                    "trend": "up"
+                },
+                "bollinger_bands": {
+                    "upper": 52000,
+                    "middle": 50000,
+                    "lower": 48000,
+                    "signal": "normal"
+                }
             },
             "risk_level": "medium"
         }
@@ -504,8 +532,21 @@ class TestTradingDecisionMaking:
             "product_id": "ETH-EUR",
             "current_price": 3000.0,
             "indicators": {
-                "rsi": 80,  # Overbought
-                "macd_signal": "bearish"
+                "rsi": {
+                    "value": 80,
+                    "signal": "overbought"
+                },
+                "macd": {
+                    "value": -50,
+                    "signal": "bearish",
+                    "trend": "down"
+                },
+                "bollinger_bands": {
+                    "upper": 3200,
+                    "middle": 3000,
+                    "lower": 2800,
+                    "signal": "breakout_upper"
+                }
             },
             "risk_level": "low"
         }
@@ -529,8 +570,21 @@ class TestTradingDecisionMaking:
             "product_id": "SOL-EUR",
             "current_price": 100.0,
             "indicators": {
-                "rsi": 50,  # Neutral
-                "macd_signal": "neutral"
+                "rsi": {
+                    "value": 50,
+                    "signal": "neutral"
+                },
+                "macd": {
+                    "value": 0,
+                    "signal": "neutral",
+                    "trend": "sideways"
+                },
+                "bollinger_bands": {
+                    "upper": 105,
+                    "middle": 100,
+                    "lower": 95,
+                    "signal": "squeeze"
+                }
             },
             "risk_level": "medium"
         }
@@ -569,8 +623,7 @@ class TestErrorHandling:
         """Test handling of empty market data."""
         empty_data = pd.DataFrame()
         
-        # This will cause an error in _prepare_market_summary, which should be caught
-        # and return the default error response
+        # This will cause an error in _prepare_market_summary, which should now be caught
         result = analyzer.analyze_market_data(
             market_data=empty_data,
             current_price=50000.0,
