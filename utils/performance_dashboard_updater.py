@@ -14,6 +14,7 @@ from pathlib import Path
 
 from utils.performance_tracker import PerformanceTracker
 from utils.performance_calculator import PerformanceCalculator
+from utils.performance_manager import PerformanceManager
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,7 @@ class PerformanceDashboardUpdater:
         # Initialize performance components
         self.tracker = PerformanceTracker()
         self.calculator = PerformanceCalculator()
+        self.manager = PerformanceManager()
         
         # Ensure dashboard data directory exists
         self.dashboard_data_path.mkdir(parents=True, exist_ok=True)
@@ -113,6 +115,9 @@ class PerformanceDashboardUpdater:
             # Generate performance overview
             overview = self._generate_performance_overview(snapshots)
             
+            # Phase 3: Add advanced performance management features
+            advanced_features = self._generate_advanced_features(period_data)
+            
             return {
                 "timestamp": datetime.utcnow().isoformat(),
                 "tracking_info": tracking_info,
@@ -120,6 +125,7 @@ class PerformanceDashboardUpdater:
                 "chart_data": chart_data,
                 "metrics_summary": metrics_summary,
                 "overview": overview,
+                "advanced_features": advanced_features,
                 "snapshots_count": len(snapshots)
             }
             
@@ -340,6 +346,148 @@ class PerformanceDashboardUpdater:
         except Exception as e:
             logger.error(f"Error getting performance data for period {period}: {e}")
             return {"error": str(e)}
+    
+    def _generate_advanced_features(self, period_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Generate Phase 3 advanced performance management features
+        
+        Args:
+            period_data: Performance data for different periods
+            
+        Returns:
+            Dict with advanced features data
+        """
+        try:
+            advanced_features = {}
+            
+            # Get performance periods
+            periods_info = self.manager.get_performance_periods()
+            advanced_features["performance_periods"] = periods_info
+            
+            # Check performance goals if we have current metrics
+            current_metrics = period_data.get("7d", {})  # Use 7d as current period
+            if current_metrics and "error" not in current_metrics:
+                goals_status = self.manager.check_performance_goals(current_metrics)
+                advanced_features["goals_status"] = goals_status
+            else:
+                advanced_features["goals_status"] = {
+                    "status": "no_data",
+                    "message": "Insufficient data for goal checking"
+                }
+            
+            # Compare to benchmarks
+            if current_metrics and "error" not in current_metrics:
+                benchmark_comparison = self.manager.compare_to_benchmarks(current_metrics)
+                advanced_features["benchmark_comparison"] = benchmark_comparison
+            else:
+                advanced_features["benchmark_comparison"] = {
+                    "status": "no_data",
+                    "message": "Insufficient data for benchmark comparison"
+                }
+            
+            # Generate performance insights
+            if period_data:
+                insights = []
+                for period, data in period_data.items():
+                    if "error" not in data:
+                        period_insights = self.manager._generate_performance_insights(
+                            {"periods": {period: data}}, period
+                        )
+                        insights.extend([f"[{period.upper()}] {insight}" for insight in period_insights])
+                
+                advanced_features["insights"] = insights[:10]  # Limit to top 10 insights
+            else:
+                advanced_features["insights"] = ["No performance insights available"]
+            
+            # Performance grades for each period
+            performance_grades = {}
+            for period, data in period_data.items():
+                if "error" not in data:
+                    grade = self.manager._calculate_performance_grade(data)
+                    performance_grades[period] = grade
+            
+            advanced_features["performance_grades"] = performance_grades
+            
+            # Quick stats summary
+            advanced_features["quick_stats"] = self._generate_quick_stats(period_data)
+            
+            return advanced_features
+            
+        except Exception as e:
+            logger.error(f"Error generating advanced features: {e}")
+            return {
+                "error": str(e),
+                "performance_periods": {"periods": [], "active_period": None},
+                "goals_status": {"status": "error", "message": str(e)},
+                "benchmark_comparison": {"status": "error", "message": str(e)},
+                "insights": ["Error generating insights"],
+                "performance_grades": {},
+                "quick_stats": {}
+            }
+    
+    def _generate_quick_stats(self, period_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate quick statistics summary"""
+        try:
+            quick_stats = {}
+            
+            # Best performing period
+            best_return = -float('inf')
+            best_period = None
+            
+            # Worst performing period
+            worst_return = float('inf')
+            worst_period = None
+            
+            # Average metrics
+            total_returns = []
+            sharpe_ratios = []
+            max_drawdowns = []
+            
+            for period, data in period_data.items():
+                if "error" not in data:
+                    total_return = data.get("total_return", 0)
+                    
+                    if total_return > best_return:
+                        best_return = total_return
+                        best_period = period
+                    
+                    if total_return < worst_return:
+                        worst_return = total_return
+                        worst_period = period
+                    
+                    total_returns.append(total_return)
+                    
+                    if "sharpe_ratio" in data:
+                        sharpe_ratios.append(data["sharpe_ratio"])
+                    
+                    if "max_drawdown" in data:
+                        max_drawdowns.append(data["max_drawdown"])
+            
+            if total_returns:
+                quick_stats["best_period"] = {
+                    "period": best_period,
+                    "return": best_return
+                }
+                
+                quick_stats["worst_period"] = {
+                    "period": worst_period,
+                    "return": worst_return
+                }
+                
+                quick_stats["average_return"] = sum(total_returns) / len(total_returns)
+                
+                if sharpe_ratios:
+                    quick_stats["average_sharpe"] = sum(sharpe_ratios) / len(sharpe_ratios)
+                
+                if max_drawdowns:
+                    quick_stats["average_drawdown"] = sum(max_drawdowns) / len(max_drawdowns)
+                    quick_stats["max_drawdown_overall"] = max(max_drawdowns)
+            
+            return quick_stats
+            
+        except Exception as e:
+            logger.error(f"Error generating quick stats: {e}")
+            return {}
     
     def is_data_available(self) -> bool:
         """Check if performance data is available for dashboard"""

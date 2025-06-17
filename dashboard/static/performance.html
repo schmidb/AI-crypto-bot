@@ -258,6 +258,110 @@
             border-radius: 50%;
             background: currentColor;
         }
+
+        /* Phase 3: Advanced Performance Management Styles */
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 8px;
+            background: rgba(0, 140, 186, 0.05);
+            border: 1px solid rgba(0, 140, 186, 0.1);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .goal-item {
+            padding: 0.75rem;
+            border-radius: 6px;
+            background: rgba(40, 167, 69, 0.05);
+            border-left: 4px solid var(--success-color);
+            margin-bottom: 0.75rem;
+        }
+
+        .goal-item.not-achieved {
+            background: rgba(220, 53, 69, 0.05);
+            border-left-color: var(--danger-color);
+        }
+
+        .goal-progress {
+            height: 6px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .goal-progress-bar {
+            height: 100%;
+            background: var(--success-color);
+            transition: width 0.3s ease;
+        }
+
+        .goal-progress-bar.not-achieved {
+            background: var(--danger-color);
+        }
+
+        .benchmark-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 6px;
+            background: rgba(0, 140, 186, 0.05);
+            margin-bottom: 0.5rem;
+        }
+
+        .benchmark-outperforming {
+            background: rgba(40, 167, 69, 0.05);
+            border-left: 3px solid var(--success-color);
+        }
+
+        .benchmark-underperforming {
+            background: rgba(220, 53, 69, 0.05);
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .insight-item {
+            padding: 0.75rem;
+            border-radius: 6px;
+            background: rgba(255, 193, 7, 0.05);
+            border-left: 3px solid var(--warning-color);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .grade-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .grade-a { background: rgba(40, 167, 69, 0.1); color: var(--success-color); }
+        .grade-b { background: rgba(0, 140, 186, 0.1); color: var(--primary-color); }
+        .grade-c { background: rgba(255, 193, 7, 0.1); color: var(--warning-color); }
+        .grade-d { background: rgba(255, 108, 55, 0.1); color: #ff6c37; }
+        .grade-f { background: rgba(220, 53, 69, 0.1); color: var(--danger-color); }
+
+        .period-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -706,6 +810,137 @@
                 </div>
             </div>
         </div>
+
+        <!-- Phase 3: Advanced Performance Management Features -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <h5 class="text-muted mb-3">
+                    <i class="fas fa-cogs me-2"></i>Performance Management
+                </h5>
+            </div>
+        </div>
+
+        <!-- Performance Goals Section -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="performance-card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-bullseye me-2"></i>Performance Goals
+                        </h6>
+                        <span class="badge bg-primary" id="goals-count">0 Active</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="goals-status">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-target fa-2x mb-2"></i>
+                                <p>No performance goals set</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Benchmark Comparison -->
+            <div class="col-lg-6">
+                <div class="performance-card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>Benchmark Comparison
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="benchmark-comparison">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-balance-scale fa-2x mb-2"></i>
+                                <p>Loading benchmark data...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Insights and Grades -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="performance-card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>Performance Insights
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="performance-insights">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-brain fa-2x mb-2"></i>
+                                <p>Generating insights...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Performance Grades -->
+            <div class="col-lg-4">
+                <div class="performance-card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-graduation-cap me-2"></i>Performance Grades
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="performance-grades">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-medal fa-2x mb-2"></i>
+                                <p>Calculating grades...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Summary -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="performance-card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>Quick Performance Summary
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3" id="quick-stats">
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stat-item">
+                                    <div class="stat-label">Best Period</div>
+                                    <div class="stat-value" id="best-period">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stat-item">
+                                    <div class="stat-label">Worst Period</div>
+                                    <div class="stat-value" id="worst-period">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stat-item">
+                                    <div class="stat-label">Avg Return</div>
+                                    <div class="stat-value" id="avg-return">-</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6">
+                                <div class="stat-item">
+                                    <div class="stat-label">Avg Sharpe</div>
+                                    <div class="stat-value" id="avg-sharpe">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap 5 JS Bundle -->
@@ -947,6 +1182,9 @@
 
                 // Update performance metrics cards
                 updatePerformanceMetricsCards(performanceData);
+
+                // Phase 3: Update advanced performance management features
+                updateAdvancedFeatures(performanceData.advanced_features);
 
                 // Update performance charts
                 if (performanceData.chart_data) {
@@ -1795,6 +2033,244 @@
                 if (tradingActivityChart) tradingActivityChart.resize();
             }, 250);
         });
+
+        // Phase 3: Advanced Performance Management Functions
+        function updateAdvancedFeatures(advancedFeatures) {
+            try {
+                if (!advancedFeatures) {
+                    console.log('No advanced features data available');
+                    return;
+                }
+
+                // Update performance goals
+                updatePerformanceGoals(advancedFeatures.goals_status);
+                
+                // Update benchmark comparison
+                updateBenchmarkComparison(advancedFeatures.benchmark_comparison);
+                
+                // Update performance insights
+                updatePerformanceInsights(advancedFeatures.insights);
+                
+                // Update performance grades
+                updatePerformanceGrades(advancedFeatures.performance_grades);
+                
+                // Update quick stats
+                updateQuickStats(advancedFeatures.quick_stats);
+                
+                console.log('Advanced features updated successfully');
+                
+            } catch (error) {
+                console.error('Error updating advanced features:', error);
+            }
+        }
+
+        function updatePerformanceGoals(goalsStatus) {
+            const goalsContainer = document.getElementById('goals-status');
+            const goalsCount = document.getElementById('goals-count');
+            
+            if (!goalsStatus || goalsStatus.status === 'error' || goalsStatus.status === 'no_data') {
+                goalsContainer.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-target fa-2x mb-2"></i>
+                        <p>No performance goals data available</p>
+                    </div>
+                `;
+                goalsCount.textContent = '0 Active';
+                return;
+            }
+
+            const goalResults = goalsStatus.goal_results || [];
+            goalsCount.textContent = `${goalResults.length} Active`;
+
+            if (goalResults.length === 0) {
+                goalsContainer.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-target fa-2x mb-2"></i>
+                        <p>No performance goals set</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let goalsHtml = '';
+            goalResults.forEach(goal => {
+                const achievedClass = goal.achieved ? '' : 'not-achieved';
+                const progressBarClass = goal.achieved ? '' : 'not-achieved';
+                
+                goalsHtml += `
+                    <div class="goal-item ${achievedClass}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <strong>${goal.type.replace('_', ' ').toUpperCase()}</strong>
+                            <span class="badge ${goal.achieved ? 'bg-success' : 'bg-danger'}">
+                                ${goal.achieved ? 'Achieved' : 'Not Achieved'}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between text-sm">
+                            <span>Target: ${goal.target}${goal.type.includes('return') ? '%' : ''}</span>
+                            <span>Current: ${goal.current.toFixed(2)}${goal.type.includes('return') ? '%' : ''}</span>
+                        </div>
+                        <div class="goal-progress">
+                            <div class="goal-progress-bar ${progressBarClass}" style="width: ${Math.min(goal.progress, 100)}%"></div>
+                        </div>
+                        <small class="text-muted">${goal.timeframe} • ${goal.progress.toFixed(1)}% progress</small>
+                    </div>
+                `;
+            });
+
+            goalsContainer.innerHTML = goalsHtml;
+        }
+
+        function updateBenchmarkComparison(benchmarkComparison) {
+            const benchmarkContainer = document.getElementById('benchmark-comparison');
+            
+            if (!benchmarkComparison || benchmarkComparison.status === 'error' || benchmarkComparison.status === 'no_data') {
+                benchmarkContainer.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-balance-scale fa-2x mb-2"></i>
+                        <p>No benchmark comparison data available</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const comparisons = benchmarkComparison.comparisons || [];
+            
+            if (comparisons.length === 0) {
+                benchmarkContainer.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-balance-scale fa-2x mb-2"></i>
+                        <p>No benchmarks available for comparison</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let benchmarkHtml = '';
+            comparisons.forEach(comparison => {
+                const outperformingClass = comparison.outperforming ? 'benchmark-outperforming' : 'benchmark-underperforming';
+                const icon = comparison.outperforming ? 'fa-arrow-up text-success' : 'fa-arrow-down text-danger';
+                
+                benchmarkHtml += `
+                    <div class="benchmark-item ${outperformingClass}">
+                        <div>
+                            <strong>${comparison.benchmark_name}</strong>
+                            <div class="small text-muted">
+                                Benchmark: ${comparison.benchmark_return.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="d-flex align-items-center">
+                                <i class="fas ${icon} me-2"></i>
+                                <span class="fw-bold">${Math.abs(comparison.outperformance).toFixed(2)}%</span>
+                            </div>
+                            <small class="text-muted">
+                                ${comparison.outperforming ? 'Outperforming' : 'Underperforming'}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            benchmarkContainer.innerHTML = benchmarkHtml;
+        }
+
+        function updatePerformanceInsights(insights) {
+            const insightsContainer = document.getElementById('performance-insights');
+            
+            if (!insights || insights.length === 0) {
+                insightsContainer.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-brain fa-2x mb-2"></i>
+                        <p>No performance insights available</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let insightsHtml = '';
+            insights.slice(0, 8).forEach(insight => { // Limit to 8 insights
+                insightsHtml += `
+                    <div class="insight-item">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        ${insight}
+                    </div>
+                `;
+            });
+
+            insightsContainer.innerHTML = insightsHtml;
+        }
+
+        function updatePerformanceGrades(performanceGrades) {
+            const gradesContainer = document.getElementById('performance-grades');
+            
+            if (!performanceGrades || Object.keys(performanceGrades).length === 0) {
+                gradesContainer.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-medal fa-2x mb-2"></i>
+                        <p>No performance grades available</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let gradesHtml = '';
+            Object.entries(performanceGrades).forEach(([period, grade]) => {
+                const gradeClass = `grade-${grade.toLowerCase().charAt(0)}`;
+                
+                gradesHtml += `
+                    <div class="text-center mb-3">
+                        <div class="period-label">${period.toUpperCase()}</div>
+                        <div class="grade-badge ${gradeClass}">${grade}</div>
+                    </div>
+                `;
+            });
+
+            gradesContainer.innerHTML = gradesHtml;
+        }
+
+        function updateQuickStats(quickStats) {
+            if (!quickStats) return;
+
+            // Update best period
+            const bestPeriodEl = document.getElementById('best-period');
+            if (quickStats.best_period) {
+                bestPeriodEl.innerHTML = `
+                    <div class="text-success">${quickStats.best_period.period.toUpperCase()}</div>
+                    <small>+${quickStats.best_period.return.toFixed(2)}%</small>
+                `;
+            } else {
+                bestPeriodEl.textContent = '-';
+            }
+
+            // Update worst period
+            const worstPeriodEl = document.getElementById('worst-period');
+            if (quickStats.worst_period) {
+                worstPeriodEl.innerHTML = `
+                    <div class="text-danger">${quickStats.worst_period.period.toUpperCase()}</div>
+                    <small>${quickStats.worst_period.return.toFixed(2)}%</small>
+                `;
+            } else {
+                worstPeriodEl.textContent = '-';
+            }
+
+            // Update average return
+            const avgReturnEl = document.getElementById('avg-return');
+            if (quickStats.average_return !== undefined) {
+                const returnClass = quickStats.average_return >= 0 ? 'text-success' : 'text-danger';
+                avgReturnEl.innerHTML = `<span class="${returnClass}">${quickStats.average_return.toFixed(2)}%</span>`;
+            } else {
+                avgReturnEl.textContent = '-';
+            }
+
+            // Update average Sharpe
+            const avgSharpeEl = document.getElementById('avg-sharpe');
+            if (quickStats.average_sharpe !== undefined) {
+                const sharpeClass = quickStats.average_sharpe >= 1 ? 'text-success' : quickStats.average_sharpe >= 0.5 ? 'text-warning' : 'text-danger';
+                avgSharpeEl.innerHTML = `<span class="${sharpeClass}">${quickStats.average_sharpe.toFixed(2)}</span>`;
+            } else {
+                avgSharpeEl.textContent = '-';
+            }
+        }
     </script>
 </body>
 </html>
