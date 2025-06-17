@@ -99,17 +99,9 @@ class LLMAnalyzer:
         prompt = self._create_analysis_prompt(market_summary, trading_pair, additional_context)
 
         try:
-            # Call appropriate LLM based on provider
-            if self.provider == "vertex_ai":
-                analysis_result = self._call_vertex_ai(prompt)
-            elif self.provider == "palm":
-                analysis_result = self._call_palm(prompt)
-            elif self.provider == "gemini":
-                analysis_result = self._call_gemini(prompt)
-            else:
-                logger.error(f"Unsupported LLM provider: {self.provider}")
-                raise ValueError(f"Unsupported LLM provider: {self.provider}")
-
+            # Call Vertex AI
+            analysis_result = self._call_vertex_ai(prompt)
+            
             logger.info(f"LLM analysis completed for {trading_pair}")
             return analysis_result
 
@@ -314,120 +306,6 @@ class LLMAnalyzer:
             }
 
         return analysis_result
-
-    def _call_palm(self, prompt: str) -> Dict:
-        """Call PaLM API for text generation"""
-        try:
-            from google.cloud import aiplatform
-            from vertexai.language_models import TextGenerationModel
-
-            # Initialize Vertex AI
-            aiplatform.init(project=GOOGLE_CLOUD_PROJECT, location=self.location)
-
-            # Load the model
-            generation_model = TextGenerationModel.from_pretrained(self.model)
-
-            # Generate text
-            response = generation_model.predict(
-                prompt=prompt,
-                temperature=0.2,
-                max_output_tokens=10000,  # Increased from 1024 to 4096
-                top_k=40,
-                top_p=0.8,
-            )
-
-            # Parse the response
-            try:
-                # Try to parse as JSON
-                result_text = response.text
-                # Find JSON content between curly braces
-                start_idx = result_text.find('{')
-                end_idx = result_text.rfind('}') + 1
-
-                if start_idx >= 0 and end_idx > start_idx:
-                    json_str = result_text[start_idx:end_idx]
-                    analysis_result = json.loads(json_str)
-                else:
-                    # Fallback to default response
-                    logger.warning(f"Could not find JSON in response: {result_text}")
-                    analysis_result = {
-                        "decision": "HOLD",
-                        "confidence": 50,
-                        "reasoning": "Could not parse LLM response as JSON",
-                        "risk_assessment": "medium"
-                    }
-            except json.JSONDecodeError:
-                logger.warning(f"Failed to parse JSON from response: {response.text}")
-                analysis_result = {
-                    "decision": "HOLD",
-                    "confidence": 50,
-                    "reasoning": "Could not parse LLM response as JSON",
-                    "risk_assessment": "medium"
-                }
-
-            return analysis_result
-
-        except Exception as e:
-            logger.error(f"Error calling PaLM API: {e}")
-            raise
-
-    def _call_gemini(self, prompt: str) -> Dict:
-        """Call Gemini API for text generation"""
-        try:
-            import vertexai
-            from vertexai.generative_models import GenerativeModel
-
-            # Initialize Vertex AI
-            vertexai.init(project=GOOGLE_CLOUD_PROJECT, location=self.location)
-
-            # Load the model
-            model = GenerativeModel(self.model)
-
-            # Generate content
-            response = model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": 0.2,
-                    "top_p": 0.8,
-                    "top_k": 40,
-                    "max_output_tokens": 10000,  # Increased from 1024 to 4096
-                }
-            )
-
-            # Parse the response
-            try:
-                # Try to parse as JSON
-                result_text = response.text
-                # Find JSON content between curly braces
-                start_idx = result_text.find('{')
-                end_idx = result_text.rfind('}') + 1
-
-                if start_idx >= 0 and end_idx > start_idx:
-                    json_str = result_text[start_idx:end_idx]
-                    analysis_result = json.loads(json_str)
-                else:
-                    # Fallback to default response
-                    logger.warning(f"Could not find JSON in response: {result_text}")
-                    analysis_result = {
-                        "decision": "HOLD",
-                        "confidence": 50,
-                        "reasoning": "Could not parse LLM response as JSON",
-                        "risk_assessment": "medium"
-                    }
-            except json.JSONDecodeError:
-                logger.warning(f"Failed to parse JSON from response: {response.text}")
-                analysis_result = {
-                    "decision": "HOLD",
-                    "confidence": 50,
-                    "reasoning": "Could not parse LLM response as JSON",
-                    "risk_assessment": "medium"
-                }
-
-            return analysis_result
-
-        except Exception as e:
-            logger.error(f"Error calling Gemini API: {e}")
-            raise
 
     def _prepare_market_summary(self, market_data: pd.DataFrame, current_price: float, trading_pair: str) -> Dict:
         """Prepare a summary of market data for the LLM"""
@@ -856,98 +734,13 @@ Respond with ONLY a JSON object in this format:
             logger.error(f"Error parsing trading decision: {e}")
             return decision
     def _get_llm_response(self, prompt: str) -> str:
-        """Get response from LLM"""
+        """Get response from LLM using Vertex AI"""
         try:
-            # Normalize provider name to handle different variations
-            provider_normalized = self.provider.lower().replace('_', '')
-
-            if provider_normalized == "vertex" or provider_normalized == "vertexai":
-                if "gemini" in self.model.lower():
-                    return self._call_gemini(prompt)
-                elif "palm" in self.model.lower() or "text-bison" in self.model.lower():
-                    return self._call_palm(prompt)
-                else:
-                    return self._call_vertex_ai(prompt)
-            else:
-                logger.error(f"Unsupported LLM provider: {self.provider}")
-                return "ERROR: Unsupported LLM provider"
+            # Call Vertex AI directly
+            result = self._call_vertex_ai(prompt)
+            # Convert dict response to JSON string for compatibility
+            import json
+            return json.dumps(result)
         except Exception as e:
             logger.error(f"Error getting LLM response: {e}")
             return f"ERROR: {str(e)}"
-    def _call_gemini(self, prompt: str) -> str:
-        """Call Gemini API using direct REST API approach"""
-        try:
-            # Log the model name being used
-            logger.info(f"Using model: {self.model}")
-
-            # Get authentication token
-            import subprocess
-            auth_process = subprocess.run(
-                ["gcloud", "auth", "application-default", "print-access-token"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            auth_token = auth_process.stdout.strip()
-
-            # Determine model ID - ensure we're mapping to the correct API model name
-            model_id = None
-
-            # Normalize model name for comparison
-            model_id = self.model.lower()
-
-            logger.info(f"Mapped model name '{self.model}' to API model ID: {model_id}")
-
-            # Prepare request
-            url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{model_id}:generateContent"
-
-            logger.info(f"Making API request to: {url}")
-
-            headers = {
-                "Authorization": f"Bearer {auth_token}",
-                "Content-Type": "application/json"
-            }
-
-            payload = {
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [
-                            {
-                                "text": prompt
-                            }
-                        ]
-                    }
-                ],
-                "generationConfig": {
-                    "temperature": 0.2,
-                    "maxOutputTokens": 10000,
-                    "topP": 0.8,
-                    "topK": 40
-                }
-            }
-
-            # Make the API call
-            import requests
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()  # Raise exception for HTTP errors
-
-            # Parse the response
-            response_json = response.json()
-
-            # Extract text from response
-            try:
-                text = response_json["candidates"][0]["content"]["parts"][0]["text"]
-                return text
-            except (KeyError, IndexError):
-                logger.warning(f"Unexpected response format: {response_json}")
-                return str(response_json)
-
-        except Exception as e:
-            logger.error(f"Error calling Gemini API: {e}")
-            # Fallback to a default trading decision
-            return """
-            ACTION: hold
-            CONFIDENCE: 50
-            REASON: Unable to connect to Gemini API for analysis. Defaulting to hold position as a precaution.
-            """
