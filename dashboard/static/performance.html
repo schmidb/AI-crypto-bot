@@ -1029,9 +1029,9 @@
             const performanceSection = document.querySelector('.performance-metrics-section');
             if (performanceSection) {
                 performanceSection.innerHTML = `
-                    <div class="alert alert-info">
-                        <h5><i class="fas fa-info-circle"></i> Performance Tracking</h5>
-                        <p>Advanced performance tracking is not yet available. The system needs at least 2 portfolio snapshots to calculate performance metrics.</p>
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle"></i> Performance Tracking</h5>
+                        <p><strong>Advanced performance tracking is not yet available.</strong> The system needs at least 2 portfolio snapshots to calculate performance metrics.</p>
                         <p><strong>Note:</strong> Performance tracking will automatically start once the bot has been running and taking portfolio snapshots.</p>
                     </div>
                 `;
