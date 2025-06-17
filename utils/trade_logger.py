@@ -48,7 +48,12 @@ class TradeLogger:
             }
             
             # Load existing trades
-            trades = self.get_all_trades()
+            trades = []
+            try:
+                with open(self.log_file, 'r') as f:
+                    trades = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                trades = []
             
             # Add new trade
             trades.append(trade_record)
@@ -100,7 +105,7 @@ class TradeLogger:
                 "action": result.get("action", "unknown"),
                 "price": price,
                 "crypto_amount": result.get("crypto_amount", 0),
-                "trade_amount_usd": result.get("trade_amount_usd", 0),
+                "trade_amount_usd": result.get("trade_amount_base", result.get("trade_amount_usd", 0)),  # Use trade_amount_base as primary
                 "confidence": decision.get("confidence", 0),
                 "reason": result.get("reason", decision.get("reason", "No reason provided")),  # Use result reason first
                 "status": result.get("status", "unknown"),
@@ -109,18 +114,21 @@ class TradeLogger:
                 "skip_reason": result.get("skip_reason", None),
                 "ai_recommendation": decision.get("action", "unknown"),
                 "execution_message": result.get("execution_message", result.get("message", "")),
-                # Fee information from Coinbase API
+                # Fee information from Coinbase API - use the fee_percentage directly from execution result
                 "total_fees": result.get("total_fees", 0),
                 "total_value_after_fees": result.get("total_value_after_fees", 0),
                 "filled_size": result.get("filled_size", 0),
                 "average_filled_price": result.get("average_filled_price", price),
-                "actual_eur_spent": result.get("actual_eur_spent", result.get("trade_amount_usd", 0)),
-                "fee_percentage": 0  # Will be calculated below
+                "actual_eur_spent": result.get("actual_eur_spent", result.get("trade_amount_base", result.get("trade_amount_usd", 0))),
+                "fee_percentage": result.get("fee_percentage", 0)  # Use fee_percentage directly from execution result
             }
             
-            # Calculate fee percentage if we have the data
-            if trade["total_fees"] > 0 and trade["trade_amount_usd"] > 0:
-                trade["fee_percentage"] = (trade["total_fees"] / trade["trade_amount_usd"]) * 100
+            # If fee_percentage wasn't provided but we have fee data, calculate it
+            if trade["fee_percentage"] == 0 and trade["total_fees"] > 0:
+                # Use actual_eur_spent as the base for fee percentage calculation
+                base_amount = trade["actual_eur_spent"] if trade["actual_eur_spent"] > 0 else trade["trade_amount_usd"]
+                if base_amount > 0:
+                    trade["fee_percentage"] = (trade["total_fees"] / base_amount) * 100
             
             # Add trade to history
             trades.append(trade)
