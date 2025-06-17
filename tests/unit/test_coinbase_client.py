@@ -9,25 +9,29 @@ import pytest
 import time
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
-from coinbase_client import CoinbaseClient
+
+
+# Mock the RESTClient at module level to prevent any real initialization
+with patch('coinbase.rest.RESTClient'):
+    from coinbase_client import CoinbaseClient
 
 
 class TestCoinbaseClientInitialization:
     """Test CoinbaseClient initialization and basic setup."""
     
-    def test_client_initialization_with_valid_credentials(self):
+    @patch('coinbase_client.RESTClient')
+    def test_client_initialization_with_valid_credentials(self, mock_rest_client):
         """Test successful client initialization with valid API credentials."""
-        with patch('coinbase_client.RESTClient') as mock_rest_client:
-            mock_rest_client.return_value = Mock()
-            
-            client = CoinbaseClient(api_key="test-key", api_secret="test-secret")
-            
-            assert client.api_key == "test-key"
-            assert client.api_secret == "test-secret"
-            assert client.min_request_interval == 0.1
-            assert client.last_request_time == 0
-            assert client.client is not None
-            mock_rest_client.assert_called_once_with(api_key="test-key", api_secret="test-secret")
+        mock_rest_client.return_value = Mock()
+        
+        client = CoinbaseClient(api_key="test-key", api_secret="test-secret")
+        
+        assert client.api_key == "test-key"
+        assert client.api_secret == "test-secret"
+        assert client.min_request_interval == 0.1
+        assert client.last_request_time == 0
+        assert client.client is not None
+        mock_rest_client.assert_called_once_with(api_key="test-key", api_secret="test-secret")
     
     def test_client_initialization_with_missing_credentials(self):
         """Test client initialization failure with missing credentials."""
@@ -40,17 +44,17 @@ class TestCoinbaseClientInitialization:
         with pytest.raises(ValueError, match="Coinbase API key and secret are required"):
             CoinbaseClient(api_key="", api_secret="test-secret")
     
-    def test_client_initialization_with_rest_client_error(self):
+    @patch('coinbase_client.RESTClient')
+    def test_client_initialization_with_rest_client_error(self, mock_rest_client):
         """Test graceful handling of RESTClient initialization errors."""
-        with patch('coinbase_client.RESTClient') as mock_rest_client:
-            mock_rest_client.side_effect = Exception("Connection failed")
-            
-            # Should not raise exception, but log error and set client to None
-            client = CoinbaseClient(api_key="test-key", api_secret="test-secret")
-            
-            assert client.api_key == "test-key"
-            assert client.api_secret == "test-secret"
-            assert client.client is None
+        mock_rest_client.side_effect = Exception("Connection failed")
+        
+        # Should not raise exception, but log error and set client to None
+        client = CoinbaseClient(api_key="test-key", api_secret="test-secret")
+        
+        assert client.api_key == "test-key"
+        assert client.api_secret == "test-secret"
+        assert client.client is None
     
     def test_client_initialization_with_default_credentials(self):
         """Test client initialization with default credentials from config."""
