@@ -1222,10 +1222,32 @@
                     <div class="card-body">
                         <div class="portfolio-value" id="total-value">€0.00</div>
                         <div class="mb-3" id="portfolio-change">
-                            <span class="text-success">
-                                <i class="fas fa-caret-up"></i> 0.00%
-                            </span>
-                            (24h)
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <small class="text-muted d-block">1h</small>
+                                    <span id="change-1h" class="text-muted">
+                                        <i class="fas fa-minus"></i> 0.00%
+                                    </span>
+                                </div>
+                                <div class="col-3">
+                                    <small class="text-muted d-block">4h</small>
+                                    <span id="change-4h" class="text-muted">
+                                        <i class="fas fa-minus"></i> 0.00%
+                                    </span>
+                                </div>
+                                <div class="col-3">
+                                    <small class="text-muted d-block">24h</small>
+                                    <span id="change-24h" class="text-muted">
+                                        <i class="fas fa-minus"></i> 0.00%
+                                    </span>
+                                </div>
+                                <div class="col-3">
+                                    <small class="text-muted d-block">5d</small>
+                                    <span id="change-5d" class="text-muted">
+                                        <i class="fas fa-minus"></i> 0.00%
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Balance Status Section -->
@@ -1768,11 +1790,11 @@
                                                 </span>
                                             </label>
                                             <select class="form-select bg-dark text-light" id="time-filter">
-                                                <option value="6h">Last 6 Hours</option>
+                                                <option value="6h" selected>Last 6 Hours</option>
                                                 <option value="24h">Last 24 Hours</option>
                                                 <option value="7d">Last 7 Days</option>
                                                 <option value="30d">Last 30 Days</option>
-                                                <option value="all" selected>All Time</option>
+                                                <option value="all">All Time</option>
                                             </select>
                                         </div>
                                         <div class="col-md-3">
@@ -1974,14 +1996,59 @@
             }
         }
 
+        // Function to load detailed analysis files (silently handles 404s)
+        async function loadDetailedAnalysisData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    // Silently return null for 404s (file doesn't exist)
+                    if (response.status === 404) {
+                        return null;
+                    }
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                // Silently handle all errors for detailed analysis files
+                return null;
+            }
+        }
+
+        // Cache for available detailed analysis files
+        let availableAnalysisFiles = null;
+
+        // Function to get list of available detailed analysis files
+        async function getAvailableAnalysisFiles() {
+            if (availableAnalysisFiles !== null) {
+                return availableAnalysisFiles;
+            }
+
+            try {
+                // Try to load a manifest of available files if it exists
+                const manifest = await loadData('./data/analysis_manifest.json');
+                if (manifest && manifest.files) {
+                    availableAnalysisFiles = new Set(manifest.files);
+                    return availableAnalysisFiles;
+                }
+            } catch (error) {
+                // Manifest doesn't exist, continue with fallback
+            }
+
+            // Fallback: assume no files are available to avoid 404s
+            // This prevents unnecessary HTTP requests
+            availableAnalysisFiles = new Set();
+            return availableAnalysisFiles;
+        }
+
         // Global variable to store countdown interval
         let countdownInterval = null;
 
         // Function to update bot status
         async function updateBotStatus() {
-            const data = await loadData('/crypto-bot/data/cache/bot_startup.json');
-            const configData = await loadData('/crypto-bot/data/config/config.json');
-            const lastUpdated = await loadData('/crypto-bot/data/cache/last_updated.txt');
+            const data = await loadData('./data/cache/bot_startup.json');
+            const configData = await loadData('./data/config/config.json');
+            const lastUpdated = await loadData('./data/cache/last_updated.txt');
             
             if (data) {
                 // Update bot online/offline status
@@ -2094,7 +2161,7 @@
                 }
                 
                 // Update last trade time (from trade history)
-                const tradeHistory = await loadData('/crypto-bot/data/trades/trade_history.json');
+                const tradeHistory = await loadData('./data/trades/trade_history.json');
                 const lastUpdateElement = document.getElementById('last-update');
                 if (tradeHistory && tradeHistory.length > 0) {
                     const lastTrade = tradeHistory[tradeHistory.length - 1];
@@ -2318,8 +2385,8 @@
         // Function to update market data and recent decisions
         async function updateMarketData() {
             const assets = ['BTC', 'ETH', 'SOL'];
-            const decisions = await loadData('/crypto-bot/data/cache/latest_decisions.json');
-            const tradingData = await loadData('/crypto-bot/data/cache/trading_data.json');
+            const decisions = await loadData('./data/cache/latest_decisions.json');
+            const tradingData = await loadData('./data/cache/trading_data.json');
             
             for (const asset of assets) {
                 // Read from the latest individual decision file instead of market_data folder
@@ -2679,22 +2746,15 @@
 
         // Function to update portfolio data
         async function updatePortfolio() {
-            const data = await loadData('/crypto-bot/data/portfolio/portfolio.json');
+            const data = await loadData('./data/portfolio/portfolio.json');
+            const performanceData = await loadData('./data/dashboard/performance_data.json');
+            
             if (data) {
                 document.getElementById('total-value').textContent = 
                     '€' + parseFloat(data.portfolio_value_eur || 0).toFixed(2);
                 
-                // Calculate portfolio change
-                const changePercent = ((data.portfolio_value_eur - data.initial_value_eur) / data.initial_value_eur) * 100;
-                const changeClass = changePercent >= 0 ? 'text-success' : 'text-danger';
-                const changeIcon = changePercent >= 0 ? 'fa-caret-up' : 'fa-caret-down';
-                document.getElementById('portfolio-change').innerHTML = `
-                    <span class="${changeClass}">
-                        <i class="fas ${changeIcon}"></i> 
-                        ${Math.abs(changePercent).toFixed(2)}%
-                    </span>
-                    (Total)
-                `;
+                // Update time-based percentage changes using performance data and portfolio history
+                await updatePortfolioChanges(data.portfolio_value_eur, performanceData);
 
                 // Update trading strategy status
                 updateTradingStrategyStatus(data);
@@ -2710,6 +2770,167 @@
 
                 // Update allocation chart (current holdings only)
                 updateAllocationComparison(current, data);
+            }
+        }
+
+        // Function to update portfolio percentage changes for different time periods
+        async function updatePortfolioChanges(currentValue, performanceData) {
+            try {
+                const changes = {
+                    '1h': { value: 0, percent: 0 },
+                    '4h': { value: 0, percent: 0 },
+                    '24h': { value: 0, percent: 0 },
+                    '5d': { value: 0, percent: 0 }
+                };
+
+                // Use performance data if available and recent
+                if (performanceData && performanceData.period_data) {
+                    const trackingInfo = performanceData.tracking_info;
+                    const isRecentTracking = trackingInfo && trackingInfo.tracking_start_date;
+                    
+                    if (isRecentTracking) {
+                        const startDate = new Date(trackingInfo.tracking_start_date);
+                        const now = new Date();
+                        const trackingHours = (now - startDate) / (1000 * 60 * 60);
+                        
+                        // Only use performance data if tracking is recent enough
+                        if (trackingHours >= 1 && performanceData.period_data['7d']) {
+                            const weekData = performanceData.period_data['7d'];
+                            const totalPercent = weekData.total_return_percent || 0;
+                            const totalValue = weekData.absolute_change || 0;
+                            
+                            // Estimate shorter periods based on available data
+                            if (trackingHours >= 24) {
+                                changes['24h'].percent = totalPercent;
+                                changes['24h'].value = totalValue;
+                                changes['5d'].percent = totalPercent;
+                                changes['5d'].value = totalValue;
+                            }
+                            
+                            if (trackingHours >= 4) {
+                                changes['4h'].percent = totalPercent * (4 / trackingHours);
+                                changes['4h'].value = totalValue * (4 / trackingHours);
+                            }
+                            
+                            if (trackingHours >= 1) {
+                                changes['1h'].percent = totalPercent * (1 / trackingHours);
+                                changes['1h'].value = totalValue * (1 / trackingHours);
+                            }
+                        }
+                    }
+                }
+
+                // Fallback: Try to load portfolio history for more accurate calculations
+                const portfolioHistory = await loadPortfolioHistory();
+                if (portfolioHistory && portfolioHistory.length > 0) {
+                    const now = new Date();
+                    const timeframes = {
+                        '1h': 1 * 60 * 60 * 1000,
+                        '4h': 4 * 60 * 60 * 1000,
+                        '24h': 24 * 60 * 60 * 1000,
+                        '5d': 5 * 24 * 60 * 60 * 1000
+                    };
+
+                    for (const [period, milliseconds] of Object.entries(timeframes)) {
+                        const targetTime = new Date(now.getTime() - milliseconds);
+                        
+                        // Find the closest historical value
+                        let closestEntry = null;
+                        let closestTimeDiff = Infinity;
+                        
+                        for (const entry of portfolioHistory) {
+                            if (!entry.portfolio_value_eur || entry.portfolio_value_eur === 'None') continue;
+                            
+                            try {
+                                const entryTime = new Date(entry.timestamp);
+                                const timeDiff = Math.abs(entryTime.getTime() - targetTime.getTime());
+                                
+                                if (timeDiff < closestTimeDiff) {
+                                    closestTimeDiff = timeDiff;
+                                    closestEntry = entry;
+                                }
+                            } catch (e) {
+                                continue;
+                            }
+                        }
+                        
+                        if (closestEntry && closestTimeDiff < milliseconds * 0.5) {
+                            const historicalValue = parseFloat(closestEntry.portfolio_value_eur);
+                            if (historicalValue > 0) {
+                                changes[period].value = currentValue - historicalValue;
+                                changes[period].percent = ((currentValue - historicalValue) / historicalValue) * 100;
+                            }
+                        }
+                    }
+                }
+
+                // Update the UI
+                updateChangeDisplay('change-1h', changes['1h']);
+                updateChangeDisplay('change-4h', changes['4h']);
+                updateChangeDisplay('change-24h', changes['24h']);
+                updateChangeDisplay('change-5d', changes['5d']);
+
+            } catch (error) {
+                console.error('Error updating portfolio changes:', error);
+                // Set all to neutral if error
+                ['change-1h', 'change-4h', 'change-24h', 'change-5d'].forEach(id => {
+                    updateChangeDisplay(id, { percent: 0, value: 0 });
+                });
+            }
+        }
+
+        // Helper function to update individual change display
+        function updateChangeDisplay(elementId, change) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            const percent = change.percent || 0;
+            const absPercent = Math.abs(percent);
+            
+            let className = 'text-muted';
+            let icon = 'fa-minus';
+            
+            if (percent > 0.01) {
+                className = 'text-success';
+                icon = 'fa-caret-up';
+            } else if (percent < -0.01) {
+                className = 'text-danger';
+                icon = 'fa-caret-down';
+            }
+            
+            element.className = className;
+            element.innerHTML = `<i class="fas ${icon}"></i> ${absPercent.toFixed(2)}%`;
+        }
+
+        // Function to load portfolio history
+        async function loadPortfolioHistory() {
+            try {
+                const response = await fetch('./data/portfolio/portfolio_history.csv');
+                if (!response.ok) return null;
+                
+                const csvText = await response.text();
+                const lines = csvText.trim().split('\n');
+                
+                if (lines.length <= 1) return null;
+                
+                const headers = lines[0].split(',');
+                const data = [];
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',');
+                    const entry = {};
+                    
+                    headers.forEach((header, index) => {
+                        entry[header.trim()] = values[index]?.trim();
+                    });
+                    
+                    data.push(entry);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Error loading portfolio history:', error);
+                return null;
             }
         }
 
@@ -3225,12 +3446,16 @@
                 // Use the product_id from the trade to ensure correct currency
                 const filename = `${trade.product_id.replace('-', '_')}_${year}${month}${day}_${hour}${minute}${second}.json`;
                 
-                console.log(`Attempting to load detailed analysis: ${filename}`);
+                // Check if file is in our available files list
+                const availableFiles = await getAvailableAnalysisFiles();
+                if (!availableFiles.has(filename)) {
+                    // File not available, return trade data without making HTTP request
+                    return trade;
+                }
                 
-                const detailedData = await loadData(`/crypto-bot/data/${filename}`);
+                const detailedData = await loadDetailedAnalysisData(`/crypto-bot/data/${filename}`);
                 
                 if (detailedData && detailedData.ai_analysis) {
-                    console.log(`Successfully loaded detailed analysis for ${filename}`);
                     // Merge detailed data with trade data
                     return {
                         ...trade,
@@ -3243,20 +3468,18 @@
                     };
                 }
                 
-                console.log(`No detailed analysis found for ${filename}, using basic trade data`);
                 // If no detailed file found, return the trade data itself
                 return trade;
                 
             } catch (error) {
-                console.warn(`Could not load detailed analysis for trade ${trade.timestamp}:`, error.message);
-                // Return the original trade data if detailed analysis fails to load
+                // Only log unexpected errors, not missing files
                 return trade;
             }
         }
 
         // Function to update trade history with filtering
         async function updateTradeHistory() {
-            const data = await loadData('/crypto-bot/data/trades/trade_history.json');
+            const data = await loadData('./data/trades/trade_history.json');
             
             if (data && Array.isArray(data)) {
                 let filteredTrades = data;

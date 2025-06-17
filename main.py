@@ -20,6 +20,13 @@ from utils.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
 from utils.notification_service import NotificationService
 
+# Import performance tracking
+try:
+    from utils.performance_tracker import PerformanceTracker
+    PERFORMANCE_TRACKING_AVAILABLE = True
+except ImportError:
+    PERFORMANCE_TRACKING_AVAILABLE = False
+
 from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED, SIMULATION_MODE, RISK_LEVEL, TRADING_STYLE, TRADING_TIMEFRAME, EXPECTED_HOLDING_PERIOD, Config
 
 # Configure logging with daily rotation
@@ -57,6 +64,16 @@ class TradingBot:
         
         # Initialize dashboard updater (local data only)
         self.dashboard_updater = DashboardUpdater()
+        
+        # Initialize performance tracker
+        self.performance_tracker = None
+        if PERFORMANCE_TRACKING_AVAILABLE:
+            try:
+                self.performance_tracker = PerformanceTracker()
+                logger.info("Performance tracker initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize performance tracker: {e}")
+                self.performance_tracker = None
         
         # Initialize web server sync (if enabled)
         self.webserver_sync = WebServerSync()
@@ -210,6 +227,71 @@ class TradingBot:
             
         except Exception as e:
             logger.error(f"Error recording shutdown time: {e}")
+    
+    def _take_performance_snapshot(self, portfolio: Dict[str, Any]) -> None:
+        """Take a performance snapshot of the current portfolio"""
+        try:
+            if not self.performance_tracker:
+                logger.debug("Performance tracker not available, skipping snapshot")
+                return
+            
+            if not self.performance_tracker.is_tracking_enabled():
+                logger.debug("Performance tracking not enabled, skipping snapshot")
+                return
+            
+            # Check if tracking is initialized by looking at tracking_start_date
+            tracking_info = self.performance_tracker.get_tracking_info()
+            if not tracking_info.get("tracking_start_date"):
+                logger.info("Initializing performance tracking with current portfolio")
+                
+                # Calculate portfolio value
+                portfolio_value = portfolio.get("portfolio_value_eur", 0)
+                if portfolio_value == 0:
+                    # Try to calculate from individual holdings
+                    portfolio_value = sum([
+                        holding.get("value_eur", 0) 
+                        for holding in portfolio.values() 
+                        if isinstance(holding, dict) and "value_eur" in holding
+                    ])
+                
+                success = self.performance_tracker.initialize_tracking(
+                    initial_portfolio_value=portfolio_value,
+                    initial_portfolio_composition=portfolio
+                )
+                if not success:
+                    logger.error("Failed to initialize performance tracking")
+                    return
+            
+            # Format portfolio data for performance tracker
+            formatted_portfolio = {
+                "total_value_eur": portfolio.get("portfolio_value_eur", 0),
+                "portfolio_composition": {
+                    asset: {
+                        "amount": data.get("amount", 0),
+                        "value_eur": data.get("amount", 0) * data.get("last_price_eur", 0)
+                    }
+                    for asset, data in portfolio.items()
+                    if isinstance(data, dict) and "amount" in data
+                },
+                "asset_prices": {
+                    asset: data.get("last_price_eur", 0)
+                    for asset, data in portfolio.items()
+                    if isinstance(data, dict) and "last_price_eur" in data
+                },
+                "snapshot_type": "scheduled",
+                "trading_session_id": f"session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            }
+            
+            # Take the snapshot
+            success = self.performance_tracker.take_portfolio_snapshot(formatted_portfolio)
+            
+            if success:
+                logger.info("Performance snapshot taken successfully")
+            else:
+                logger.warning("Failed to take performance snapshot")
+                
+        except Exception as e:
+            logger.error(f"Error taking performance snapshot: {e}")
         
         
     def initialize_dashboard(self):
@@ -278,6 +360,9 @@ class TradingBot:
             # Update dashboard with loaded data
             self.dashboard_updater.update_dashboard(trading_data, portfolio)
             logger.info("Dashboard initialized with existing data")
+            
+            # Take initial performance snapshot
+            self._take_performance_snapshot(portfolio)
         except Exception as e:
             logger.error(f"Error initializing dashboard: {e}")
     
@@ -444,6 +529,9 @@ class TradingBot:
             # Update local dashboard data
             self.dashboard_updater.update_dashboard(dashboard_data, portfolio)
             logger.info("Local dashboard updated successfully")
+            
+            # Take performance snapshot after portfolio update
+            self._take_performance_snapshot(portfolio)
             
             # Update next decision time
             self.update_next_decision_time()

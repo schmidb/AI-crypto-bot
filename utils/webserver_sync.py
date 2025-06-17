@@ -95,7 +95,8 @@ class WebServerSync:
                 "data/cache/bot_startup.json": "data/cache/bot_startup.json",
                 "data/cache/bot_uptime.json": "data/cache/bot_uptime.json",
                 "data/trades/trade_history.json": "data/trades/trade_history.json",
-                "data/reports/strategy_performance.json": "data/reports/strategy_performance.json"
+                "data/reports/strategy_performance.json": "data/reports/strategy_performance.json",
+                "data/dashboard/performance_data.json": "data/dashboard/performance_data.json"  # Performance tracking data
             }
             
             for source_rel_path, dest_rel_path in data_files.items():

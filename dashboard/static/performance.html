@@ -1028,6 +1028,27 @@
         let returnsDistributionChart = null;
         let allocationChart = null;
         let tradingActivityChart = null;
+        let isCreatingCharts = false; // Flag to prevent concurrent chart creation
+        
+        // Chart cleanup utility function
+        function destroyChart(chartVariable) {
+            if (chartVariable && typeof chartVariable.destroy === 'function') {
+                try {
+                    chartVariable.destroy();
+                } catch (e) {
+                    console.warn('Error destroying chart:', e);
+                }
+            }
+            return null;
+        }
+        
+        // Destroy all charts
+        function destroyAllCharts() {
+            portfolioChart = destroyChart(portfolioChart);
+            returnsDistributionChart = destroyChart(returnsDistributionChart);
+            allocationChart = destroyChart(allocationChart);
+            tradingActivityChart = destroyChart(tradingActivityChart);
+        }
         let monthlyPerformanceChart = null;
         let riskAnalysisChart = null;
         let uptimeChart = null;
@@ -1167,6 +1188,218 @@
                 worstDay: (isNaN(worstDay) ? 0 : worstDay) * 100,
                 profitableDays: (isNaN(profitableDays) ? 0 : profitableDays) * 100
             };
+        }
+
+        // Performance chart update functions
+        function updatePortfolioValueChart(chartData) {
+            try {
+                const ctx = document.getElementById('portfolio-chart');
+                if (!ctx) {
+                    console.log('Portfolio chart canvas not found');
+                    return;
+                }
+                
+                // Destroy existing chart if it exists
+                portfolioChart = destroyChart(portfolioChart);
+                
+                // Create new chart
+                portfolioChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Portfolio Value Over Time'
+                            },
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    displayFormats: {
+                                        hour: 'MMM dd HH:mm',
+                                        day: 'MMM dd',
+                                        week: 'MMM dd',
+                                        month: 'MMM yyyy'
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Value (EUR)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '€' + value.toFixed(2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Portfolio value chart updated');
+            } catch (error) {
+                console.error('Error updating portfolio value chart:', error);
+            }
+        }
+        
+        function updateReturnsChart(chartData) {
+            try {
+                const ctx = document.getElementById('returns-distribution-chart');
+                if (!ctx) {
+                    console.log('Returns chart canvas not found');
+                    return;
+                }
+                
+                // Destroy existing chart if it exists
+                if (window.returnsChart) {
+                    window.returnsChart.destroy();
+                }
+                
+                // Create new chart
+                window.returnsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Daily Returns'
+                            },
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    displayFormats: {
+                                        hour: 'MMM dd HH:mm',
+                                        day: 'MMM dd',
+                                        week: 'MMM dd',
+                                        month: 'MMM yyyy'
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Returns (%)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toFixed(2) + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Returns chart updated');
+            } catch (error) {
+                console.error('Error updating returns chart:', error);
+            }
+        }
+        
+        function updateDrawdownChart(chartData) {
+            try {
+                const ctx = document.getElementById('risk-analysis-chart');
+                if (!ctx) {
+                    console.log('Drawdown chart canvas not found');
+                    return;
+                }
+                
+                // Destroy existing chart if it exists
+                if (window.drawdownChart) {
+                    window.drawdownChart.destroy();
+                }
+                
+                // Create new chart
+                window.drawdownChart = new Chart(ctx, {
+                    type: 'line',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Portfolio Drawdown'
+                            },
+                            legend: {
+                                display: true
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    displayFormats: {
+                                        hour: 'MMM dd HH:mm',
+                                        day: 'MMM dd',
+                                        week: 'MMM dd',
+                                        month: 'MMM yyyy'
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Drawdown (%)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toFixed(2) + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                console.log('Drawdown chart updated');
+            } catch (error) {
+                console.error('Error updating drawdown chart:', error);
+            }
+        }
+        
+        // Update period selector function
+        function updatePeriodSelector(periodData) {
+            try {
+                // This function can be used to update period selection UI
+                // For now, just log the available periods
+                console.log('Available performance periods:', Object.keys(periodData || {}));
+                
+                // You can add period selector UI updates here if needed
+                // For example, updating dropdown options or buttons
+                
+            } catch (error) {
+                console.error('Error updating period selector:', error);
+            }
         }
 
         // NEW: Update performance charts with tracking data
@@ -1353,9 +1586,8 @@
         function createPortfolioChart(data) {
             const ctx = document.getElementById('portfolio-chart').getContext('2d');
             
-            if (portfolioChart) {
-                portfolioChart.destroy();
-            }
+            // Destroy existing chart
+            portfolioChart = destroyChart(portfolioChart);
             
             const chartData = data.map(d => ({
                 x: new Date(d.timestamp),
@@ -1436,9 +1668,8 @@
         function createAllocationChart(portfolio) {
             const ctx = document.getElementById('allocation-chart').getContext('2d');
             
-            if (allocationChart) {
-                allocationChart.destroy();
-            }
+            // Destroy existing chart
+            allocationChart = destroyChart(allocationChart);
             
             if (!portfolio) return;
             
@@ -1510,9 +1741,8 @@
         function createTradingActivityChart(trades) {
             const ctx = document.getElementById('trading-activity-chart').getContext('2d');
             
-            if (tradingActivityChart) {
-                tradingActivityChart.destroy();
-            }
+            // Destroy existing chart
+            tradingActivityChart = destroyChart(tradingActivityChart);
             
             if (!trades || trades.length === 0) return;
             
@@ -1596,9 +1826,8 @@
         function createReturnsDistributionChart(data) {
             const ctx = document.getElementById('returns-distribution-chart').getContext('2d');
             
-            if (returnsDistributionChart) {
-                returnsDistributionChart.destroy();
-            }
+            // Destroy existing chart
+            returnsDistributionChart = destroyChart(returnsDistributionChart);
             
             if (!data || data.length < 2) return;
             
@@ -1869,13 +2098,25 @@
             console.log('Filtered portfolio data length:', filteredPortfolioData.length);
             console.log('Filtered trades data length:', filteredTradesData.length);
             
-            if (filteredPortfolioData.length > 0) {
-                createPortfolioChart(filteredPortfolioData);
-                createReturnsDistributionChart(filteredPortfolioData);
-            }
+            // Destroy existing charts before creating new ones
+            destroyAllCharts();
             
-            if (filteredTradesData.length > 0) {
-                createTradingActivityChart(filteredTradesData);
+            if (!isCreatingCharts) {
+                isCreatingCharts = true;
+                try {
+                    if (filteredPortfolioData.length > 0) {
+                        // createPortfolioChart(filteredPortfolioData);  // Disabled - using new performance charts
+                        createReturnsDistributionChart(filteredPortfolioData);
+                    }
+                    
+                    if (filteredTradesData.length > 0) {
+                        createTradingActivityChart(filteredTradesData);
+                    }
+                } catch (chartError) {
+                    console.error('Error updating charts for time range:', chartError);
+                } finally {
+                    isCreatingCharts = false;
+                }
             }
         }
         // Main data loading function
@@ -1921,24 +2162,32 @@
                 updateRecentTradesTable(trades);
                 updateAIAnalysis(trades);
                 
+                // Destroy existing charts before creating new ones
+                destroyAllCharts();
+                
                 // Create charts with error handling
-                try {
-                    if (portfolioHistory && portfolioHistory.length > 0) {
-                        createPortfolioChart(portfolioHistory);
-                        createReturnsDistributionChart(portfolioHistory);
-                    } else {
-                        console.log('No portfolio history available for charts');
+                if (!isCreatingCharts) {
+                    isCreatingCharts = true;
+                    try {
+                        if (portfolioHistory && portfolioHistory.length > 0) {
+                            // createPortfolioChart(portfolioHistory);  // Disabled - using new performance charts
+                            createReturnsDistributionChart(portfolioHistory);
+                        } else {
+                            console.log('No portfolio history available for charts');
+                        }
+                        
+                        if (portfolio) {
+                            createAllocationChart(portfolio);
+                        }
+                        
+                        if (trades && trades.length > 0) {
+                            createTradingActivityChart(trades);
+                        }
+                    } catch (chartError) {
+                        console.error('Error creating charts:', chartError);
+                    } finally {
+                        isCreatingCharts = false;
                     }
-                    
-                    if (portfolio) {
-                        createAllocationChart(portfolio);
-                    }
-                    
-                    if (trades && trades.length > 0) {
-                        createTradingActivityChart(trades);
-                    }
-                } catch (chartError) {
-                    console.error('Error creating charts:', chartError);
                 }
                 
                 // Update bot status
