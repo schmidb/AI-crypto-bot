@@ -264,7 +264,7 @@ class TestBalanceSafetyChecks:
             
             result = strategy._apply_risk_management("BUY", 80, "BTC-EUR")
             assert result["action"] == "HOLD"
-            assert "insufficient_usd_balance" in result["risk_adjustment"]
+            assert "insufficient_eur_balance" in result["risk_adjustment"]
     
     @patch('trading_strategy.TradeLogger')
     @patch('trading_strategy.CoinbaseClient')
