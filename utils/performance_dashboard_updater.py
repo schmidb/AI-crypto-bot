@@ -365,8 +365,42 @@ class PerformanceDashboardUpdater:
             advanced_features["performance_periods"] = periods_info
             
             # Check performance goals if we have current metrics
-            current_metrics = period_data.get("7d", {})  # Use 7d as current period
-            if current_metrics and "error" not in current_metrics:
+            # Try different periods to find one with data
+            current_metrics = None
+            for period in ["30d", "all", "7d", "1d"]:
+                period_metrics = period_data.get(period, {})
+                if period_metrics and "error" not in period_metrics and len(period_metrics) > 0:
+                    # Map the available metrics to goal metric names
+                    mapped_metrics = {}
+                    
+                    # Map total return
+                    if "total_return_percent" in period_metrics:
+                        mapped_metrics["total_return"] = period_metrics["total_return_percent"]
+                    
+                    # Map monthly return (estimate from total return and period)
+                    if "total_return_percent" in period_metrics and period == "30d":
+                        mapped_metrics["monthly_return"] = period_metrics["total_return_percent"]
+                    elif "total_return_percent" in period_metrics:
+                        # Rough monthly estimate for other periods
+                        days = 30 if period == "30d" else 365 if period == "1y" else 90 if period == "90d" else 7
+                        monthly_factor = 30 / days
+                        mapped_metrics["monthly_return"] = period_metrics["total_return_percent"] * monthly_factor
+                    
+                    # Map risk metrics if available
+                    risk_metrics = period_metrics.get("risk_metrics", {})
+                    if "sharpe_ratio" in risk_metrics:
+                        mapped_metrics["sharpe_ratio"] = risk_metrics["sharpe_ratio"]
+                    if "max_drawdown" in risk_metrics:
+                        # Convert to negative value to match goal expectation
+                        mapped_metrics["max_drawdown"] = -abs(risk_metrics["max_drawdown"])
+                    
+                    # TODO: Add win_rate from trading data if available
+                    
+                    current_metrics = mapped_metrics
+                    logger.info(f"Using {period} period data for performance goals checking with {len(mapped_metrics)} metrics")
+                    break
+            
+            if current_metrics and len(current_metrics) > 0:
                 goals_status = self.manager.check_performance_goals(current_metrics)
                 advanced_features["goals_status"] = goals_status
             else:

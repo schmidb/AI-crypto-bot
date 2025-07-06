@@ -526,10 +526,6 @@
                         <h6 class="mb-0">
                             <i class="fas fa-chart-area me-2"></i>Portfolio Value Over Time
                         </h6>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-outline-primary" id="chart-type-line">Line</button>
-                            <button class="btn btn-sm btn-outline-primary" id="chart-type-candle">Candle</button>
-                        </div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container large">
@@ -802,10 +798,6 @@
                                 </div>
                             </div>
                         </div>
-                        <hr>
-                        <div class="chart-container small">
-                            <canvas id="uptime-chart"></canvas>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1042,19 +1034,39 @@
             return null;
         }
         
+        // Enhanced chart cleanup for specific canvas elements
+        function destroyChartByCanvasId(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const existingChart = Chart.getChart(canvas);
+                if (existingChart) {
+                    try {
+                        existingChart.destroy();
+                    } catch (e) {
+                        console.warn(`Error destroying chart on canvas ${canvasId}:`, e);
+                    }
+                }
+            }
+        }
+        
         // Destroy all charts
         function destroyAllCharts() {
+            // Destroy by variable reference
             portfolioChart = destroyChart(portfolioChart);
             returnsDistributionChart = destroyChart(returnsDistributionChart);
             allocationChart = destroyChart(allocationChart);
             tradingActivityChart = destroyChart(tradingActivityChart);
+            
+            // Also destroy by canvas ID as backup
+            destroyChartByCanvasId('portfolio-chart');
+            destroyChartByCanvasId('returns-distribution-chart');
+            destroyChartByCanvasId('allocation-chart');
+            destroyChartByCanvasId('trading-activity-chart');
         }
         let monthlyPerformanceChart = null;
         let riskAnalysisChart = null;
-        let uptimeChart = null;
         
         let currentTimeRange = '24h';
-        let currentChartType = 'line'; // Add chart type tracking
         let portfolioData = [];
         let tradesData = [];
         let performanceTrackingData = null;  // NEW: Store performance tracking data
@@ -1584,16 +1596,82 @@
         }
         // Create portfolio performance chart
         function createPortfolioChart(data) {
-            const ctx = document.getElementById('portfolio-chart').getContext('2d');
+            let canvas = document.getElementById('portfolio-chart');
+            const chartContainer = document.querySelector('.chart-container.large');
             
-            // Destroy existing chart
-            portfolioChart = destroyChart(portfolioChart);
+            // Restore canvas if it was replaced with a message
+            if (!canvas && chartContainer) {
+                console.log('Restoring portfolio chart canvas');
+                chartContainer.innerHTML = '<canvas id="portfolio-chart"></canvas>';
+                canvas = document.getElementById('portfolio-chart');
+            }
             
-            const chartData = data.map(d => ({
-                x: new Date(d.timestamp),
-                y: parseFloat(d.portfolio_value_eur || d.portfolio_value_usd || 0)
-            }));
+            if (!canvas) {
+                console.warn('Portfolio chart canvas not found and could not be restored');
+                return;
+            }
             
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart more thoroughly
+            if (portfolioChart) {
+                try {
+                    portfolioChart.destroy();
+                    portfolioChart = null;
+                } catch (e) {
+                    console.warn('Error destroying portfolio chart:', e);
+                }
+            }
+            
+            // Clear any existing Chart.js instances on this canvas
+            if (Chart.getChart(canvas)) {
+                Chart.getChart(canvas).destroy();
+            }
+            
+            if (!data || data.length === 0) {
+                console.log('No portfolio data available for chart');
+                return;
+            }
+            
+            // Filter and process data - only include entries with meaningful portfolio values
+            const chartData = data
+                .filter(d => {
+                    const value = parseFloat(d.portfolio_value_eur || d.portfolio_value_usd || 0);
+                    return value > 0; // Only include non-zero values
+                })
+                .map(d => ({
+                    x: new Date(d.timestamp),
+                    y: parseFloat(d.portfolio_value_eur || d.portfolio_value_usd || 0)
+                }));
+            
+            console.log(`Portfolio chart: ${chartData.length} data points (filtered from ${data.length} total)`);
+            
+            if (chartData.length === 0) {
+                console.log('No valid portfolio data points for chart after filtering');
+                
+                // Show a message in the chart area
+                let message = `No portfolio data available for selected time range (${currentTimeRange.toUpperCase()})`;
+                if (currentTimeRange === '24h') {
+                    message = 'No data available for 24-hour range. Try 30D or ALL ranges for historical data.';
+                } else if (currentTimeRange === '7d') {
+                    message = 'No data available for 7-day range. Portfolio tracking was recently fixed - try 24H or 30D ranges.';
+                }
+                chartContainer.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6c757d; font-style: italic; text-align: center; padding: 20px;">${message}</div>`;
+                return;
+            }
+            
+            if (chartData.length < 2) {
+                console.log('Insufficient data points for meaningful chart');
+                // Show a message for insufficient data
+                let message = `Only ${chartData.length} data point available for ${currentTimeRange.toUpperCase()} range (need at least 2 points)`;
+                if (currentTimeRange === '7d') {
+                    message = 'Only 1 data point available for 7-day range. Portfolio tracking was recently fixed - more data will be available soon.';
+                }
+                chartContainer.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6c757d; font-style: italic; text-align: center; padding: 20px;">${message}</div>`;
+                return;
+            }
+            
+            // Create simple line chart
             portfolioChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1616,6 +1694,15 @@
                         intersect: false,
                         mode: 'index'
                     },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Portfolio Value Over Time'
+                        },
+                        legend: {
+                            display: true
+                        }
+                    },
                     scales: {
                         x: {
                             type: 'time',
@@ -1635,28 +1722,11 @@
                             beginAtZero: false,
                             ticks: {
                                 callback: function(value) {
-                                    return '€' + value.toFixed(0);
+                                    return '€' + value.toFixed(2);
                                 }
                             },
                             grid: {
-                                color: 'rgba(0,0,0,0.05)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleColor: 'white',
-                            bodyColor: 'white',
-                            borderColor: '#008cba',
-                            borderWidth: 1,
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Portfolio Value: €' + context.parsed.y.toFixed(2);
-                                }
+                                color: 'rgba(0, 0, 0, 0.1)'
                             }
                         }
                     }
@@ -1666,10 +1736,28 @@
 
         // Create allocation pie chart
         function createAllocationChart(portfolio) {
-            const ctx = document.getElementById('allocation-chart').getContext('2d');
+            const canvas = document.getElementById('allocation-chart');
+            if (!canvas) {
+                console.warn('Allocation chart canvas not found');
+                return;
+            }
             
-            // Destroy existing chart
-            allocationChart = destroyChart(allocationChart);
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart more thoroughly
+            if (allocationChart) {
+                try {
+                    allocationChart.destroy();
+                    allocationChart = null;
+                } catch (e) {
+                    console.warn('Error destroying allocation chart:', e);
+                }
+            }
+            
+            // Clear any existing Chart.js instances on this canvas
+            if (Chart.getChart(canvas)) {
+                Chart.getChart(canvas).destroy();
+            }
             
             if (!portfolio) return;
             
@@ -1739,10 +1827,28 @@
 
         // Create trading activity chart
         function createTradingActivityChart(trades) {
-            const ctx = document.getElementById('trading-activity-chart').getContext('2d');
+            const canvas = document.getElementById('trading-activity-chart');
+            if (!canvas) {
+                console.warn('Trading activity chart canvas not found');
+                return;
+            }
             
-            // Destroy existing chart
-            tradingActivityChart = destroyChart(tradingActivityChart);
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart more thoroughly
+            if (tradingActivityChart) {
+                try {
+                    tradingActivityChart.destroy();
+                    tradingActivityChart = null;
+                } catch (e) {
+                    console.warn('Error destroying trading activity chart:', e);
+                }
+            }
+            
+            // Clear any existing Chart.js instances on this canvas
+            if (Chart.getChart(canvas)) {
+                Chart.getChart(canvas).destroy();
+            }
             
             if (!trades || trades.length === 0) return;
             
@@ -1824,10 +1930,28 @@
 
         // Create returns distribution chart
         function createReturnsDistributionChart(data) {
-            const ctx = document.getElementById('returns-distribution-chart').getContext('2d');
+            const canvas = document.getElementById('returns-distribution-chart');
+            if (!canvas) {
+                console.warn('Returns distribution chart canvas not found');
+                return;
+            }
             
-            // Destroy existing chart
-            returnsDistributionChart = destroyChart(returnsDistributionChart);
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart more thoroughly
+            if (returnsDistributionChart) {
+                try {
+                    returnsDistributionChart.destroy();
+                    returnsDistributionChart = null;
+                } catch (e) {
+                    console.warn('Error destroying returns distribution chart:', e);
+                }
+            }
+            
+            // Clear any existing Chart.js instances on this canvas
+            if (Chart.getChart(canvas)) {
+                Chart.getChart(canvas).destroy();
+            }
             
             if (!data || data.length < 2) return;
             
@@ -1988,42 +2112,9 @@
                     updateChartsForTimeRange();
                 });
             });
-            
-            // Setup chart type selector
-            setupChartTypeSelector();
         }
         
-        // Chart type selector event handlers
-        function setupChartTypeSelector() {
-            const lineBtn = document.getElementById('chart-type-line');
-            const candleBtn = document.getElementById('chart-type-candle');
-            
-            if (lineBtn && candleBtn) {
-                console.log('Setting up chart type selector');
-                
-                // Set initial active state
-                lineBtn.classList.add('active');
-                
-                lineBtn.addEventListener('click', function() {
-                    console.log('Line chart type selected');
-                    lineBtn.classList.add('active');
-                    candleBtn.classList.remove('active');
-                    currentChartType = 'line';
-                    updateChartsForTimeRange();
-                });
-                
-                candleBtn.addEventListener('click', function() {
-                    console.log('Candle chart type selected');
-                    candleBtn.classList.add('active');
-                    lineBtn.classList.remove('active');
-                    currentChartType = 'candle';
-                    updateChartsForTimeRange();
-                });
-            } else {
-                console.warn('Chart type buttons not found');
-            }
-        }
-
+        
         // Filter data based on time range
         function filterDataByTimeRange(data, range) {
             if (!data || data.length === 0) return data;
@@ -2055,37 +2146,6 @@
             return data.filter(d => new Date(d.timestamp) >= cutoffDate);
         }
 
-        // Chart type selector event handlers
-        function setupChartTypeSelector() {
-            const lineBtn = document.getElementById('chart-type-line');
-            const candleBtn = document.getElementById('chart-type-candle');
-            
-            if (lineBtn && candleBtn) {
-                console.log('Setting up chart type selector');
-                
-                // Set initial active state
-                lineBtn.classList.add('active');
-                
-                lineBtn.addEventListener('click', function() {
-                    console.log('Line chart type selected');
-                    lineBtn.classList.add('active');
-                    candleBtn.classList.remove('active');
-                    currentChartType = 'line';
-                    updateChartsForTimeRange();
-                });
-                
-                candleBtn.addEventListener('click', function() {
-                    console.log('Candle chart type selected');
-                    candleBtn.classList.add('active');
-                    lineBtn.classList.remove('active');
-                    currentChartType = 'candle';
-                    updateChartsForTimeRange();
-                });
-            } else {
-                console.warn('Chart type buttons not found');
-            }
-        }
-
         // Update charts for selected time range
         function updateChartsForTimeRange() {
             console.log('Updating charts for time range:', currentTimeRange);
@@ -2105,7 +2165,7 @@
                 isCreatingCharts = true;
                 try {
                     if (filteredPortfolioData.length > 0) {
-                        // createPortfolioChart(filteredPortfolioData);  // Disabled - using new performance charts
+                        createPortfolioChart(filteredPortfolioData);  // Re-enabled for Portfolio Value Over Time
                         createReturnsDistributionChart(filteredPortfolioData);
                     }
                     
@@ -2170,7 +2230,7 @@
                     isCreatingCharts = true;
                     try {
                         if (portfolioHistory && portfolioHistory.length > 0) {
-                            // createPortfolioChart(portfolioHistory);  // Disabled - using new performance charts
+                            createPortfolioChart(portfolioHistory);  // Re-enabled for Portfolio Value Over Time
                             createReturnsDistributionChart(portfolioHistory);
                         } else {
                             console.log('No portfolio history available for charts');
@@ -2239,7 +2299,6 @@
                 
                 // Setup event handlers after data is loaded
                 setupTimeRangeSelector();
-                setupChartTypeSelector(); // Add chart type selector setup
                 console.log('Time range selector setup complete');
                 
                 // Start auto-refresh

@@ -85,8 +85,8 @@ class TradeLogger:
             except (json.JSONDecodeError, FileNotFoundError):
                 trades = []
             
-            # Ensure we have a valid price - fetch it if missing or zero
-            price = result.get("price", 0)
+            # Ensure we have a valid price - check multiple possible fields
+            price = result.get("price", 0) or result.get("execution_price", 0)
             if price == 0:
                 logger.warning(f"Missing price for {product_id}, attempting to fetch current price")
                 try:
@@ -97,6 +97,8 @@ class TradeLogger:
                     logger.info(f"Successfully fetched current price for {product_id}: ${price}")
                 except Exception as e:
                     logger.error(f"Failed to fetch current price for {product_id}: {e}")
+                    # Set a default price to avoid logging with 0
+                    price = 0
             
             # Create trade record with enhanced reasoning and fee information
             trade = {

@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/yeti/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Multi-Strategy Styles -->
+    <link href="multi-strategy.css" rel="stylesheet">
     <style>
         /* Custom styles to enhance Yeti theme */
         :root {
@@ -1367,7 +1369,57 @@
                                         </div>
                                         <div class="decision-time text-muted mb-2">Last Update: <span class="time-value">--</span></div>
                                         
-                                        <!-- Enhanced Decision Analysis -->
+                                                                                <!-- Multi-Strategy Analysis -->
+                                        <div class="multi-strategy-section mb-3" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; background: #f8f9fa;">
+                                            <div class="strategy-header mb-2">
+                                                <small class="text-muted"><i class="fas fa-chess-board me-1"></i>Multi-Strategy Analysis:</small>
+                                                <span class="market-regime-badge badge bg-info ms-2">--</span>
+                                            </div>
+                                            
+                                            <!-- Combined Signal -->
+                                            <div class="combined-signal mb-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small><strong>Combined Signal:</strong></small>
+                                                    <span class="combined-action-badge badge bg-secondary">--</span>
+                                                </div>
+                                                <div class="confidence-bar-container mt-1">
+                                                    <div class="confidence-bar">
+                                                        <div class="confidence-fill" style="width: 0%;"></div>
+                                                    </div>
+                                                    <small class="confidence-text">0%</small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Individual Strategies -->
+                                            <div class="individual-strategies" style="display: none;">
+                                                <small class="text-muted d-block mb-1">Individual Strategy Signals:</small>
+                                                <div class="strategy-signals">
+                                                    <div class="strategy-signal" data-strategy="trend_following">
+                                                        <span class="strategy-name">Trend Following:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                    <div class="strategy-signal" data-strategy="mean_reversion">
+                                                        <span class="strategy-name">Mean Reversion:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                    <div class="strategy-signal" data-strategy="momentum">
+                                                        <span class="strategy-name">Momentum:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Expand/Collapse Button -->
+                                            <button class="btn btn-sm btn-outline-secondary mt-2 expand-strategies" type="button">
+                                                <i class="fas fa-chevron-down me-1"></i>Show Strategy Details
+                                            </button>
+                                        </div>
+
+                                        
+
                                         <div class="enhanced-decision-section">
                                             <!-- AI Analysis Summary -->
                                             <div class="ai-summary mb-2">
@@ -1408,7 +1460,6 @@
                                             
                                             <!-- Reasoning Section -->
                                             <div class="reasoning-section">
-                                                <div class="reasoning-text">No reasoning available</div>
                                                 <button class="btn btn-link btn-sm p-0 expand-button">Show detailed analysis</button>
                                                 
                                                 <!-- Detailed Analysis (Hidden by default) -->
@@ -1416,25 +1467,25 @@
                                                     <div class="analysis-section">
                                                         <h6>AI Detailed Reasoning</h6>
                                                         <ul class="analysis-list ai-reasoning-list">
-                                                            <li>No detailed reasoning available</li>
+                                                            <li><strong>Trend Following:</strong> Weak trend (strength: 0.53) or unclear direction</li><li><strong>Mean Reversion:</strong> No clear mean reversion signal: RSI neutral at 46.0, No Bollinger Band data</li><li><strong>Momentum:</strong> Weak momentum: Price momentum: 1h=0.1%, 4h=0.3%, 24h=0.2%</li>
                                                         </ul>
                                                     </div>
                                                     
                                                     <div class="analysis-section">
                                                         <h6>Bot Decision Logic <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>AI Decision Making Process</h6>Shows how the bot processes AI recommendations:<ul><li><strong>Confidence Check:</strong> Verifies AI confidence meets minimum threshold</li><li><strong>Risk Assessment:</strong> Evaluates market conditions and portfolio risk</li><li><strong>Final Decision:</strong> Combines AI analysis with risk management rules</li></ul><div class="example">Bot may override AI recommendations if risk is too high</div></span></span></h6>
                                                         <ul class="analysis-list bot-logic-list">
-                                                            <li class="threshold-info">Confidence threshold check: --</li>
-                                                            <li class="risk-info">Risk management applied: --</li>
-                                                            <li class="final-reason">Final decision reason: --</li>
+                                                            <li class="threshold-info">Confidence threshold check: Confidence 20% below threshold (70%)</li>
+                                                            <li class="risk-info">Risk management applied: Risk level: Sideways</li>
+                                                            <li class="final-reason">Final decision reason: Final decision: HOLD based on combined analysis</li>
                                                         </ul>
                                                     </div>
                                                     
                                                     <div class="analysis-section">
                                                         <h6>Execution Context</h6>
                                                         <ul class="analysis-list execution-context-list">
-                                                            <li class="data-quality">Market data quality: --</li>
-                                                            <li class="analysis-duration">Analysis duration: --</li>
-                                                            <li class="model-used">LLM model: --</li>
+                                                            <li class="data-quality">Market data quality: Good</li>
+                                                            <li class="analysis-duration">Analysis duration: 0.00ms</li>
+                                                            <li class="model-used">Analysis model: Multi-Strategy Analysis</li>
                                                         </ul>
                                                     </div>
                                                 </div>
@@ -1486,7 +1537,57 @@
                                         </div>
                                         <div class="decision-time text-muted mb-2">Last Update: <span class="time-value">--</span></div>
                                         
-                                        <!-- Enhanced Decision Analysis -->
+                                                                                <!-- Multi-Strategy Analysis -->
+                                        <div class="multi-strategy-section mb-3" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; background: #f8f9fa;">
+                                            <div class="strategy-header mb-2">
+                                                <small class="text-muted"><i class="fas fa-chess-board me-1"></i>Multi-Strategy Analysis:</small>
+                                                <span class="market-regime-badge badge bg-info ms-2">--</span>
+                                            </div>
+                                            
+                                            <!-- Combined Signal -->
+                                            <div class="combined-signal mb-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small><strong>Combined Signal:</strong></small>
+                                                    <span class="combined-action-badge badge bg-secondary">--</span>
+                                                </div>
+                                                <div class="confidence-bar-container mt-1">
+                                                    <div class="confidence-bar">
+                                                        <div class="confidence-fill" style="width: 0%;"></div>
+                                                    </div>
+                                                    <small class="confidence-text">0%</small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Individual Strategies -->
+                                            <div class="individual-strategies" style="display: none;">
+                                                <small class="text-muted d-block mb-1">Individual Strategy Signals:</small>
+                                                <div class="strategy-signals">
+                                                    <div class="strategy-signal" data-strategy="trend_following">
+                                                        <span class="strategy-name">Trend Following:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                    <div class="strategy-signal" data-strategy="mean_reversion">
+                                                        <span class="strategy-name">Mean Reversion:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                    <div class="strategy-signal" data-strategy="momentum">
+                                                        <span class="strategy-name">Momentum:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Expand/Collapse Button -->
+                                            <button class="btn btn-sm btn-outline-secondary mt-2 expand-strategies" type="button">
+                                                <i class="fas fa-chevron-down me-1"></i>Show Strategy Details
+                                            </button>
+                                        </div>
+
+                                        
+
                                         <div class="enhanced-decision-section">
                                             <!-- AI Analysis Summary -->
                                             <div class="ai-summary mb-2">
@@ -1527,7 +1628,6 @@
                                             
                                             <!-- Reasoning Section -->
                                             <div class="reasoning-section">
-                                                <div class="reasoning-text">No reasoning available</div>
                                                 <button class="btn btn-link btn-sm p-0 expand-button">Show detailed analysis</button>
                                                 
                                                 <!-- Detailed Analysis (Hidden by default) -->
@@ -1535,25 +1635,25 @@
                                                     <div class="analysis-section">
                                                         <h6>AI Detailed Reasoning</h6>
                                                         <ul class="analysis-list ai-reasoning-list">
-                                                            <li>No detailed reasoning available</li>
+                                                            <li><strong>Trend Following:</strong> Weak trend (strength: 0.47) or unclear direction</li><li><strong>Mean Reversion:</strong> No clear mean reversion signal: RSI neutral at 47.8, No Bollinger Band data</li><li><strong>Momentum:</strong> Weak momentum: Price momentum: 1h=0.3%, 4h=0.4%, 24h=-0.2%</li>
                                                         </ul>
                                                     </div>
                                                     
                                                     <div class="analysis-section">
                                                         <h6>Bot Decision Logic <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>AI Decision Making Process</h6>Shows how the bot processes AI recommendations:<ul><li><strong>Confidence Check:</strong> Verifies AI confidence meets minimum threshold</li><li><strong>Risk Assessment:</strong> Evaluates market conditions and portfolio risk</li><li><strong>Final Decision:</strong> Combines AI analysis with risk management rules</li></ul><div class="example">Bot may override AI recommendations if risk is too high</div></span></span></h6>
                                                         <ul class="analysis-list bot-logic-list">
-                                                            <li class="threshold-info">Confidence threshold check: --</li>
-                                                            <li class="risk-info">Risk management applied: --</li>
-                                                            <li class="final-reason">Final decision reason: --</li>
+                                                            <li class="threshold-info">Confidence threshold check: Confidence 20% below threshold (70%)</li>
+                                                            <li class="risk-info">Risk management applied: Risk level: Sideways</li>
+                                                            <li class="final-reason">Final decision reason: Final decision: HOLD based on combined analysis</li>
                                                         </ul>
                                                     </div>
                                                     
                                                     <div class="analysis-section">
                                                         <h6>Execution Context</h6>
                                                         <ul class="analysis-list execution-context-list">
-                                                            <li class="data-quality">Market data quality: --</li>
-                                                            <li class="analysis-duration">Analysis duration: --</li>
-                                                            <li class="model-used">LLM model: --</li>
+                                                            <li class="data-quality">Market data quality: Good</li>
+                                                            <li class="analysis-duration">Analysis duration: 0.00ms</li>
+                                                            <li class="model-used">Analysis model: Multi-Strategy Analysis</li>
                                                         </ul>
                                                     </div>
                                                 </div>
@@ -1605,7 +1705,57 @@
                                         </div>
                                         <div class="decision-time text-muted mb-2">Last Update: <span class="time-value">--</span></div>
                                         
-                                        <!-- Enhanced Decision Analysis -->
+                                                                                <!-- Multi-Strategy Analysis -->
+                                        <div class="multi-strategy-section mb-3" style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; background: #f8f9fa;">
+                                            <div class="strategy-header mb-2">
+                                                <small class="text-muted"><i class="fas fa-chess-board me-1"></i>Multi-Strategy Analysis:</small>
+                                                <span class="market-regime-badge badge bg-info ms-2">--</span>
+                                            </div>
+                                            
+                                            <!-- Combined Signal -->
+                                            <div class="combined-signal mb-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small><strong>Combined Signal:</strong></small>
+                                                    <span class="combined-action-badge badge bg-secondary">--</span>
+                                                </div>
+                                                <div class="confidence-bar-container mt-1">
+                                                    <div class="confidence-bar">
+                                                        <div class="confidence-fill" style="width: 0%;"></div>
+                                                    </div>
+                                                    <small class="confidence-text">0%</small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Individual Strategies -->
+                                            <div class="individual-strategies" style="display: none;">
+                                                <small class="text-muted d-block mb-1">Individual Strategy Signals:</small>
+                                                <div class="strategy-signals">
+                                                    <div class="strategy-signal" data-strategy="trend_following">
+                                                        <span class="strategy-name">Trend Following:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                    <div class="strategy-signal" data-strategy="mean_reversion">
+                                                        <span class="strategy-name">Mean Reversion:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                    <div class="strategy-signal" data-strategy="momentum">
+                                                        <span class="strategy-name">Momentum:</span>
+                                                        <span class="strategy-action badge bg-secondary">--</span>
+                                                        <span class="strategy-confidence">--</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Expand/Collapse Button -->
+                                            <button class="btn btn-sm btn-outline-secondary mt-2 expand-strategies" type="button">
+                                                <i class="fas fa-chevron-down me-1"></i>Show Strategy Details
+                                            </button>
+                                        </div>
+
+                                        
+
                                         <div class="enhanced-decision-section">
                                             <!-- AI Analysis Summary -->
                                             <div class="ai-summary mb-2">
@@ -1646,7 +1796,6 @@
                                             
                                             <!-- Reasoning Section -->
                                             <div class="reasoning-section">
-                                                <div class="reasoning-text">No reasoning available</div>
                                                 <button class="btn btn-link btn-sm p-0 expand-button">Show detailed analysis</button>
                                                 
                                                 <!-- Detailed Analysis (Hidden by default) -->
@@ -1654,25 +1803,25 @@
                                                     <div class="analysis-section">
                                                         <h6>AI Detailed Reasoning</h6>
                                                         <ul class="analysis-list ai-reasoning-list">
-                                                            <li>No detailed reasoning available</li>
+                                                            <li><strong>Trend Following:</strong> Weak trend (strength: 0.37) or unclear direction</li><li><strong>Mean Reversion:</strong> No clear mean reversion signal: RSI neutral at 50.1, No Bollinger Band data</li><li><strong>Momentum:</strong> Weak momentum: Price momentum: 1h=0.3%, 4h=1.0%, 24h=-0.1%</li>
                                                         </ul>
                                                     </div>
                                                     
                                                     <div class="analysis-section">
                                                         <h6>Bot Decision Logic <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>AI Decision Making Process</h6>Shows how the bot processes AI recommendations:<ul><li><strong>Confidence Check:</strong> Verifies AI confidence meets minimum threshold</li><li><strong>Risk Assessment:</strong> Evaluates market conditions and portfolio risk</li><li><strong>Final Decision:</strong> Combines AI analysis with risk management rules</li></ul><div class="example">Bot may override AI recommendations if risk is too high</div></span></span></h6>
                                                         <ul class="analysis-list bot-logic-list">
-                                                            <li class="threshold-info">Confidence threshold check: --</li>
-                                                            <li class="risk-info">Risk management applied: --</li>
-                                                            <li class="final-reason">Final decision reason: --</li>
+                                                            <li class="threshold-info">Confidence threshold check: Confidence 20% below threshold (70%)</li>
+                                                            <li class="risk-info">Risk management applied: Risk level: Sideways</li>
+                                                            <li class="final-reason">Final decision reason: Final decision: HOLD based on combined analysis</li>
                                                         </ul>
                                                     </div>
                                                     
                                                     <div class="analysis-section">
                                                         <h6>Execution Context</h6>
                                                         <ul class="analysis-list execution-context-list">
-                                                            <li class="data-quality">Market data quality: --</li>
-                                                            <li class="analysis-duration">Analysis duration: --</li>
-                                                            <li class="model-used">LLM model: --</li>
+                                                            <li class="data-quality">Market data quality: Good</li>
+                                                            <li class="analysis-duration">Analysis duration: 0.00ms</li>
+                                                            <li class="model-used">Analysis model: Multi-Strategy Analysis</li>
                                                         </ul>
                                                     </div>
                                                 </div>
@@ -1977,6 +2126,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Chart.js for performance charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Multi-Strategy JavaScript -->
+    <script src="multi-strategy.js"></script>
     <script>
         // Function to load data
         async function loadData(url) {
@@ -2185,7 +2336,7 @@
                 }
                 
                 // Update market data timestamp (from latest decision files)
-                const btcMarketData = await loadData('/crypto-bot/data/BTC_EUR_latest.json');
+                const btcMarketData = await loadData('./data/BTC_EUR_latest.json');
                 const marketDataUpdateElement = document.getElementById('market-data-update');
                 if (btcMarketData && btcMarketData.market_data && btcMarketData.market_data.timestamp) {
                     const marketDataTime = new Date(btcMarketData.market_data.timestamp + (btcMarketData.market_data.timestamp.includes('Z') ? '' : 'Z'));
@@ -2390,7 +2541,7 @@
             
             for (const asset of assets) {
                 // Read from the latest individual decision file instead of market_data folder
-                const marketData = await loadData(`/crypto-bot/data/${asset}_EUR_latest.json`);
+                const marketData = await loadData(`./data/${asset}_EUR_latest.json`);
                 const card = document.querySelector(`#market-decisions-data [data-asset="${asset}"]`);
                 
                 if (card) {
@@ -2481,6 +2632,12 @@
                     action === 'SELL' ? 'bg-danger' : 
                     'bg-warning'
                 }`;
+            }
+            
+            // Update multi-strategy display if available
+            if (decision.strategy_details && window.MultiStrategy) {
+                const asset = decision.asset || card.getAttribute('data-asset');
+                window.MultiStrategy.updateDisplay(asset, decision);
             }
             
             // Update confidence values (if exists)
@@ -2603,12 +2760,6 @@
                 riskSection.style.display = 'block';
             } else if (riskSection) {
                 riskSection.style.display = 'none';
-            }
-            
-            // Update basic reasoning text (if exists)
-            const reasoningText = card.querySelector('.reasoning-text');
-            if (reasoningText) {
-                reasoningText.textContent = decision.reasoning || 'No reasoning available';
             }
             
             // Update detailed analysis sections
@@ -3858,22 +4009,6 @@
                         detailedAnalysis.classList.toggle('expanded');
                         e.target.textContent = detailedAnalysis.classList.contains('expanded') ? 
                             'Hide detailed analysis' : 'Show detailed analysis';
-                    } else {
-                        // Fallback to old behavior for basic reasoning text
-                        const reasoningText = reasoningSection.querySelector('.reasoning-text');
-                        if (reasoningText) {
-                            reasoningText.classList.toggle('expanded');
-                            e.target.textContent = reasoningText.classList.contains('expanded') ? 
-                                'Show less' : 'Show more';
-                        }
-                    }
-                } else {
-                    // Handle other expand buttons (legacy support)
-                    const reasoningText = e.target.previousElementSibling;
-                    if (reasoningText) {
-                        reasoningText.classList.toggle('expanded');
-                        e.target.textContent = reasoningText.classList.contains('expanded') ? 
-                            'Show less' : 'Show more';
                     }
                 }
             }
@@ -3884,6 +4019,12 @@
             loadSharedHeader().then(() => {
                 setupTradeHistoryFilters();
                 updateAllData();
+                
+                // Initialize multi-strategy functionality
+                if (window.MultiStrategy) {
+                    window.MultiStrategy.initialize();
+                }
+                
                 setInterval(updateAllData, 60000);
             });
         });

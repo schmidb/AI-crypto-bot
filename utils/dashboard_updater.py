@@ -48,6 +48,8 @@ class DashboardUpdater:
             self._update_latest_decisions(trading_data)
             self._update_logs_data()
             self._update_performance_data(portfolio)  # Add performance data update
+            self._update_html_detailed_analysis()  # Add HTML detailed analysis update
+            self._create_individual_latest_files()  # Create individual latest files for dashboard
             self._update_timestamp()
             logger.info("Local dashboard data updated successfully")
         except Exception as e:
@@ -98,11 +100,12 @@ class DashboardUpdater:
             # Create new history file if it doesn't exist
             if not os.path.exists(history_file):
                 with open(history_file, "w") as f:
-                    f.write("timestamp,portfolio_value_usd,btc_amount,eth_amount,sol_amount,usd_amount,btc_price,eth_price,sol_price\n")
+                    f.write("timestamp,portfolio_value_usd,btc_amount,eth_amount,sol_amount,usd_amount,btc_price,eth_price,sol_price,portfolio_value_eur\n")
             
             # Extract and append data
             timestamp = datetime.datetime.now().isoformat()
-            portfolio_value = float(portfolio.get("portfolio_value_usd", 0))
+            portfolio_value_usd = float(portfolio.get("portfolio_value_usd", 0))  # Keep for backward compatibility
+            portfolio_value_eur = float(portfolio.get("portfolio_value_eur", 0))  # Primary value
             
             # Extract asset data with validation
             btc_data = portfolio.get("BTC", {})
@@ -110,21 +113,21 @@ class DashboardUpdater:
             sol_data = portfolio.get("SOL", {})
             usd_data = portfolio.get("USD", {})
             
-            if not isinstance(btc_data, dict): btc_data = {"amount": 0, "last_price_usd": 0}
-            if not isinstance(eth_data, dict): eth_data = {"amount": 0, "last_price_usd": 0}
-            if not isinstance(sol_data, dict): sol_data = {"amount": 0, "last_price_usd": 0}
+            if not isinstance(btc_data, dict): btc_data = {"amount": 0, "last_price_eur": 0}
+            if not isinstance(eth_data, dict): eth_data = {"amount": 0, "last_price_eur": 0}
+            if not isinstance(sol_data, dict): sol_data = {"amount": 0, "last_price_eur": 0}
             if not isinstance(usd_data, dict): usd_data = {"amount": 0}
             
             btc_amount = float(btc_data.get("amount", 0))
             eth_amount = float(eth_data.get("amount", 0))
             sol_amount = float(sol_data.get("amount", 0))
             usd_amount = float(usd_data.get("amount", 0))
-            btc_price = float(btc_data.get("last_price_usd", 0))
-            eth_price = float(eth_data.get("last_price_usd", 0))
-            sol_price = float(sol_data.get("last_price_usd", 0))
+            btc_price = float(btc_data.get("last_price_eur", 0))  # Use EUR prices
+            eth_price = float(eth_data.get("last_price_eur", 0))  # Use EUR prices
+            sol_price = float(sol_data.get("last_price_eur", 0))  # Use EUR prices
             
             with open(history_file, "a") as f:
-                f.write(f"{timestamp},{portfolio_value},{btc_amount},{eth_amount},{sol_amount},{usd_amount},{btc_price},{eth_price},{sol_price}\n")
+                f.write(f"{timestamp},{portfolio_value_usd},{btc_amount},{eth_amount},{sol_amount},{usd_amount},{btc_price},{eth_price},{sol_price},{portfolio_value_eur}\n")
                 
         except Exception as e:
             logger.error(f"Error appending portfolio history: {e}")
@@ -233,7 +236,7 @@ class DashboardUpdater:
             logger.error(f"Error updating detailed config data: {e}")
     
     def _update_latest_decisions(self, trading_data: Dict[str, Any]) -> None:
-        """Update latest trading decisions cache"""
+        """Update latest trading decisions cache with multi-strategy data"""
         try:
             latest_decisions = []
             assets = ["BTC", "ETH", "SOL"]
@@ -243,7 +246,7 @@ class DashboardUpdater:
                 try:
                     # Read the latest decision file directly
                     import glob
-                    pattern = f"data/{asset}_USD_*.json"
+                    pattern = f"data/{asset}_EUR_*.json"  # Updated to EUR
                     files = glob.glob(pattern)
                     
                     if files:
@@ -251,14 +254,38 @@ class DashboardUpdater:
                         latest_file = sorted(files)[-1]
                         with open(latest_file, "r") as f:
                             decision_data = json.load(f)
-                            
+                        
+                        # Extract strategy details if available
+                        strategy_details = decision_data.get("strategy_details", {})
+                        
                         decision = {
                             "timestamp": decision_data.get("timestamp", ""),
                             "asset": asset,
                             "action": decision_data.get("action", "unknown"),
                             "confidence": decision_data.get("confidence", 0),
-                            "reasoning": decision_data.get("reason", decision_data.get("reasoning", "No reasoning provided"))
+                            "reasoning": decision_data.get("reason", decision_data.get("reasoning", "No reasoning provided")),
+                            "strategy_details": strategy_details
                         }
+                        
+                        # Add multi-strategy specific data
+                        if strategy_details:
+                            decision["market_regime"] = strategy_details.get("market_regime", "unknown")
+                            decision["individual_strategies"] = strategy_details.get("individual_strategies", {})
+                            decision["combined_signal"] = strategy_details.get("combined_signal", {})
+                            decision["strategy_weights"] = strategy_details.get("strategy_weights", {})
+                            
+                            # Create ai_analysis structure for JavaScript compatibility
+                            individual_strategies = strategy_details.get("individual_strategies", {})
+                            detailed_reasoning = []
+                            for strategy_name, strategy_data in individual_strategies.items():
+                                strategy_reasoning = strategy_data.get("reasoning", "")
+                                if strategy_reasoning:
+                                    detailed_reasoning.append(f"{strategy_name.replace('_', ' ').title()}: {strategy_reasoning}")
+                            
+                            decision["ai_analysis"] = {
+                                "detailed_reasoning": detailed_reasoning if detailed_reasoning else ["No detailed reasoning available"]
+                            }
+                        
                         latest_decisions.append(decision)
                     else:
                         logger.warning(f"No decision files found for {asset}")
@@ -271,6 +298,8 @@ class DashboardUpdater:
             
             with open("data/cache/latest_decisions.json", "w") as f:
                 json.dump(latest_decisions, f, indent=2, default=str)
+                
+            logger.debug(f"Updated latest decisions with multi-strategy data for {len(latest_decisions)} assets")
                 
         except Exception as e:
             logger.error(f"Error updating latest decisions: {e}")
@@ -377,11 +406,36 @@ class DashboardUpdater:
                 try:
                     with open(file, 'r') as f:
                         data = json.load(f)
+                        
+                        # Try to get volatility from ai_analysis first (legacy format)
                         market_conditions = data.get('ai_analysis', {}).get('market_conditions', {})
                         volatility = market_conditions.get('volatility', 'unknown')
+                        
+                        # If not found, calculate from price changes (current format)
+                        if volatility == 'unknown':
+                            market_data = data.get('market_data', {})
+                            price_changes = market_data.get('price_changes', {})
+                            
+                            if price_changes:
+                                # Calculate volatility based on price changes
+                                changes = [abs(price_changes.get('1h', 0)), 
+                                          abs(price_changes.get('4h', 0)), 
+                                          abs(price_changes.get('24h', 0))]
+                                avg_change = sum(changes) / len(changes) if changes else 0
+                                
+                                if avg_change > 3.0:  # >3% average change = high volatility
+                                    volatility = 'high'
+                                elif avg_change > 1.5:  # >1.5% average change = medium volatility
+                                    volatility = 'medium'
+                                else:
+                                    volatility = 'low'
+                                
+                                logger.debug(f"Calculated volatility '{volatility}' from price changes {changes} in {file}")
+                        
                         if volatility != 'unknown':
                             volatility_levels.append(volatility)
                             logger.debug(f"Found volatility '{volatility}' in {file}")
+                            
                 except Exception as e:
                     logger.debug(f"Error reading volatility from {file}: {e}")
                     continue
@@ -467,6 +521,160 @@ class DashboardUpdater:
         except Exception as e:
             logger.error(f"Error getting performance data for period {period}: {e}")
             return {"error": str(e)}
+    
+    def _update_html_detailed_analysis(self) -> None:
+        """Update HTML template with detailed analysis data"""
+        try:
+            # Read the latest decisions data
+            latest_decisions_file = "data/cache/latest_decisions.json"
+            if not os.path.exists(latest_decisions_file):
+                logger.warning("Latest decisions file not found, skipping HTML detailed analysis update")
+                return
+                
+            with open(latest_decisions_file, "r") as f:
+                latest_decisions = json.load(f)
+            
+            # Read the HTML template
+            html_file = "dashboard/static/index.html"
+            if not os.path.exists(html_file):
+                logger.warning("HTML template not found, skipping detailed analysis update")
+                return
+                
+            with open(html_file, "r") as f:
+                html_content = f.read()
+            
+            # Update detailed analysis for each asset
+            for decision in latest_decisions:
+                asset = decision.get("asset", "")
+                if not asset:
+                    continue
+                    
+                # Extract detailed analysis data
+                strategy_details = decision.get("strategy_details", {})
+                individual_strategies = strategy_details.get("individual_strategies", {})
+                combined_signal = strategy_details.get("combined_signal", {})
+                
+                # Build detailed reasoning list
+                reasoning_items = []
+                if individual_strategies:
+                    for strategy_name, strategy_data in individual_strategies.items():
+                        strategy_reasoning = strategy_data.get("reasoning", "")
+                        if strategy_reasoning:
+                            reasoning_items.append(f"<li><strong>{strategy_name.replace('_', ' ').title()}:</strong> {strategy_reasoning}</li>")
+                
+                if not reasoning_items:
+                    reasoning_items = ["<li>No detailed reasoning available</li>"]
+                
+                # Build bot decision logic
+                confidence = decision.get("confidence", 0)
+                action = decision.get("action", "unknown")
+                confidence_threshold = 70  # Default threshold
+                
+                threshold_check = f"Confidence {confidence}% {'meets' if confidence >= confidence_threshold else 'below'} threshold ({confidence_threshold}%)"
+                risk_assessment = f"Risk level: {strategy_details.get('market_regime', 'unknown').title()}"
+                final_reason = f"Final decision: {action} based on combined analysis"
+                
+                # Build execution context
+                analysis_duration = decision.get("analysis_duration_ms", 0)
+                model_used = "Multi-Strategy Analysis"
+                data_quality = "Good" if strategy_details else "Limited"
+                
+                # Update HTML for this asset
+                asset_section_pattern = f'<div class="col-md-4" data-asset="{asset}">'
+                asset_start = html_content.find(asset_section_pattern)
+                
+                if asset_start != -1:
+                    # Find the detailed analysis section for this asset
+                    detailed_analysis_start = html_content.find('<div class="detailed-analysis">', asset_start)
+                    if detailed_analysis_start != -1:
+                        # Find the end of this detailed analysis section
+                        detailed_analysis_end = html_content.find('</div>', detailed_analysis_start)
+                        # Find the actual end (there are nested divs)
+                        div_count = 1
+                        search_pos = detailed_analysis_start + len('<div class="detailed-analysis">')
+                        while div_count > 0 and search_pos < len(html_content):
+                            next_open = html_content.find('<div', search_pos)
+                            next_close = html_content.find('</div>', search_pos)
+                            
+                            if next_close == -1:
+                                break
+                            if next_open != -1 and next_open < next_close:
+                                div_count += 1
+                                search_pos = next_open + 4
+                            else:
+                                div_count -= 1
+                                search_pos = next_close + 6
+                                if div_count == 0:
+                                    detailed_analysis_end = next_close + 6
+                        
+                        if detailed_analysis_end != -1:
+                            # Replace the detailed analysis section
+                            new_detailed_analysis = f'''<div class="detailed-analysis">
+                                                    <div class="analysis-section">
+                                                        <h6>AI Detailed Reasoning</h6>
+                                                        <ul class="analysis-list ai-reasoning-list">
+                                                            {''.join(reasoning_items)}
+                                                        </ul>
+                                                    </div>
+                                                    
+                                                    <div class="analysis-section">
+                                                        <h6>Bot Decision Logic <span class="tooltip"><i class="fas fa-question-circle help-icon" style="font-size: 0.8rem;"></i><span class="tooltiptext"><h6>AI Decision Making Process</h6>Shows how the bot processes AI recommendations:<ul><li><strong>Confidence Check:</strong> Verifies AI confidence meets minimum threshold</li><li><strong>Risk Assessment:</strong> Evaluates market conditions and portfolio risk</li><li><strong>Final Decision:</strong> Combines AI analysis with risk management rules</li></ul><div class="example">Bot may override AI recommendations if risk is too high</div></span></span></h6>
+                                                        <ul class="analysis-list bot-logic-list">
+                                                            <li class="threshold-info">Confidence threshold check: {threshold_check}</li>
+                                                            <li class="risk-info">Risk management applied: {risk_assessment}</li>
+                                                            <li class="final-reason">Final decision reason: {final_reason}</li>
+                                                        </ul>
+                                                    </div>
+                                                    
+                                                    <div class="analysis-section">
+                                                        <h6>Execution Context</h6>
+                                                        <ul class="analysis-list execution-context-list">
+                                                            <li class="data-quality">Market data quality: {data_quality}</li>
+                                                            <li class="analysis-duration">Analysis duration: {analysis_duration:.2f}ms</li>
+                                                            <li class="model-used">Analysis model: {model_used}</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>'''
+                            
+                            html_content = html_content[:detailed_analysis_start] + new_detailed_analysis + html_content[detailed_analysis_end:]
+            
+            # Write the updated HTML back
+            with open(html_file, "w") as f:
+                f.write(html_content)
+                
+            logger.debug("Updated HTML detailed analysis sections")
+            
+        except Exception as e:
+            logger.error(f"Error updating HTML detailed analysis: {e}")
+    
+    def _create_individual_latest_files(self) -> None:
+        """Create individual latest decision files for dashboard JavaScript"""
+        try:
+            # Read the latest decisions data
+            latest_decisions_file = "data/cache/latest_decisions.json"
+            if not os.path.exists(latest_decisions_file):
+                logger.warning("Latest decisions file not found, skipping individual file creation")
+                return
+                
+            with open(latest_decisions_file, "r") as f:
+                latest_decisions = json.load(f)
+            
+            # Create individual files for each asset
+            for decision in latest_decisions:
+                asset = decision.get("asset", "")
+                if not asset:
+                    continue
+                    
+                # Create individual latest file
+                individual_file = f"data/{asset}_EUR_latest.json"
+                with open(individual_file, "w") as f:
+                    json.dump(decision, f, indent=2, default=str)
+                    
+            logger.debug(f"Created individual latest files for {len(latest_decisions)} assets")
+            
+        except Exception as e:
+            logger.error(f"Error creating individual latest files: {e}")
+
     
     # Dummy methods to handle old chart generation calls gracefully
     def _generate_portfolio_value_chart(self, portfolio: Dict[str, Any]) -> None:
