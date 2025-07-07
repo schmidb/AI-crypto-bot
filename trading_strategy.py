@@ -876,7 +876,7 @@ class TradingStrategy:
                     
                     if usd_available <= config.MIN_TRADE_AMOUNT:  # Use configured minimum trade amount
                         decision = "HOLD"
-                        risk_adjustment = f"insufficient_usd_balance ({config.format_currency(usd_available)} available, minimum {config.format_currency(config.MIN_TRADE_AMOUNT)} required)"
+                        risk_adjustment = f"insufficient_eur_balance ({config.format_currency(usd_available)} available, minimum {config.format_currency(config.MIN_TRADE_AMOUNT)} required)"
                         logger.info(f"Risk management: Changed BUY to HOLD for {product_id} - insufficient EUR balance")
                 except Exception as e:
                     logger.warning(f"Could not check EUR balance for {product_id}: {e}")
