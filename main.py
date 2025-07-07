@@ -634,10 +634,22 @@ class TradingBot:
                     log_reason = "AI analysis recommends HOLD - no trading action needed"
             
             if should_log:
+                # Ensure we have a valid price for logging
+                log_price = trade_result.get('execution_price', 0)
+                if log_price == 0:
+                    # Try to get current price for HOLD decisions or failed trades
+                    try:
+                        log_price = self.data_collector.get_current_price(product_id)
+                        logger.debug(f"Using current price {log_price} for {product_id} trade logging")
+                    except Exception as e:
+                        logger.warning(f"Could not get current price for {product_id} logging: {e}")
+                        log_price = 0
+                
                 # Create enhanced trade record for dashboard visibility
                 enhanced_trade_result = {
                     **trade_result,
                     'action': log_action,
+                    'price': log_price,  # Ensure price is always included
                     'status': 'executed' if trade_result.get('trade_executed') else 'hold' if log_action == 'HOLD' else 'attempted',
                     'reason': log_reason,
                     'intended_action': log_action,
@@ -704,10 +716,12 @@ class TradingBot:
                 return execution_result
             
             # Calculate trade size based on confidence and available funds
+            strategy_details = decision_result.get('strategy_details', {})
+            
             if action == 'BUY':
-                return self._execute_buy_order(product_id, asset, current_price, confidence, portfolio, execution_result)
+                return self._execute_buy_order(product_id, asset, current_price, confidence, portfolio, execution_result, strategy_details)
             elif action == 'SELL':
-                return self._execute_sell_order(product_id, asset, current_price, confidence, portfolio, execution_result)
+                return self._execute_sell_order(product_id, asset, current_price, confidence, portfolio, execution_result, strategy_details)
             else:
                 execution_result.update({
                     'execution_status': 'unknown_action',
@@ -735,7 +749,7 @@ class TradingBot:
                 'execution_price': 0
             }
     
-    def _execute_buy_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict) -> Dict[str, Any]:
+    def _execute_buy_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict, strategy_details: Dict = None) -> Dict[str, Any]:
         f"""Execute BUY order with {config.BASE_CURRENCY} balance validation"""
         try:
             # Check base currency balance
@@ -750,24 +764,31 @@ class TradingBot:
                 logger.warning(f"BUY order skipped for {product_id}: Insufficient {config.BASE_CURRENCY} ({config.format_currency(base_available)})")
                 return execution_result
             
-            # Calculate trade size with dynamic position sizing
-            # Base trade percentage: 10-25% based on confidence
-            base_trade_percentage = 0.10 + (confidence / 100.0 * 0.15)  # 10% to 25%
+            # Calculate trade size using multi-strategy position sizing
+            position_size = self.trading_strategy.calculate_position_size(
+                decision="BUY",
+                confidence=confidence,
+                available_balance=base_available,
+                strategy_details=strategy_details
+            )
             
-            # Get dynamic position multiplier from strategy
-            dynamic_multiplier = 1.0
-            if hasattr(self.trading_strategy, '_calculate_dynamic_position_size'):
-                dynamic_multiplier = self.trading_strategy._calculate_dynamic_position_size("BUY", confidence, product_id)
+            if position_size == 0:
+                execution_result.update({
+                    'execution_status': 'insufficient_size',
+                    'execution_message': f'Calculated position size too small (below minimum {config.format_currency(config.MIN_TRADE_AMOUNT)})',
+                    'available_base': base_available
+                })
+                logger.warning(f"BUY order skipped for {product_id}: Position size too small")
+                return execution_result
             
-            # Apply dynamic sizing
-            adjusted_percentage = base_trade_percentage * dynamic_multiplier
-            max_trade_amount = min(base_available * adjusted_percentage, config.MAX_POSITION_SIZE)
-            
-            risk_multiplier = self.trading_strategy._get_risk_multiplier()
-            trade_amount_base = max_trade_amount * risk_multiplier
-            trade_amount_base = max(config.MIN_TRADE_AMOUNT, min(trade_amount_base, base_available - 5.0))  # Keep €5 buffer
-            
+            # Ensure we don't exceed available balance
+            trade_amount_base = min(position_size, base_available - 5.0)  # Keep €5 buffer
             crypto_amount = trade_amount_base / current_price
+            
+            logger.info(f"Position sizing for {product_id}: confidence={confidence}%, "
+                       f"available={config.format_currency(base_available)}, "
+                       f"calculated_size={config.format_currency(position_size)}, "
+                       f"final_size={config.format_currency(trade_amount_base)}")
             
             if SIMULATION_MODE:
                 # Simulate the trade
@@ -841,7 +862,7 @@ class TradingBot:
             })
             return execution_result
     
-    def _execute_sell_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict) -> Dict[str, Any]:
+    def _execute_sell_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict, strategy_details: Dict = None) -> Dict[str, Any]:
         """Execute SELL order with asset balance validation"""
         try:
             # Check asset balance

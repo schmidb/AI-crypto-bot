@@ -7,11 +7,12 @@ from datetime import datetime
 from config import Config
 from utils.trade_logger import TradeLogger
 from coinbase_client import CoinbaseClient
+from strategies import StrategyManager
 
 logger = logging.getLogger(__name__)
 
 class TradingStrategy:
-    """Implements trading strategy with risk management"""
+    """Implements trading strategy with multi-strategy framework and risk management"""
     
     def __init__(self, config: Config, llm_analyzer=None, data_collector=None):
         """Initialize trading strategy with configuration"""
@@ -24,10 +25,14 @@ class TradingStrategy:
         self.trade_logger = TradeLogger()
         self.coinbase_client = CoinbaseClient()
         
+        # Initialize multi-strategy framework
+        self.strategy_manager = StrategyManager(config)
+        
         # Load initial portfolio
         self.portfolio = self._load_portfolio()
         
         logger.info(f"Trading strategy initialized with risk level: {self.risk_level}")
+        logger.info(f"Multi-strategy framework initialized with {len(self.strategy_manager.strategies)} strategies")
         logger.info(f"Initial portfolio: {self.portfolio}")
     
     def _load_portfolio(self) -> Dict:
@@ -47,6 +52,25 @@ class TradingStrategy:
                 json.dump(self.portfolio, f, indent=4)
         except Exception as e:
             logger.error(f"Error saving portfolio: {e}")
+    
+    def _convert_numpy_types(self, data):
+        """Convert numpy types to Python native types recursively"""
+        import numpy as np
+        
+        if isinstance(data, dict):
+            return {key: self._convert_numpy_types(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [self._convert_numpy_types(item) for item in data]
+        elif isinstance(data, np.integer):
+            return int(data)
+        elif isinstance(data, np.floating):
+            return float(data)
+        elif isinstance(data, np.ndarray):
+            return data.tolist()
+        elif hasattr(data, 'item'):  # numpy scalar
+            return data.item()
+        else:
+            return data
     
     def refresh_portfolio_from_coinbase(self) -> Dict[str, Any]:
         """
@@ -79,76 +103,87 @@ class TradingStrategy:
             logger.error(error_msg)
             return {"status": "error", "message": error_msg}
     
-    def get_trading_decision(self, market_data: Dict[str, Any], indicators: Dict[str, float]) -> Tuple[str, float, str]:
+    def get_trading_decision(self, market_data: Dict[str, Any], indicators: Dict[str, float]) -> Tuple[str, float, str, Dict]:
         """
-        Get trading decision based on market data and indicators
+        Get trading decision using multi-strategy framework
         
         Args:
             market_data: Current market data
             indicators: Technical indicators
             
         Returns:
-            Tuple of (decision, confidence, reasoning)
+            Tuple of (decision, confidence, reasoning, strategy_details)
         """
         try:
-            # Extract key indicators (convert numpy types to Python types)
-            rsi = float(indicators.get('rsi', 50))
-            macd = float(indicators.get('macd', 0))
-            macd_signal = float(indicators.get('macd_signal', 0))
-            bb_upper = float(indicators.get('bb_upper', 0))
-            bb_lower = float(indicators.get('bb_lower', 0))
-            current_price = float(indicators.get('current_price', 0))
+            # Get combined signal from strategy manager
+            logger.debug(f"Calling strategy manager with market_data type: {type(market_data)}")
+            logger.debug(f"Calling strategy manager with indicators type: {type(indicators)}")
+            logger.debug(f"Indicators keys: {list(indicators.keys()) if isinstance(indicators, dict) else 'Not a dict'}")
             
-            # Initialize confidence scores
-            buy_confidence = 0
-            sell_confidence = 0
+            combined_signal = self.strategy_manager.get_combined_signal(
+                market_data, indicators, self.portfolio
+            )
             
-            # RSI Analysis (30% weight)
-            if rsi < 30:  # Oversold
-                buy_confidence += 30
-            elif rsi > 70:  # Overbought
-                sell_confidence += 30
+            # Get individual strategy signals for dashboard
+            individual_signals = self.strategy_manager.analyze_all_strategies(
+                market_data, indicators, self.portfolio
+            )
             
-            # MACD Analysis (40% weight)
-            if macd > macd_signal:  # Bullish crossover
-                buy_confidence += 40
-            elif macd < macd_signal:  # Bearish crossover
-                sell_confidence += 40
+            # Prepare strategy details for dashboard
+            strategy_details = {
+                'market_regime': self.strategy_manager.get_current_market_regime(),
+                'strategy_weights': self.strategy_manager.strategy_weights.copy(),
+                'individual_strategies': {},
+                'combined_signal': {
+                    'action': combined_signal.action,
+                    'confidence': combined_signal.confidence,
+                    'reasoning': combined_signal.reasoning,
+                    'position_multiplier': combined_signal.position_size_multiplier
+                }
+            }
             
-            # Bollinger Bands Analysis (30% weight)
-            if current_price < bb_lower:  # Price below lower band
-                buy_confidence += 30
-            elif current_price > bb_upper:  # Price above upper band
-                sell_confidence += 30
+            # Add individual strategy details
+            for name, signal in individual_signals.items():
+                strategy_details['individual_strategies'][name] = {
+                    'action': signal.action,
+                    'confidence': signal.confidence,
+                    'reasoning': signal.reasoning,
+                    'position_multiplier': signal.position_size_multiplier
+                }
             
-            # Apply risk level adjustments
-            if self.risk_level == "low":
-                confidence_threshold = 80
-            elif self.risk_level == "medium":
-                confidence_threshold = 70
-            else:  # high
-                confidence_threshold = 60
+            # Apply confidence thresholds from config
+            min_buy_confidence = getattr(self.config, 'CONFIDENCE_THRESHOLD_BUY', 70)
+            min_sell_confidence = getattr(self.config, 'CONFIDENCE_THRESHOLD_SELL', 70)
             
-            # Determine decision
-            if buy_confidence >= confidence_threshold:
-                return "buy", buy_confidence, f"Strong buy signals: RSI={rsi:.2f}, MACD crossover positive, price near support"
-            elif sell_confidence >= confidence_threshold:
-                return "sell", sell_confidence, f"Strong sell signals: RSI={rsi:.2f}, MACD crossover negative, price near resistance"
-            else:
-                return "hold", max(buy_confidence, sell_confidence), f"No clear signals: RSI={rsi:.2f}, MACD neutral"
+            final_action = combined_signal.action
+            final_confidence = combined_signal.confidence
+            
+            # Override action if confidence doesn't meet thresholds
+            if combined_signal.action == "BUY" and combined_signal.confidence < min_buy_confidence:
+                final_action = "HOLD"
+                strategy_details['confidence_override'] = f"BUY confidence {combined_signal.confidence:.1f}% below threshold {min_buy_confidence}%"
+            elif combined_signal.action == "SELL" and combined_signal.confidence < min_sell_confidence:
+                final_action = "HOLD"
+                strategy_details['confidence_override'] = f"SELL confidence {combined_signal.confidence:.1f}% below threshold {min_sell_confidence}%"
+            
+            logger.info(f"Multi-strategy decision: {final_action} (confidence: {final_confidence:.1f}%)")
+            logger.info(f"Market regime: {strategy_details['market_regime']}")
+            
+            return final_action.lower(), final_confidence, combined_signal.reasoning, strategy_details
                 
         except Exception as e:
             logger.error(f"Error getting trading decision: {e}")
-            return "hold", 0, f"Error during analysis: {str(e)}"
+            return "hold", 0, f"Error during multi-strategy analysis: {str(e)}", {}
     
-    def calculate_position_size(self, decision: str, confidence: float, available_balance: float) -> float:
+    def calculate_position_size(self, decision: str, confidence: float, available_balance: float, strategy_details: Dict = None) -> float:
         """
-        Calculate position size based on confidence and risk level
+        Calculate position size based on confidence, risk level, and strategy multiplier
         
         Args:
             decision: Trading decision (buy/sell/hold)
             confidence: Decision confidence (0-100)
             available_balance: Available balance for trading
+            strategy_details: Strategy analysis details including position multiplier
             
         Returns:
             Position size in USD
@@ -157,10 +192,15 @@ class TradingStrategy:
             # Base position size on confidence
             base_size = available_balance * (confidence / 100)
             
-            # Apply risk level multipliers using the centralized function
+            # Apply risk level multipliers
             risk_multiplier = self._get_risk_multiplier()
-                
-            position_size = base_size * risk_multiplier
+            
+            # Apply strategy position multiplier if available
+            strategy_multiplier = 1.0
+            if strategy_details and 'combined_signal' in strategy_details:
+                strategy_multiplier = strategy_details['combined_signal'].get('position_multiplier', 1.0)
+            
+            position_size = base_size * risk_multiplier * strategy_multiplier
             
             # Apply min/max constraints
             min_trade = float(self.config.MIN_TRADE_AMOUNT)
@@ -168,6 +208,9 @@ class TradingStrategy:
             
             if position_size < min_trade:
                 return 0  # Don't trade if below minimum
+            
+            logger.info(f"Position size calculation: base={base_size:.2f}, risk_mult={risk_multiplier:.2f}, "
+                       f"strategy_mult={strategy_multiplier:.2f}, final={position_size:.2f}")
             
             return min(position_size, max_position)
             
@@ -634,29 +677,18 @@ class TradingStrategy:
     
     def execute_strategy(self, product_id: str) -> Dict[str, Any]:
         """
-        Execute trading strategy for a specific product
+        Execute multi-strategy trading analysis for a specific product
         
         Args:
             product_id: Trading pair (e.g., 'BTC-EUR')
             
         Returns:
-            Dict with trading decision and details
+            Dict with trading decision and strategy details
         """
         try:
-            logger.info(f"Executing strategy for {product_id}")
+            logger.info(f"Executing multi-strategy analysis for {product_id}")
             
             # Check if we have the required components
-            if not self.llm_analyzer:
-                logger.warning("LLM analyzer not available, returning HOLD decision")
-                return {
-                    "action": "HOLD",
-                    "decision": "HOLD", 
-                    "confidence": 50,
-                    "reasoning": "LLM analyzer not available - holding position",
-                    "product_id": product_id,
-                    "timestamp": datetime.utcnow().isoformat()
-                }
-            
             if not self.data_collector:
                 logger.warning("Data collector not available, returning HOLD decision")
                 return {
@@ -700,40 +732,70 @@ class TradingStrategy:
                     "timestamp": datetime.utcnow().isoformat()
                 }
             
-            # 2. Calculate technical indicators optimized for trading style
+            # 2. Calculate technical indicators
             from config import TRADING_STYLE
             indicators = self.data_collector.calculate_indicators(historical_data, TRADING_STYLE)
+            
+            # Add current price to indicators
+            indicators['current_price'] = current_price
+            
+            # Convert numpy types to Python types for multi-strategy framework
+            indicators = self._convert_numpy_types(indicators)
+            
             logger.info(f"Calculated indicators for {TRADING_STYLE}: {list(indicators.keys())}")
             
-            # 3. Use LLM analyzer to make decisions
-            logger.info(f"Analyzing market data with LLM for {product_id}")
+            # 3. Use multi-strategy framework for decision making
+            logger.info(f"Running multi-strategy analysis for {product_id}")
             start_time = datetime.utcnow()
             
-            # Create additional context with calculated indicators
-            additional_context = {
-                "indicators": indicators,
-                "trading_style": TRADING_STYLE,
-                "market_data": current_market_data
-            }
-            
-            analysis_result = self.llm_analyzer.analyze_market_data(
-                market_data=historical_data,
-                current_price=current_price,
-                trading_pair=product_id,
-                additional_context=additional_context
+            # Get trading decision from multi-strategy framework
+            decision, confidence, reasoning, strategy_details = self.get_trading_decision(
+                market_data=current_market_data,
+                indicators=indicators
             )
+            
             analysis_duration = (datetime.utcnow() - start_time).total_seconds() * 1000
             
-            if not analysis_result:
-                logger.warning(f"LLM analysis failed for {product_id}")
-                return {
-                    "action": "HOLD",
-                    "decision": "HOLD", 
-                    "confidence": 50,
-                    "reasoning": "LLM analysis failed - holding position",
-                    "product_id": product_id,
-                    "timestamp": datetime.utcnow().isoformat()
-                }
+            # 4. Prepare comprehensive result
+            result = {
+                "action": decision.upper(),
+                "decision": decision.upper(),
+                "confidence": confidence,
+                "reasoning": reasoning,
+                "product_id": product_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "analysis_duration_ms": analysis_duration,
+                "current_price": current_price,
+                "indicators": indicators,
+                "strategy_details": strategy_details
+            }
+            
+            # 5. Log strategy analysis details
+            if strategy_details:
+                logger.info(f"Market regime: {strategy_details.get('market_regime', 'unknown')}")
+                logger.info(f"Strategy weights: {strategy_details.get('strategy_weights', {})}")
+                
+                # Log individual strategy signals
+                individual_strategies = strategy_details.get('individual_strategies', {})
+                for strategy_name, signal in individual_strategies.items():
+                    logger.info(f"{strategy_name}: {signal['action']} ({signal['confidence']:.1f}%)")
+            
+            logger.info(f"Multi-strategy decision for {product_id}: {decision.upper()} "
+                       f"(confidence: {confidence:.1f}%) - {reasoning}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error executing multi-strategy analysis for {product_id}: {e}")
+            return {
+                "action": "HOLD",
+                "decision": "HOLD",
+                "confidence": 0,
+                "reasoning": f"Error during multi-strategy analysis: {str(e)}",
+                "product_id": product_id,
+                "timestamp": datetime.utcnow().isoformat(),
+                "error": str(e)
+            }
             
             # 3. Process the LLM decision
             decision = analysis_result.get("decision", "HOLD")
