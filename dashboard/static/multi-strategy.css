@@ -1,0 +1,168 @@
+/* Multi-Strategy Analysis Styles */
+.multi-strategy-section {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+}
+
+.strategy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.market-regime-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.market-regime-badge.bull {
+    background-color: #28a745 !important;
+}
+
+.market-regime-badge.bear {
+    background-color: #dc3545 !important;
+}
+
+.market-regime-badge.sideways {
+    background-color: #6c757d !important;
+}
+
+.combined-signal {
+    background: white;
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.confidence-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.confidence-bar {
+    flex: 1;
+    height: 6px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #dc3545 0%, #ffc107 50%, #28a745 100%);
+    transition: width 0.3s ease;
+}
+
+.confidence-text {
+    font-weight: 600;
+    min-width: 35px;
+    text-align: right;
+}
+
+.individual-strategies {
+    background: white;
+    border-radius: 6px;
+    padding: 8px;
+    margin-top: 0.5rem;
+}
+
+.strategy-signals {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.strategy-signal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.strategy-name {
+    font-weight: 500;
+    flex: 1;
+}
+
+.strategy-action {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    margin: 0 0.5rem;
+}
+
+.strategy-action.BUY {
+    background-color: #28a745 !important;
+}
+
+.strategy-action.SELL {
+    background-color: #dc3545 !important;
+}
+
+.strategy-action.HOLD {
+    background-color: #6c757d !important;
+}
+
+.strategy-confidence {
+    font-size: 0.8rem;
+    color: #6c757d;
+    min-width: 40px;
+    text-align: right;
+}
+
+.expand-strategies {
+    width: 100%;
+    border: 1px solid #dee2e6;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.expand-strategies:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.expand-strategies i {
+    transition: transform 0.2s ease;
+}
+
+.expand-strategies.expanded i {
+    transform: rotate(180deg);
+}
+
+.combined-action-badge.BUY {
+    background-color: #28a745 !important;
+}
+
+.combined-action-badge.SELL {
+    background-color: #dc3545 !important;
+}
+
+.combined-action-badge.HOLD {
+    background-color: #6c757d !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .strategy-signal {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    
+    .strategy-name {
+        font-size: 0.8rem;
+    }
+    
+    .strategy-action,
+    .strategy-confidence {
+        font-size: 0.75rem;
+    }
+}
