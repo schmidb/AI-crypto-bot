@@ -225,7 +225,7 @@ COINBASE_API_SECRET=your_private_key
 # Google Cloud (for AI analysis)
 GOOGLE_CLOUD_PROJECT=your_project_id
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
-LLM_MODEL=gemini-2.5-pro-preview-05-06
+LLM_MODEL=gemini-2.5-pro
 
 # Push Notifications (Pushover)
 NOTIFICATIONS_ENABLED=true

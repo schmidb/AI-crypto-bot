@@ -64,8 +64,8 @@ echo "Google Cloud credentials secret created successfully!"
 # Create secret for bot configuration
 echo "Creating bot configuration secret..."
 read -p "Enter your Google Cloud Project ID: " GCP_PROJECT_ID
-read -p "Enter LLM Model (default: gemini-2.5-pro-preview-05-06): " LLM_MODEL
-LLM_MODEL=${LLM_MODEL:-"gemini-2.5-pro-preview-05-06"}
+read -p "Enter LLM Model (default: gemini-2.5-pro): " LLM_MODEL
+LLM_MODEL=${LLM_MODEL:-"gemini-2.5-pro"}
 
 aws secretsmanager create-secret \
     --name "crypto-bot/configuration" \

@@ -104,33 +104,51 @@ class DashboardUpdater:
             
             # Extract and append data
             timestamp = datetime.datetime.now().isoformat()
-            portfolio_value_usd = float(portfolio.get("portfolio_value_usd", 0))  # Keep for backward compatibility
-            portfolio_value_eur = float(portfolio.get("portfolio_value_eur", 0))  # Primary value
+            
+            # Handle portfolio values that might be dictionaries or numbers
+            portfolio_value_usd_raw = portfolio.get("portfolio_value_usd", 0)
+            portfolio_value_eur_raw = portfolio.get("portfolio_value_eur", 0)
+            
+            # Convert to float, handling dict case
+            if isinstance(portfolio_value_usd_raw, dict):
+                portfolio_value_usd = float(portfolio_value_usd_raw.get("amount", 0))
+            else:
+                portfolio_value_usd = float(portfolio_value_usd_raw) if portfolio_value_usd_raw else 0
+                
+            if isinstance(portfolio_value_eur_raw, dict):
+                portfolio_value_eur = float(portfolio_value_eur_raw.get("amount", 0))
+            else:
+                portfolio_value_eur = float(portfolio_value_eur_raw) if portfolio_value_eur_raw else 0
             
             # Extract asset data with validation
             btc_data = portfolio.get("BTC", {})
             eth_data = portfolio.get("ETH", {})
             sol_data = portfolio.get("SOL", {})
             usd_data = portfolio.get("USD", {})
+            eur_data = portfolio.get("EUR", {})  # Add EUR support
             
             if not isinstance(btc_data, dict): btc_data = {"amount": 0, "last_price_eur": 0}
             if not isinstance(eth_data, dict): eth_data = {"amount": 0, "last_price_eur": 0}
             if not isinstance(sol_data, dict): sol_data = {"amount": 0, "last_price_eur": 0}
             if not isinstance(usd_data, dict): usd_data = {"amount": 0}
+            if not isinstance(eur_data, dict): eur_data = {"amount": 0}
             
             btc_amount = float(btc_data.get("amount", 0))
             eth_amount = float(eth_data.get("amount", 0))
             sol_amount = float(sol_data.get("amount", 0))
             usd_amount = float(usd_data.get("amount", 0))
+            eur_amount = float(eur_data.get("amount", 0))  # Use EUR amount instead of USD
             btc_price = float(btc_data.get("last_price_eur", 0))  # Use EUR prices
             eth_price = float(eth_data.get("last_price_eur", 0))  # Use EUR prices
             sol_price = float(sol_data.get("last_price_eur", 0))  # Use EUR prices
             
+            # Use EUR amount instead of USD amount for the CSV
             with open(history_file, "a") as f:
-                f.write(f"{timestamp},{portfolio_value_usd},{btc_amount},{eth_amount},{sol_amount},{usd_amount},{btc_price},{eth_price},{sol_price},{portfolio_value_eur}\n")
+                f.write(f"{timestamp},{portfolio_value_usd},{btc_amount},{eth_amount},{sol_amount},{eur_amount},{btc_price},{eth_price},{sol_price},{portfolio_value_eur}\n")
                 
         except Exception as e:
             logger.error(f"Error appending portfolio history: {e}")
+            logger.debug(f"Portfolio data causing error: {portfolio}")
     
     def _update_config_data(self) -> None:
         """Update configuration data for the dashboard"""
@@ -244,14 +262,18 @@ class DashboardUpdater:
             # Get latest decision data for each asset
             for asset in assets:
                 try:
-                    # Read the latest decision file directly
+                    # Read the latest decision file directly, excluding *_latest.json files
                     import glob
+                    import os
                     pattern = f"data/{asset}_EUR_*.json"  # Updated to EUR
                     files = glob.glob(pattern)
                     
+                    # Filter out *_latest.json files as they may contain stale data
+                    files = [f for f in files if not f.endswith('_latest.json')]
+                    
                     if files:
-                        # Get the latest file
-                        latest_file = sorted(files)[-1]
+                        # Sort by modification time to get the truly latest file
+                        latest_file = max(files, key=os.path.getmtime)
                         with open(latest_file, "r") as f:
                             decision_data = json.load(f)
                         

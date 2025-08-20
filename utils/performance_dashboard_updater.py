@@ -146,11 +146,20 @@ class PerformanceDashboardUpdater:
             sorted_snapshots = sorted(snapshots, key=lambda x: x["timestamp"])
             
             # Generate portfolio value chart data
+            portfolio_values = []
+            for s in sorted_snapshots:
+                value_raw = s["total_value_eur"]
+                if isinstance(value_raw, dict):
+                    value = float(value_raw.get("amount", 0))
+                else:
+                    value = float(value_raw) if value_raw else 0
+                portfolio_values.append(value)
+            
             portfolio_chart = {
                 "labels": [s["timestamp"] for s in sorted_snapshots],
                 "datasets": [{
                     "label": "Portfolio Value (EUR)",
-                    "data": [s["total_value_eur"] for s in sorted_snapshots],
+                    "data": portfolio_values,
                     "borderColor": "#008cba",
                     "backgroundColor": "rgba(0, 140, 186, 0.1)",
                     "fill": True,
@@ -163,8 +172,19 @@ class PerformanceDashboardUpdater:
             returns_labels = []
             
             for i in range(1, len(sorted_snapshots)):
-                prev_value = sorted_snapshots[i-1]["total_value_eur"]
-                curr_value = sorted_snapshots[i]["total_value_eur"]
+                prev_value_raw = sorted_snapshots[i-1]["total_value_eur"]
+                curr_value_raw = sorted_snapshots[i]["total_value_eur"]
+                
+                # Handle both dict and float formats
+                if isinstance(prev_value_raw, dict):
+                    prev_value = float(prev_value_raw.get("amount", 0))
+                else:
+                    prev_value = float(prev_value_raw) if prev_value_raw else 0
+                    
+                if isinstance(curr_value_raw, dict):
+                    curr_value = float(curr_value_raw.get("amount", 0))
+                else:
+                    curr_value = float(curr_value_raw) if curr_value_raw else 0
                 
                 if prev_value > 0:
                     daily_return = ((curr_value - prev_value) / prev_value) * 100
@@ -185,10 +205,19 @@ class PerformanceDashboardUpdater:
             
             # Generate drawdown chart data
             drawdown_data = []
-            peak = sorted_snapshots[0]["total_value_eur"]
+            peak_raw = sorted_snapshots[0]["total_value_eur"]
+            if isinstance(peak_raw, dict):
+                peak = float(peak_raw.get("amount", 0))
+            else:
+                peak = float(peak_raw) if peak_raw else 0
             
             for snapshot in sorted_snapshots:
-                value = snapshot["total_value_eur"]
+                value_raw = snapshot["total_value_eur"]
+                if isinstance(value_raw, dict):
+                    value = float(value_raw.get("amount", 0))
+                else:
+                    value = float(value_raw) if value_raw else 0
+                    
                 if value > peak:
                     peak = value
                 
@@ -229,8 +258,20 @@ class PerformanceDashboardUpdater:
             
             # Get current vs initial values
             sorted_snapshots = sorted(snapshots, key=lambda x: x["timestamp"])
-            initial_value = sorted_snapshots[0]["total_value_eur"]
-            current_value = sorted_snapshots[-1]["total_value_eur"]
+            
+            initial_value_raw = sorted_snapshots[0]["total_value_eur"]
+            current_value_raw = sorted_snapshots[-1]["total_value_eur"]
+            
+            # Handle both dict and float formats
+            if isinstance(initial_value_raw, dict):
+                initial_value = float(initial_value_raw.get("amount", 0))
+            else:
+                initial_value = float(initial_value_raw) if initial_value_raw else 0
+                
+            if isinstance(current_value_raw, dict):
+                current_value = float(current_value_raw.get("amount", 0))
+            else:
+                current_value = float(current_value_raw) if current_value_raw else 0
             
             # Calculate additional metrics
             days_tracked = len(snapshots)

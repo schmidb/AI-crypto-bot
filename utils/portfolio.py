@@ -265,32 +265,66 @@ class Portfolio:
         Returns:
             Total portfolio value in USD
         """
-        total_value = 0.0
-        initial_value = 0.0
+        total_value_usd = 0.0
+        total_value_eur = 0.0
+        initial_value_usd = 0.0
+        initial_value_eur = 0.0
+        
+        # Fields to exclude from asset calculation (these are calculated values, not assets)
+        excluded_fields = {
+            'trades_executed', 'portfolio_value_usd', 'portfolio_value_eur', 
+            'initial_value_usd', 'initial_value_eur', 'last_updated'
+        }
         
         # Calculate value for all assets
         for asset, data in self.data.items():
-            if isinstance(data, dict) and "amount" in data:
-                if asset == 'USD':
-                    # USD value is direct
-                    asset_value = data["amount"]
-                    initial_asset_value = data["initial_amount"]
-                else:
-                    # Crypto value = amount * price
-                    price = data.get("last_price_usd", 0.0)
-                    asset_value = data["amount"] * price
-                    initial_asset_value = data["initial_amount"] * price
+            # Skip calculated fields and non-asset entries
+            if asset in excluded_fields or not isinstance(data, dict) or "amount" not in data:
+                continue
                 
-                total_value += asset_value
-                initial_value += initial_asset_value
+            if asset == 'USD':
+                # USD value is direct
+                asset_value_usd = data["amount"]
+                initial_asset_value_usd = data.get("initial_amount", 0)
+                # Convert USD to EUR (approximate rate: 1 USD = 0.92 EUR)
+                asset_value_eur = asset_value_usd * 0.92
+                initial_asset_value_eur = initial_asset_value_usd * 0.92
+            elif asset == 'EUR':
+                # EUR value is direct
+                asset_value_eur = data["amount"]
+                initial_asset_value_eur = data.get("initial_amount", 0)
+                # Convert EUR to USD (approximate rate: 1 EUR = 1.09 USD)
+                asset_value_usd = asset_value_eur * 1.09
+                initial_asset_value_usd = initial_asset_value_eur * 1.09
+            else:
+                # Crypto value = amount * price
+                price_usd = data.get("last_price_usd", 0.0)
+                price_eur = data.get("last_price_eur", price_usd * 0.92 if price_usd > 0 else 0.0)
+                
+                asset_value_usd = data["amount"] * price_usd
+                asset_value_eur = data["amount"] * price_eur
+                initial_asset_value_usd = data.get("initial_amount", 0) * price_usd
+                initial_asset_value_eur = data.get("initial_amount", 0) * price_eur
+            
+            # Add to current portfolio totals
+            total_value_usd += asset_value_usd
+            total_value_eur += asset_value_eur
+            
+            # Add to initial value totals (separate calculation)
+            initial_value_usd += initial_asset_value_usd
+            initial_value_eur += initial_asset_value_eur
         
-        self.data["portfolio_value_usd"] = total_value
+        # Store current portfolio values
+        self.data["portfolio_value_usd"] = total_value_usd
+        self.data["portfolio_value_eur"] = {"amount": total_value_eur, "last_price_eur": 1.0}
         
         # Calculate initial value if not set or if it's zero
         if self.data.get("initial_value_usd", 0.0) == 0.0:
-            self.data["initial_value_usd"] = initial_value
+            self.data["initial_value_usd"] = initial_value_usd
+        if self.data.get("initial_value_eur", {}).get("amount", 0.0) == 0.0:
+            self.data["initial_value_eur"] = {"amount": initial_value_eur, "last_price_eur": 1.0}
         
-        return total_value
+        return total_value_usd
         
     def get_asset_allocation(self) -> Dict[str, float]:
         """
@@ -420,7 +454,7 @@ class Portfolio:
         Update portfolio with data from exchange.
         
         Args:
-            exchange_data: Portfolio data from exchange
+            exchange_data: Complete portfolio data from exchange (from get_portfolio())
             
         Returns:
             Dictionary with update status
@@ -429,50 +463,85 @@ class Portfolio:
             # Validate exchange data
             if not isinstance(exchange_data, dict):
                 return {
-                    "success": False,
+                    "status": "error",
                     "message": f"Invalid exchange data type: {type(exchange_data)}"
                 }
             
             updated_assets = []
             
+            # Update portfolio metadata
+            if "last_updated" in exchange_data:
+                self.data["last_updated"] = exchange_data["last_updated"]
+            
+            # Update portfolio values
+            for key in ["portfolio_value_usd", "portfolio_value_eur", "initial_value_usd", "initial_value_eur"]:
+                if key in exchange_data:
+                    value = exchange_data[key]
+                    # Handle both float and dict formats for EUR values
+                    if key.endswith("_eur") and isinstance(value, (int, float)):
+                        self.data[key] = {"amount": float(value), "last_price_eur": 1.0}
+                    else:
+                        self.data[key] = value
+            
             # Update all assets present in exchange data
             for asset, asset_data in exchange_data.items():
+                # Skip non-asset keys
+                if asset in ["trades_executed", "portfolio_value_usd", "portfolio_value_eur", 
+                           "initial_value_usd", "initial_value_eur", "last_updated"]:
+                    continue
+                    
                 if isinstance(asset_data, dict) and "amount" in asset_data:
                     # Ensure asset exists in portfolio
                     if asset not in self.data:
                         if asset == 'USD':
                             self.data[asset] = {"amount": 0.0, "initial_amount": 0.0}
+                        elif asset == 'EUR':
+                            self.data[asset] = {"amount": 0.0, "initial_amount": 0.0}
                         else:
-                            self.data[asset] = {"amount": 0.0, "initial_amount": 0.0, "last_price_usd": 0.0}
+                            self.data[asset] = {"amount": 0.0, "initial_amount": 0.0, "last_price_usd": 0.0, "last_price_eur": 0.0}
                     
                     # Update amount
                     old_amount = self.data[asset]["amount"]
                     new_amount = asset_data.get("amount", old_amount)
                     self.data[asset]["amount"] = new_amount
                     
-                    # Update price if provided
-                    if asset != 'USD' and "last_price_usd" in asset_data:
-                        self.data[asset]["last_price_usd"] = asset_data["last_price_usd"]
+                    # Update initial amount if provided
+                    if "initial_amount" in asset_data:
+                        self.data[asset]["initial_amount"] = asset_data["initial_amount"]
+                    
+                    # Update prices if provided
+                    if asset not in ['USD', 'EUR']:
+                        if "last_price_usd" in asset_data:
+                            self.data[asset]["last_price_usd"] = asset_data["last_price_usd"]
+                        if "last_price_eur" in asset_data:
+                            self.data[asset]["last_price_eur"] = asset_data["last_price_eur"]
+                        elif "last_price_usd" in asset_data:
+                            # Convert USD price to EUR (approximate rate: 1 USD = 0.92 EUR)
+                            self.data[asset]["last_price_eur"] = asset_data["last_price_usd"] * 0.92
                     
                     updated_assets.append(f"{asset}: {old_amount} -> {new_amount}")
             
-            # Recalculate portfolio value
+            # Recalculate portfolio value to ensure consistency
             self._calculate_portfolio_value()
             
             # Save changes
             self.save()
             
             return {
-                "success": True,
+                "status": "success",
                 "message": f"Portfolio updated from exchange data: {', '.join(updated_assets)}",
-                "portfolio_value_usd": self.data["portfolio_value_usd"],
+                "portfolio_value_usd": self.data.get("portfolio_value_usd", 0),
+                "portfolio_value_eur": self.data.get("portfolio_value_eur", {"amount": 0}),
                 "updated_assets": len(updated_assets)
             }
             
         except Exception as e:
             logger.error(f"Error updating portfolio from exchange: {e}")
+            logger.error(f"Exchange data keys: {list(exchange_data.keys()) if isinstance(exchange_data, dict) else 'Not a dict'}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return {
-                "success": False,
+                "status": "error",
                 "message": f"Error updating portfolio: {str(e)}"
             }
     
@@ -519,6 +588,46 @@ class Portfolio:
             return 0.0
             
         return self.data[asset].get("amount", 0.0)
+    
+    def update_asset_amount(self, asset: str, amount_change: float) -> None:
+        """
+        Update asset amount by adding the change.
+        
+        Args:
+            asset: Asset symbol (BTC, ETH, SOL, EUR, etc.)
+            amount_change: Amount to add (can be negative for subtraction)
+        """
+        if asset not in self.data:
+            logger.warning(f"Asset {asset} not found in portfolio, initializing")
+            self.data[asset] = {"amount": 0.0, "last_price_usd": 0.0, "last_price_eur": 0.0}
+        
+        current_amount = self.data[asset].get("amount", 0.0)
+        new_amount = current_amount + amount_change
+        self.data[asset]["amount"] = max(0.0, new_amount)  # Prevent negative amounts
+        
+        logger.debug(f"Updated {asset} amount: {current_amount} + {amount_change} = {self.data[asset]['amount']}")
+    
+    def update_asset_price(self, asset: str, price_usd: float, price_eur: float = None) -> None:
+        """
+        Update asset price.
+        
+        Args:
+            asset: Asset symbol (BTC, ETH, SOL, etc.)
+            price_usd: Price in USD
+            price_eur: Price in EUR (optional, will be calculated if not provided)
+        """
+        if asset not in self.data:
+            logger.warning(f"Asset {asset} not found in portfolio, initializing")
+            self.data[asset] = {"amount": 0.0, "last_price_usd": 0.0, "last_price_eur": 0.0}
+        
+        self.data[asset]["last_price_usd"] = price_usd
+        if price_eur is not None:
+            self.data[asset]["last_price_eur"] = price_eur
+        else:
+            # Assume EUR/USD rate of ~0.85 if not provided
+            self.data[asset]["last_price_eur"] = price_usd * 0.85
+        
+        logger.debug(f"Updated {asset} price: ${price_usd:.2f} USD, €{self.data[asset]['last_price_eur']:.2f} EUR")
     
     def get_asset_price(self, asset: str) -> float:
         """

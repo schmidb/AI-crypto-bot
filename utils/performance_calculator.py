@@ -47,8 +47,19 @@ class PerformanceCalculator:
             # Sort snapshots by timestamp
             sorted_snapshots = sorted(snapshots, key=lambda x: x["timestamp"])
             
-            initial_value = sorted_snapshots[0]["total_value_eur"]
-            final_value = sorted_snapshots[-1]["total_value_eur"]
+            initial_value_raw = sorted_snapshots[0]["total_value_eur"]
+            final_value_raw = sorted_snapshots[-1]["total_value_eur"]
+            
+            # Handle both dict and float formats for total_value_eur
+            if isinstance(initial_value_raw, dict):
+                initial_value = float(initial_value_raw.get("amount", 0))
+            else:
+                initial_value = float(initial_value_raw) if initial_value_raw else 0
+                
+            if isinstance(final_value_raw, dict):
+                final_value = float(final_value_raw.get("amount", 0))
+            else:
+                final_value = float(final_value_raw) if final_value_raw else 0
             
             if initial_value <= 0:
                 return {"error": "Invalid initial portfolio value"}
@@ -235,8 +246,19 @@ class PerformanceCalculator:
             daily_returns = []
             
             for i in range(1, len(sorted_snapshots)):
-                prev_value = sorted_snapshots[i-1]["total_value_eur"]
-                curr_value = sorted_snapshots[i]["total_value_eur"]
+                prev_value_raw = sorted_snapshots[i-1]["total_value_eur"]
+                curr_value_raw = sorted_snapshots[i]["total_value_eur"]
+                
+                # Handle both dict and float formats
+                if isinstance(prev_value_raw, dict):
+                    prev_value = float(prev_value_raw.get("amount", 0))
+                else:
+                    prev_value = float(prev_value_raw) if prev_value_raw else 0
+                    
+                if isinstance(curr_value_raw, dict):
+                    curr_value = float(curr_value_raw.get("amount", 0))
+                else:
+                    curr_value = float(curr_value_raw) if curr_value_raw else 0
                 
                 if prev_value > 0:
                     daily_return = (curr_value - prev_value) / prev_value
@@ -287,7 +309,16 @@ class PerformanceCalculator:
             if len(snapshots) < 2:
                 return 0.0
             
-            values = [s["total_value_eur"] for s in snapshots]
+            # Handle both dict and float formats for total_value_eur
+            values = []
+            for s in snapshots:
+                value_raw = s["total_value_eur"]
+                if isinstance(value_raw, dict):
+                    value = float(value_raw.get("amount", 0))
+                else:
+                    value = float(value_raw) if value_raw else 0
+                values.append(value)
+            
             peak = values[0]
             max_drawdown = 0.0
             

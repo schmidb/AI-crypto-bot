@@ -573,6 +573,16 @@ Respond with ONLY a JSON object in this format:
             # Get indicators and market data
             indicators = data.get("indicators", {})
             market_data = data.get("market_data", {})
+            
+            # Debug logging to verify LLM input data
+            logger.info(f"🔍 LLM INPUT DEBUG for {product_id}:")
+            logger.info(f"  Current Price: {current_price}")
+            logger.info(f"  Market Data: {market_data}")
+            logger.info(f"  Key Indicators:")
+            for key in ['rsi', 'macd', 'macd_histogram', 'bb_upper', 'bb_lower', 'bb_middle']:
+                if key in indicators:
+                    logger.info(f"    {key}: {indicators[key]}")
+            logger.info(f"  Historical Data Points: {len(historical_data)}")
 
             # Create additional context from indicators
             additional_context = {

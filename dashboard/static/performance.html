@@ -1015,6 +1015,26 @@
     </script>
     
     <script>
+        // Safe number formatting functions
+        function safeToFixed(value, decimals = 2) {
+            const num = parseFloat(value);
+            return isNaN(num) ? '0.00' : num.toFixed(decimals);
+        }
+        
+        function safeNumber(value, defaultValue = 0) {
+            const num = parseFloat(value);
+            return isNaN(num) ? defaultValue : num;
+        }
+        
+        function formatCurrency(value) {
+            return '€' + safeToFixed(value, 2);
+        }
+        
+        function formatPercentage(value, decimals = 2) {
+            const num = safeNumber(value);
+            return (num >= 0 ? '+' : '') + safeToFixed(num, decimals) + '%';
+        }
+
         // Global variables for charts and data
         let portfolioChart = null;
         let returnsDistributionChart = null;
@@ -1253,7 +1273,7 @@
                                 },
                                 ticks: {
                                     callback: function(value) {
-                                        return '€' + value.toFixed(2);
+                                        return formatCurrency(value);
                                     }
                                 }
                             }
@@ -1319,7 +1339,7 @@
                                 },
                                 ticks: {
                                     callback: function(value) {
-                                        return value.toFixed(2) + '%';
+                                        return safeToFixed(value) + '%';
                                     }
                                 }
                             }
@@ -1385,7 +1405,7 @@
                                 },
                                 ticks: {
                                     callback: function(value) {
-                                        return value.toFixed(2) + '%';
+                                        return safeToFixed(value) + '%';
                                     }
                                 }
                             }
@@ -1529,16 +1549,15 @@
             let totalReturn = 0;
             
             if (portfolio) {
-                currentValue = portfolio.portfolio_value_eur || 0;
-                initialValue = portfolio.initial_value_eur || currentValue;
+                currentValue = safeNumber(portfolio.portfolio_value_eur);
+                initialValue = safeNumber(portfolio.initial_value_eur, currentValue);
                 totalReturn = initialValue > 0 ? ((currentValue - initialValue) / initialValue * 100) : 0;
             }
             
             // Update main display with safe values
-            document.getElementById('total-return-display').textContent = 
-                (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(2) + '%';
-            document.getElementById('current-value').textContent = '€' + currentValue.toFixed(2);
-            document.getElementById('initial-value').textContent = '€' + initialValue.toFixed(2);
+            document.getElementById('total-return-display').textContent = formatPercentage(totalReturn);
+            document.getElementById('current-value').textContent = formatCurrency(currentValue);
+            document.getElementById('initial-value').textContent = formatCurrency(initialValue);
             
             // Calculate days active
             if (portfolioHistory && portfolioHistory.length > 0) {
@@ -1569,17 +1588,14 @@
                 const metrics = calculatePerformanceMetrics(portfolioHistory);
                 
                 // Safely update metrics with fallback values
-                document.getElementById('daily-return').textContent = 
-                    (metrics.avgDailyReturn >= 0 ? '+' : '') + (metrics.avgDailyReturn || 0).toFixed(2) + '%';
-                document.getElementById('max-drawdown').textContent = 
-                    '-' + (metrics.maxDrawdown || 0).toFixed(2) + '%';
-                document.getElementById('sharpe-ratio').textContent = (metrics.sharpeRatio || 0).toFixed(2);
-                document.getElementById('volatility-30d').textContent = (metrics.volatility || 0).toFixed(2) + '%';
-                document.getElementById('best-day').textContent = '+' + (metrics.bestDay || 0).toFixed(2) + '%';
-                document.getElementById('worst-day').textContent = (metrics.worstDay || 0).toFixed(2) + '%';
-                document.getElementById('avg-daily-return').textContent = 
-                    (metrics.avgDailyReturn >= 0 ? '+' : '') + (metrics.avgDailyReturn || 0).toFixed(2) + '%';
-                document.getElementById('profitable-days').textContent = (metrics.profitableDays || 0).toFixed(0) + '%';
+                document.getElementById('daily-return').textContent = formatPercentage(metrics.avgDailyReturn);
+                document.getElementById('max-drawdown').textContent = '-' + safeToFixed(metrics.maxDrawdown) + '%';
+                document.getElementById('sharpe-ratio').textContent = safeToFixed(metrics.sharpeRatio);
+                document.getElementById('volatility-30d').textContent = safeToFixed(metrics.volatility) + '%';
+                document.getElementById('best-day').textContent = '+' + safeToFixed(metrics.bestDay) + '%';
+                document.getElementById('worst-day').textContent = safeToFixed(metrics.worstDay) + '%';
+                document.getElementById('avg-daily-return').textContent = formatPercentage(metrics.avgDailyReturn);
+                document.getElementById('profitable-days').textContent = safeToFixed(metrics.profitableDays, 0) + '%';
             } else {
                 // Set default values when no portfolio history is available
                 document.getElementById('daily-return').textContent = '+0.00%';
@@ -1722,7 +1738,7 @@
                             beginAtZero: false,
                             ticks: {
                                 callback: function(value) {
-                                    return '€' + value.toFixed(2);
+                                    return formatCurrency(value);
                                 }
                             },
                             grid: {

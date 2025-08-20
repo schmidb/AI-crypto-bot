@@ -52,14 +52,19 @@ class MeanReversionStrategy(BaseStrategy):
             # Get technical indicators with safe conversion
             rsi = float(technical_indicators.get('rsi', 50))
             
-            # Get Bollinger Band data - data collector uses bb_upper, bb_lower, bb_middle keys
-            bollinger = {
-                'upper': technical_indicators.get('bb_upper', 0),
-                'lower': technical_indicators.get('bb_lower', 0),
-                'middle': technical_indicators.get('bb_middle', 0)
-            }
+            # Get Bollinger Band data - now provided by strategy manager as 'bollinger' key
+            bollinger = technical_indicators.get('bollinger', {})
             
-            current_price = float(technical_indicators.get('current_price', 0))
+            # Fallback to direct bb_* keys if bollinger dict not provided
+            if not bollinger or not any(bollinger.values()):
+                bollinger = {
+                    'upper': technical_indicators.get('bb_upper', 0),
+                    'lower': technical_indicators.get('bb_lower', 0),
+                    'middle': technical_indicators.get('bb_middle', 0)
+                }
+            
+            # Get current price from market data instead of technical indicators
+            current_price = float(market_data.get('price', 0))
             
             # Calculate mean reversion signals
             rsi_signal = self._analyze_rsi_reversion(rsi)
@@ -128,7 +133,14 @@ class MeanReversionStrategy(BaseStrategy):
     def _analyze_bollinger_reversion(self, bollinger: Dict, current_price: float) -> Dict:
         """Analyze Bollinger Bands for mean reversion signals"""
         
-        if not bollinger or not current_price:
+        if not current_price:
+            return {
+                "signal": "neutral",
+                "strength": 0.0,
+                "reason": "No current price data"
+            }
+            
+        if not bollinger:
             return {
                 "signal": "neutral",
                 "strength": 0.0,
@@ -143,7 +155,7 @@ class MeanReversionStrategy(BaseStrategy):
             return {
                 "signal": "neutral",
                 "strength": 0.0,
-                "reason": "Incomplete Bollinger Band data"
+                "reason": f"Incomplete Bollinger Band data: upper={upper_band}, lower={lower_band}, middle={middle_band}"
             }
         
         # Calculate position relative to bands

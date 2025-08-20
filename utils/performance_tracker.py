@@ -177,9 +177,16 @@ class PerformanceTracker:
                 return False
             
             # Create snapshot entry
+            # Handle both dict and float formats for total_value_eur
+            total_value_eur_raw = portfolio_data.get("total_value_eur", 0.0)
+            if isinstance(total_value_eur_raw, dict):
+                total_value_eur = float(total_value_eur_raw.get("amount", 0))
+            else:
+                total_value_eur = float(total_value_eur_raw) if total_value_eur_raw else 0
+            
             snapshot = {
                 "timestamp": current_time,
-                "total_value_eur": portfolio_data.get("total_value_eur", 0.0),
+                "total_value_eur": total_value_eur,
                 "portfolio_composition": portfolio_data.get("portfolio_composition", {}),
                 "asset_prices": portfolio_data.get("asset_prices", {}),
                 "snapshot_type": portfolio_data.get("snapshot_type", "scheduled"),
@@ -345,8 +352,19 @@ class PerformanceTracker:
                 return {"error": f"Insufficient data for {period} period"}
             
             # Calculate basic performance metrics
-            initial_value = filtered_snapshots[0]["total_value_eur"]
-            current_value = filtered_snapshots[-1]["total_value_eur"]
+            initial_value_raw = filtered_snapshots[0]["total_value_eur"]
+            current_value_raw = filtered_snapshots[-1]["total_value_eur"]
+            
+            # Handle both dict and float formats for total_value_eur
+            if isinstance(initial_value_raw, dict):
+                initial_value = float(initial_value_raw.get("amount", 0))
+            else:
+                initial_value = float(initial_value_raw) if initial_value_raw else 0
+                
+            if isinstance(current_value_raw, dict):
+                current_value = float(current_value_raw.get("amount", 0))
+            else:
+                current_value = float(current_value_raw) if current_value_raw else 0
             
             total_return = ((current_value - initial_value) / initial_value) * 100 if initial_value > 0 else 0
             

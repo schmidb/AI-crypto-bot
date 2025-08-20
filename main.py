@@ -12,7 +12,9 @@ from typing import Dict, List, Any
 from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer
 from data_collector import DataCollector
-from trading_strategy import TradingStrategy
+from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
+from utils.portfolio import Portfolio
+from utils.capital_manager import CapitalManager
 from utils.dashboard_updater import DashboardUpdater
 from utils.webserver_sync import WebServerSync
 from utils.tax_report import TaxReportGenerator
@@ -60,7 +62,35 @@ class TradingBot:
         self.coinbase_client = CoinbaseClient()
         self.llm_analyzer = LLMAnalyzer()
         self.data_collector = DataCollector(self.coinbase_client)
-        self.trading_strategy = TradingStrategy(self.config, self.llm_analyzer, self.data_collector)
+        
+        logger.info(f"✅ LLM analyzer initialized: {self.llm_analyzer is not None}")
+        
+        # Initialize new multi-strategy framework with Phase 3 support
+        from utils.news_sentiment import NewsSentimentAnalyzer
+        from utils.volatility_analyzer import VolatilityAnalyzer
+        
+        # Initialize Phase 3 analyzers
+        self.news_sentiment_analyzer = NewsSentimentAnalyzer()
+        self.volatility_analyzer = VolatilityAnalyzer()
+        
+        logger.info(f"✅ Phase 3 analyzers initialized - News: {self.news_sentiment_analyzer is not None}, Volatility: {self.volatility_analyzer is not None}")
+        
+        self.strategy_manager = AdaptiveStrategyManager(
+            self.config, 
+            self.llm_analyzer,
+            self.news_sentiment_analyzer,
+            self.volatility_analyzer
+        )
+        
+        # Initialize capital manager for sustainable trading
+        self.capital_manager = CapitalManager(self.config)
+        
+        logger.info("✅ Strategy manager initialized successfully")
+        self.portfolio = Portfolio("data/portfolio.json")
+        
+        # Initialize trade logger (extracted from old TradingStrategy)
+        from utils.trade_logger import TradeLogger
+        self.trade_logger = TradeLogger()
         
         # Initialize dashboard updater (local data only)
         self.dashboard_updater = DashboardUpdater()
@@ -317,7 +347,7 @@ class TradingBot:
                     logger.error(f"Error getting market data for {product_id} during initialization: {e}")
             
             # Load existing trade history
-            trades = self.trading_strategy.trade_logger.get_recent_trades(10)
+            trades = self.trade_logger.get_recent_trades(10)
             
             # If we have market data but no trades or trades with missing prices, create placeholder trades
             if market_data and (not trades or any(trade.get('price', 0) == 0 for trade in trades)):
@@ -355,7 +385,7 @@ class TradingBot:
             }
             
             # Get portfolio data
-            portfolio = self.trading_strategy.portfolio
+            portfolio = self.portfolio.to_dict()
             
             # Update dashboard with loaded data
             self.dashboard_updater.update_dashboard(trading_data, portfolio)
@@ -375,14 +405,22 @@ class TradingBot:
             logger.info("Syncing portfolio with Coinbase...")
             
             # Get current internal portfolio state
-            current_portfolio = self.trading_strategy.portfolio.copy()
+            current_portfolio = self.portfolio.to_dict().copy()
             
             # Refresh portfolio from Coinbase
-            sync_result = self.trading_strategy.refresh_portfolio_from_coinbase()
+            # Get complete portfolio data from Coinbase (includes EUR prices)
+            logger.info("Calling get_portfolio() from Coinbase client...")
+            portfolio_data = self.coinbase_client.get_portfolio()
+            logger.info(f"Received portfolio data keys: {list(portfolio_data.keys()) if portfolio_data else 'None'}")
+            if portfolio_data:
+                sync_result = self.portfolio.update_from_exchange(portfolio_data)
+                logger.info(f"Portfolio sync result: {sync_result.get('status', 'unknown')}")
+            else:
+                sync_result = {"status": "error", "message": "Failed to get portfolio data from Coinbase"}
             
             if sync_result.get("status") == "success":
                 # Get updated portfolio state
-                updated_portfolio = self.trading_strategy.portfolio
+                updated_portfolio = self.portfolio.to_dict()
                 
                 # Log any significant discrepancies
                 discrepancies_found = False
@@ -433,7 +471,81 @@ class TradingBot:
             logger.error(f"Error during portfolio sync: {e}")
             return False
     
-    def run_trading_cycle(self):
+    def _execute_multi_strategy_analysis(self, product_id: str) -> Dict[str, Any]:
+        """Execute multi-strategy analysis for a trading pair"""
+        try:
+            # Get market data and technical indicators
+            market_data = self.data_collector.get_market_data(product_id)
+            
+            # Get historical data for technical indicators (use ONE_HOUR granularity)
+            historical_data = self.data_collector.get_historical_data(product_id, "ONE_HOUR", days_back=7)
+            technical_indicators = self.data_collector.calculate_indicators(historical_data)
+            
+            # Add current price to technical indicators
+            technical_indicators['current_price'] = market_data.get('current_price', 0)
+            
+            # Get current portfolio state
+            portfolio_data = self.portfolio.to_dict()
+            
+            # Get combined signal from all strategies
+            combined_signal = self.strategy_manager.get_combined_signal(
+                market_data, technical_indicators, portfolio_data
+            )
+            
+            # Get individual strategy analysis for detailed reporting
+            individual_strategies = self.strategy_manager.analyze_all_strategies(
+                market_data, technical_indicators, portfolio_data
+            )
+            
+            # Format result to match expected structure
+            result = {
+                "action": combined_signal.action,
+                "decision": combined_signal.action,
+                "confidence": combined_signal.confidence,
+                "reasoning": combined_signal.reasoning,
+                "product_id": product_id,
+                "timestamp": datetime.now().isoformat(),
+                "current_price": technical_indicators.get('current_price', 0),
+                "indicators": technical_indicators,
+                "strategy_details": {
+                    "market_regime": getattr(self.strategy_manager, 'current_market_regime', 'sideways'),
+                    "strategy_weights": self.strategy_manager.strategy_weights,
+                    "individual_strategies": {
+                        name: {
+                            "action": signal.action,
+                            "confidence": signal.confidence,
+                            "reasoning": signal.reasoning,
+                            "position_multiplier": getattr(signal, 'position_multiplier', 1.0)
+                        }
+                        for name, signal in individual_strategies.items()
+                    },
+                    "combined_signal": {
+                        "action": combined_signal.action,
+                        "confidence": combined_signal.confidence,
+                        "reasoning": combined_signal.reasoning,
+                        "position_multiplier": getattr(combined_signal, 'position_multiplier', 1.0)
+                    }
+                },
+                "market_data": market_data,
+                "execution_status": "pending",
+                "trade_executed": False
+            }
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in multi-strategy analysis for {product_id}: {e}")
+            return {
+                "action": "HOLD",
+                "decision": "HOLD", 
+                "confidence": 0,
+                "reasoning": f"Analysis error: {str(e)}",
+                "product_id": product_id,
+                "timestamp": datetime.now().isoformat(),
+                "execution_status": "error",
+                "trade_executed": False
+            }
+
         """Run a single trading cycle for all configured trading pairs"""
         logger.info(f"Starting trading cycle at {datetime.now()}")
         
@@ -453,8 +565,8 @@ class TradingBot:
             logger.info(f"Processing {product_id}")
             
             try:
-                # Execute trading strategy (get decision)
-                decision_result = self.trading_strategy.execute_strategy(product_id)
+                # Execute new multi-strategy analysis
+                decision_result = self._execute_multi_strategy_analysis(product_id)
                 
                 # Execute the actual trade based on the decision
                 trade_result = self._execute_trade(product_id, decision_result)
@@ -490,7 +602,7 @@ class TradingBot:
         try:
             # Get current market data for all trading pairs to ensure fresh prices
             market_data = {}
-            for product_id in TRADING_PAIRS:
+            for product_id in config.TRADING_PAIRS:
                 try:
                     market_data[product_id] = self.data_collector.get_market_data(product_id)
                     logger.info(f"Got fresh market data for {product_id}: price=${market_data[product_id].get('price', 0)}")
@@ -498,7 +610,7 @@ class TradingBot:
                     logger.error(f"Error getting market data for {product_id}: {e}")
             
             # Get recent trades with the latest decisions
-            recent_trades = self.trading_strategy.trade_logger.get_recent_trades(10)
+            recent_trades = self.trade_logger.get_recent_trades(10)
             
             # Convert results to a proper format for the dashboard
             dashboard_data = {
@@ -510,7 +622,7 @@ class TradingBot:
             }
             
             # Get current portfolio data
-            portfolio = self.trading_strategy.portfolio
+            portfolio = self.portfolio.to_dict()
             
             # Ensure portfolio is a dictionary
             if isinstance(portfolio, str):
@@ -659,8 +771,8 @@ class TradingBot:
                     'ai_reasoning': decision_result.get('reasoning', '')
                 }
                 
-                # Use the trading strategy's trade logger
-                self.trading_strategy.trade_logger.log_trade(product_id, decision_result, enhanced_trade_result)
+                # Use the trade logger
+                self.trade_logger.log_trade(product_id, decision_result, enhanced_trade_result)
                 logger.info(f"Trade decision logged for {product_id}: {log_action} - {execution_status}")
             
         except Exception as e:
@@ -668,7 +780,7 @@ class TradingBot:
 
     def _execute_trade(self, product_id: str, decision_result: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Execute actual trade based on AI decision
+        Execute actual trade based on AI decision with capital management
         
         Args:
             product_id: Trading pair (e.g., 'BTC-USD')
@@ -700,8 +812,23 @@ class TradingBot:
                 return execution_result
             
             # Get current portfolio state
-            portfolio = self.trading_strategy.portfolio
+            portfolio = self.portfolio.to_dict()
             asset = product_id.split('-')[0]  # Extract asset (BTC, ETH, SOL)
+            
+            # Check portfolio health and rebalancing needs
+            health_report = self.capital_manager.get_portfolio_health_report(portfolio)
+            logger.info(f"💰 Portfolio health: {health_report['status']} (EUR: {health_report['eur_percent']*100:.1f}%, Trading capital: €{health_report['available_trading_capital']:.2f})")
+            
+            # Check if rebalancing is needed (overrides trading signals)
+            rebalance_target = self.capital_manager.get_rebalancing_target(portfolio)
+            if rebalance_target:
+                logger.warning(f"🔄 Rebalancing needed: {rebalance_target}")
+                if rebalance_target['action'] != action:
+                    execution_result.update({
+                        'execution_status': 'rebalancing_override',
+                        'execution_message': f"Rebalancing required: {rebalance_target['reason']}"
+                    })
+                    return execution_result
             
             # Get current market price
             try:
@@ -750,51 +877,63 @@ class TradingBot:
             }
     
     def _execute_buy_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict, strategy_details: Dict = None) -> Dict[str, Any]:
-        f"""Execute BUY order with {config.BASE_CURRENCY} balance validation"""
+        f"""Execute BUY order with capital management and {config.BASE_CURRENCY} balance validation"""
         try:
-            # Check base currency balance
+            # Calculate original trade size using confidence-based sizing
             base_available = portfolio.get(config.BASE_CURRENCY, {}).get('amount', 0)
+            base_trade_percentage = 0.10 + (confidence / 100.0 * 0.15)  # 10% to 25%
             
-            if base_available <= config.MIN_TRADE_AMOUNT:  # Minimum amount for any trade
-                execution_result.update({
-                    'execution_status': 'insufficient_base',
-                    'execution_message': f'Insufficient {config.BASE_CURRENCY} balance: {config.format_currency(base_available)} (minimum {config.format_currency(config.MIN_TRADE_AMOUNT)} required)',
-                    'available_base': base_available
-                })
-                logger.warning(f"BUY order skipped for {product_id}: Insufficient {config.BASE_CURRENCY} ({config.format_currency(base_available)})")
-                return execution_result
+            # Apply strategy multiplier if available
+            strategy_multiplier = 1.0
+            if strategy_details and 'combined_signal' in strategy_details:
+                strategy_multiplier = strategy_details['combined_signal'].get('position_multiplier', 1.0)
             
-            # Calculate trade size using multi-strategy position sizing
-            position_size = self.trading_strategy.calculate_position_size(
-                decision="BUY",
-                confidence=confidence,
-                available_balance=base_available,
-                strategy_details=strategy_details
+            # Calculate original trade size
+            original_trade_size = base_available * base_trade_percentage * strategy_multiplier
+            
+            # Use capital manager to calculate safe trade size
+            safe_trade_size, capital_reason = self.capital_manager.calculate_safe_trade_size(
+                "BUY", asset, portfolio, original_trade_size
             )
             
-            if position_size == 0:
+            logger.info(f"💰 Capital management: {capital_reason}")
+            
+            if safe_trade_size <= 0:
                 execution_result.update({
-                    'execution_status': 'insufficient_size',
-                    'execution_message': f'Calculated position size too small (below minimum {config.format_currency(config.MIN_TRADE_AMOUNT)})',
-                    'available_base': base_available
+                    'execution_status': 'capital_management_block',
+                    'execution_message': f'Capital management blocked trade: {capital_reason}',
+                    'available_base': base_available,
+                    'original_size': original_trade_size,
+                    'safe_size': safe_trade_size
                 })
-                logger.warning(f"BUY order skipped for {product_id}: Position size too small")
+                logger.warning(f"BUY order blocked by capital management for {product_id}: {capital_reason}")
                 return execution_result
             
-            # Ensure we don't exceed available balance
-            trade_amount_base = min(position_size, base_available - 5.0)  # Keep €5 buffer
+            # Check minimum trade amount
+            if safe_trade_size < config.MIN_TRADE_AMOUNT:
+                execution_result.update({
+                    'execution_status': 'insufficient_size',
+                    'execution_message': f'Safe trade size (€{safe_trade_size:.2f}) below minimum (€{config.MIN_TRADE_AMOUNT})',
+                    'available_base': base_available,
+                    'safe_size': safe_trade_size
+                })
+                logger.warning(f"BUY order skipped for {product_id}: Safe trade size too small")
+                return execution_result
+            
+            # Use the safe trade size calculated by capital manager
+            trade_amount_base = safe_trade_size
             crypto_amount = trade_amount_base / current_price
             
-            logger.info(f"Position sizing for {product_id}: confidence={confidence}%, "
-                       f"available={config.format_currency(base_available)}, "
-                       f"calculated_size={config.format_currency(position_size)}, "
-                       f"final_size={config.format_currency(trade_amount_base)}")
+            logger.info(f"💰 Position sizing for {product_id}: confidence={confidence}%, "
+                       f"available=€{base_available:.2f}, "
+                       f"original_size=€{original_trade_size:.2f}, "
+                       f"safe_size=€{trade_amount_base:.2f}")
             
             if SIMULATION_MODE:
                 # Simulate the trade
                 execution_result.update({
                     'execution_status': 'simulated',
-                    'execution_message': f'SIMULATED BUY: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}',
+                    'execution_message': f'SIMULATED BUY: {crypto_amount:.8f} {asset} for €{trade_amount_base:.2f}',
                     'trade_executed': True,
                     'crypto_amount': crypto_amount,
                     'trade_amount_base': trade_amount_base
@@ -826,17 +965,19 @@ class TradingBot:
                             'average_filled_price': order_result.get('average_filled_price', 0),
                             'actual_eur_spent': order_result.get('actual_eur_spent', trade_amount_base)
                         })
-                        logger.info(f"BUY order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
+                        logger.info(f"BUY order executed: {crypto_amount:.8f} {asset} for €{trade_amount_base:.2f}")
+                        
+                        # Record trade in capital manager for limit tracking
+                        portfolio_value = portfolio.get('portfolio_value_eur', {}).get('amount', 0)
+                        self.capital_manager.record_trade(asset, trade_amount_base, portfolio_value)
                         
                         # Update portfolio
-                        self.trading_strategy.portfolio['EUR']['amount'] -= trade_amount_base
-                        if asset not in self.trading_strategy.portfolio:
-                            self.trading_strategy.portfolio[asset] = {'amount': 0, 'last_price_eur': current_price}
-                        self.trading_strategy.portfolio[asset]['amount'] += crypto_amount
-                        self.trading_strategy.portfolio[asset]['last_price_eur'] = current_price
+                        self.portfolio.update_asset_amount('EUR', -trade_amount_base)
+                        self.portfolio.update_asset_amount(asset, crypto_amount)
+                        self.portfolio.update_asset_price(asset, current_price, current_price)  # Assuming EUR price
                         
                         # Save updated portfolio
-                        self.trading_strategy._save_portfolio()
+                        self.portfolio.save()
                         
                     else:
                         execution_result.update({
@@ -863,37 +1004,64 @@ class TradingBot:
             return execution_result
     
     def _execute_sell_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict, strategy_details: Dict = None) -> Dict[str, Any]:
-        """Execute SELL order with asset balance validation"""
+        """Execute SELL order with capital management and asset balance validation"""
         try:
             # Check asset balance
             asset_available = portfolio.get(asset, {}).get('amount', 0)
             min_trade_value = config.MIN_TRADE_AMOUNT  # Use configured minimum trade amount (€30)
             min_crypto_amount = min_trade_value / current_price
             
-            if asset_available <= min_crypto_amount:
-                execution_result.update({
-                    'execution_status': 'insufficient_crypto',
-                    'execution_message': f'Insufficient {asset} balance: {asset_available:.8f} (minimum {min_crypto_amount:.8f} required for €{min_trade_value} trade)',
-                    'available_crypto': asset_available
-                })
-                logger.warning(f"SELL order skipped for {product_id}: Insufficient {asset} ({asset_available:.8f})")
-                return execution_result
-            
-            # Calculate trade size with dynamic position sizing
-            # Base trade percentage: 10-25% based on confidence
+            # Calculate original trade size with dynamic position sizing
             base_trade_percentage = 0.10 + (confidence / 100.0 * 0.15)  # 10% to 25%
             
-            # Get dynamic position multiplier from strategy
+            # Apply strategy-based position multiplier
             dynamic_multiplier = 1.0
-            if hasattr(self.trading_strategy, '_calculate_dynamic_position_size'):
-                dynamic_multiplier = self.trading_strategy._calculate_dynamic_position_size("SELL", confidence, product_id)
+            if strategy_details and 'combined_signal' in strategy_details:
+                dynamic_multiplier = strategy_details['combined_signal'].get('position_multiplier', 1.0)
             
-            # Apply dynamic sizing
+            # Apply dynamic sizing and risk management
             adjusted_percentage = base_trade_percentage * dynamic_multiplier
-            max_crypto_amount = asset_available * adjusted_percentage
+            risk_multiplier = 0.5 if confidence < 70 else 1.0  # Reduce for low confidence
             
-            risk_multiplier = self.trading_strategy._get_risk_multiplier()
-            crypto_amount = max_crypto_amount * risk_multiplier
+            max_crypto_amount = asset_available * adjusted_percentage * risk_multiplier
+            original_trade_value = max_crypto_amount * current_price
+            
+            # Use capital manager to calculate safe trade size
+            safe_trade_value, capital_reason = self.capital_manager.calculate_safe_trade_size(
+                "SELL", asset, portfolio, original_trade_value
+            )
+            
+            logger.info(f"💰 Capital management: {capital_reason}")
+            
+            if safe_trade_value <= 0:
+                execution_result.update({
+                    'execution_status': 'capital_management_block',
+                    'execution_message': f'Capital management blocked trade: {capital_reason}',
+                    'available_crypto': asset_available,
+                    'original_value': original_trade_value,
+                    'safe_value': safe_trade_value
+                })
+                logger.warning(f"SELL order blocked by capital management for {product_id}: {capital_reason}")
+                return execution_result
+            
+            # Convert safe trade value back to crypto amount
+            crypto_amount = safe_trade_value / current_price
+            trade_amount_base = safe_trade_value
+            
+            # Final validation
+            if crypto_amount > asset_available:
+                crypto_amount = asset_available
+                trade_amount_base = crypto_amount * current_price
+            
+            if trade_amount_base < min_trade_value:
+                execution_result.update({
+                    'execution_status': 'insufficient_size',
+                    'execution_message': f'Safe trade value (€{trade_amount_base:.2f}) below minimum (€{min_trade_value})',
+                    'available_crypto': asset_available,
+                    'safe_value': safe_trade_value
+                })
+                logger.warning(f"SELL order skipped for {product_id}: Safe trade size too small")
+                return execution_result
             crypto_amount = max(min_crypto_amount, min(crypto_amount, asset_available * 0.90))  # Keep 10% buffer
             
             trade_amount_base = crypto_amount * current_price
@@ -934,16 +1102,18 @@ class TradingBot:
                             'average_filled_price': order_result.get('average_filled_price', 0),
                             'actual_eur_spent': order_result.get('actual_eur_spent', trade_amount_base)
                         })
-                        logger.info(f"SELL order executed: {crypto_amount:.8f} {asset} for ${trade_amount_base:.2f}")
+                        logger.info(f"SELL order executed: {crypto_amount:.8f} {asset} for €{trade_amount_base:.2f}")
+                        
+                        # Record trade in capital manager for limit tracking
+                        portfolio_value = portfolio.get('portfolio_value_eur', {}).get('amount', 0)
+                        self.capital_manager.record_trade(asset, trade_amount_base, portfolio_value)
                         
                         # Update portfolio
-                        self.trading_strategy.portfolio[asset]['amount'] -= crypto_amount
-                        if 'EUR' not in self.trading_strategy.portfolio:
-                            self.trading_strategy.portfolio['EUR'] = {'amount': 0}
-                        self.trading_strategy.portfolio['EUR']['amount'] += trade_amount_base
+                        self.portfolio.update_asset_amount(asset, -crypto_amount)
+                        self.portfolio.update_asset_amount('EUR', trade_amount_base)
                         
                         # Save updated portfolio
-                        self.trading_strategy._save_portfolio()
+                        self.portfolio.save()
                         
                     else:
                         execution_result.update({
@@ -1044,6 +1214,52 @@ class TradingBot:
         
         return changes
     
+    def run_trading_cycle(self):
+        """Execute one complete trading cycle for all trading pairs"""
+        try:
+            logger.info("🔄 Starting trading cycle")
+            
+            # Sync portfolio with Coinbase before trading
+            if not self._sync_portfolio_with_coinbase():
+                logger.warning("Portfolio sync failed, continuing with cached data")
+            
+            # Execute trading analysis for each pair
+            for product_id in self.config.TRADING_PAIRS:
+                try:
+                    logger.info(f"📊 Analyzing {product_id}")
+                    
+                    # Execute multi-strategy analysis
+                    decision_result = self._execute_multi_strategy_analysis(product_id)
+                    
+                    # Execute trade based on decision
+                    trade_result = self._execute_trade(product_id, decision_result)
+                    
+                    # Log the decision and trade result
+                    self._log_trade_decision(product_id, decision_result, trade_result)
+                    
+                    # Save results for dashboard
+                    self._save_result(product_id, {**decision_result, **trade_result})
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {product_id}: {e}")
+                    continue
+            
+            # Update dashboard after all trades
+            self.update_local_dashboard()
+            
+            # Update next decision time
+            self.update_next_decision_time()
+            
+            logger.info("✅ Trading cycle completed")
+            
+        except Exception as e:
+            logger.error(f"Error in trading cycle: {e}")
+            # Still update dashboard to show error status
+            try:
+                self.update_local_dashboard()
+            except Exception as dashboard_error:
+                logger.error(f"Failed to update dashboard after error: {dashboard_error}")
+
     def start_scheduled_trading(self):
         """Start scheduled trading at regular intervals"""
         logger.info(f"Starting scheduled trading every {DECISION_INTERVAL_MINUTES} minutes")
@@ -1061,8 +1277,9 @@ class TradingBot:
         schedule.every().sunday.at("01:00").do(self.generate_strategy_report)
         
         # Schedule portfolio rebalancing every 3 hours
-        schedule.every(180).minutes.do(self.trading_strategy.check_and_rebalance)
-        logger.info("Scheduled intelligent portfolio rebalancing every 180 minutes")
+        # TODO: Implement portfolio rebalancing method
+        # schedule.every(180).minutes.do(self.portfolio.check_and_rebalance)
+        logger.info("Portfolio rebalancing scheduled (currently disabled)")
         
         # Schedule web server sync every 30 minutes (only sync point)
         schedule.every(30).minutes.do(self.sync_to_webserver)
@@ -1081,7 +1298,7 @@ class TradingBot:
         try:
             # Get trading data
             trading_data = {
-                "recent_trades": self.trading_strategy.trade_logger.get_recent_trades(10),
+                "recent_trades": self.trade_logger.get_recent_trades(10),
                 "market_data": {}
             }
             
@@ -1094,7 +1311,7 @@ class TradingBot:
                     logger.error(f"Error getting market data for {product_id}: {e}")
             
             # Get portfolio data - ensure it's a dictionary
-            portfolio = self.trading_strategy.portfolio
+            portfolio = self.portfolio.to_dict()
             
             # Check if portfolio is a string and try to convert it to a dictionary
             if isinstance(portfolio, str):

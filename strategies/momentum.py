@@ -114,13 +114,18 @@ class MomentumStrategy(BaseStrategy):
                 "reason": "No price change data"
             }
         
-        # Get price changes for different timeframes
-        change_1h = price_changes.get('1h', 0) / 100  # Convert percentage to decimal
-        change_4h = price_changes.get('4h', 0) / 100
-        change_24h = price_changes.get('24h', 0) / 100
+        # Get price changes for different timeframes (already in percentage form)
+        change_1h = price_changes.get('1h', 0)  # Already percentage, no need to divide by 100
+        change_4h = price_changes.get('4h', 0)
+        change_24h = price_changes.get('24h', 0)
+        
+        # Convert to decimal for calculations
+        change_1h_decimal = change_1h / 100
+        change_4h_decimal = change_4h / 100
+        change_24h_decimal = change_24h / 100
         
         # Weight recent changes more heavily
-        weighted_momentum = (change_1h * 0.5) + (change_4h * 0.3) + (change_24h * 0.2)
+        weighted_momentum = (change_1h_decimal * 0.5) + (change_4h_decimal * 0.3) + (change_24h_decimal * 0.2)
         
         # Determine momentum strength and direction
         abs_momentum = abs(weighted_momentum)
@@ -142,7 +147,7 @@ class MomentumStrategy(BaseStrategy):
             "strength": strength,
             "direction": direction,
             "momentum_value": weighted_momentum,
-            "reason": f"Price momentum: 1h={change_1h*100:.1f}%, 4h={change_4h*100:.1f}%, 24h={change_24h*100:.1f}%"
+            "reason": f"Price momentum: 1h={change_1h:.1f}%, 4h={change_4h:.1f}%, 24h={change_24h:.1f}%"
         }
     
     def _analyze_volume_momentum(self, volume_data: Dict) -> Dict:

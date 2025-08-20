@@ -65,7 +65,7 @@ class TrendFollowingStrategy(BaseStrategy):
             
             # Calculate trend strength
             trend_strength = self._calculate_trend_strength(technical_indicators)
-            trend_direction = self._determine_trend_direction(technical_indicators)
+            trend_direction = self._determine_trend_direction(technical_indicators, market_data)
             
             # Generate base confidence
             base_confidence = self._calculate_base_confidence(
@@ -162,31 +162,54 @@ class TrendFollowingStrategy(BaseStrategy):
         # Average strength
         return np.mean(strength_factors) if strength_factors else 0.3
     
-    def _determine_trend_direction(self, indicators: Dict) -> str:
-        """Determine trend direction"""
+    def _determine_trend_direction(self, indicators: Dict, market_data: Dict = None) -> str:
+        """Determine trend direction with improved weighting"""
         
         direction_signals = []
         
-        # MACD direction - access individual MACD values from data collector
-        macd_histogram = indicators.get('macd_histogram', 0)
-        if macd_histogram > 0.1:
-            direction_signals.append(1)  # Up
-        elif macd_histogram < -0.1:
-            direction_signals.append(-1)  # Down
-        else:
-            direction_signals.append(0)  # Neutral
+        # Price momentum (most important) - get from market_data if available
+        if market_data and 'price_changes' in market_data:
+            price_changes = market_data['price_changes']
+            change_24h = price_changes.get('24h', 0)
+            change_5d = price_changes.get('5d', 0)
+            
+            # Strong weight for price momentum
+            if change_24h > 2 and change_5d > 5:
+                direction_signals.extend([1, 1])  # Double weight for strong uptrend
+            elif change_24h > 1 and change_5d > 2:
+                direction_signals.append(1)  # Single weight for moderate uptrend
+            elif change_24h < -2 and change_5d < -5:
+                direction_signals.extend([-1, -1])  # Double weight for strong downtrend
+            elif change_24h < -1 and change_5d < -2:
+                direction_signals.append(-1)  # Single weight for moderate downtrend
+            else:
+                direction_signals.append(0)  # Neutral
         
-        # RSI direction
+        # RSI direction (secondary)
         rsi = indicators.get('rsi', 50)
-        if rsi > 55:
+        if rsi > 60:  # Raised threshold for stronger signal
             direction_signals.append(1)
-        elif rsi < 45:
+        elif rsi < 40:  # Lowered threshold for stronger signal
             direction_signals.append(-1)
         else:
             direction_signals.append(0)
         
-        # Price vs Bollinger middle
-        current_price = indicators.get('current_price', 0)
+        # MACD direction (tertiary) - reduced weight
+        macd_histogram = indicators.get('macd_histogram', 0)
+        if macd_histogram > 1.0:  # Higher threshold to reduce noise
+            direction_signals.append(1)
+        elif macd_histogram < -1.0:  # Higher threshold to reduce noise
+            direction_signals.append(-1)
+        else:
+            direction_signals.append(0)  # Neutral for small MACD values
+        
+        # Price vs Bollinger middle - get current price from market_data if available
+        current_price = 0
+        if market_data:
+            current_price = market_data.get('price', 0)
+        if not current_price:
+            current_price = indicators.get('current_price', 0)
+            
         bb_middle = indicators.get('bb_middle', 0)
         if current_price and bb_middle:
             if current_price > bb_middle * 1.01:
