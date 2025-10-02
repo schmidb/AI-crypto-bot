@@ -1,0 +1,25 @@
+{
+  "portfolio_value_usd": 336.137342693199,
+  "initial_value_usd": 333.81,
+  "last_updated": "2025-06-10T18:27:07.285682",
+  "trades_executed": 5.0,
+  "USD": {
+    "amount": 36.09589021226141,
+    "initial_amount": 66.762
+  },
+  "BTC": {
+    "amount": 0.0010983900943308603,
+    "initial_amount": 0.00091538,
+    "last_price_usd": 108893.64
+  },
+  "ETH": {
+    "amount": 0.04109733285052559,
+    "initial_amount": 0.037507,
+    "last_price_usd": 2748.6
+  },
+  "SOL": {
+    "amount": 0.425515882022036,
+    "initial_amount": 0.4225,
+    "last_price_usd": 158.569
+  }
+}
