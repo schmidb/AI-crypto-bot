@@ -110,7 +110,7 @@ class CapitalManager:
         if safe_size < getattr(self.config, 'MIN_TRADE_AMOUNT', 30.0):
             return 0, f"Safe trade size (€{safe_size:.2f}) below minimum (€{getattr(self.config, 'MIN_TRADE_AMOUNT', 30.0)})"
         
-            reason = f"Safe BUY: €{safe_size:.2f} (from €{original_trade_size:.2f}), available: €{available_eur:.2f}"
+        reason = f"Safe BUY: €{safe_size:.2f} (from €{original_trade_size:.2f}), available: €{available_eur:.2f}"
         return safe_size, reason
     
     def _calculate_safe_sell_size(self, asset: str, portfolio: Dict, original_trade_size: float, 

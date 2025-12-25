@@ -48,6 +48,8 @@ class Config:
         # Capital Management Settings
         self.TARGET_EUR_ALLOCATION = float(os.getenv("TARGET_EUR_ALLOCATION", "25"))
         self.REBALANCE_TRIGGER_EUR_PERCENT = float(os.getenv("REBALANCE_TRIGGER_EUR_PERCENT", "15"))
+        self.MAX_CRYPTO_ALLOCATION = float(os.getenv("MAX_CRYPTO_ALLOCATION", "80"))
+        self.MAX_POSITION_SIZE_PERCENT = float(os.getenv("MAX_POSITION_SIZE_PERCENT", "35"))
         self.REBALANCE_TARGET_EUR_PERCENT = float(os.getenv("REBALANCE_TARGET_EUR_PERCENT", "25"))
         self.MIN_EUR_RESERVE = float(os.getenv("MIN_EUR_RESERVE", "50"))
         self.MAX_EUR_USAGE_PER_TRADE = float(os.getenv("MAX_EUR_USAGE_PER_TRADE", "30"))
