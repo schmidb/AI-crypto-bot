@@ -38,7 +38,11 @@ class LLMAnalyzer:
         if GOOGLE_APPLICATION_CREDENTIALS:
             try:
                 credentials = service_account.Credentials.from_service_account_file(
-                    GOOGLE_APPLICATION_CREDENTIALS
+                    GOOGLE_APPLICATION_CREDENTIALS,
+                    scopes=[
+                        'https://www.googleapis.com/auth/cloud-platform',
+                        'https://www.googleapis.com/auth/generative-language'
+                    ]
                 )
                 self.client = genai.Client(vertexai=True, credentials=credentials)
                 logger.info(f"Initialized Google GenAI with service account credentials")
