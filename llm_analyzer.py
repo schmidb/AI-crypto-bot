@@ -4,11 +4,8 @@ import re
 from typing import Dict, List, Any
 import pandas as pd
 import os
-import requests
-import google.auth
-import google.auth.transport.requests
-
-from google.cloud import aiplatform
+import google.genai as genai
+from google.genai import types
 from google.oauth2 import service_account
 
 from config import (
@@ -22,12 +19,6 @@ from config import (
     EXPECTED_HOLDING_PERIOD,
     DECISION_INTERVAL_MINUTES
 )
-
-# Define OAuth scopes needed for Vertex AI
-SCOPES = [
-    'https://www.googleapis.com/auth/cloud-platform',
-    'https://www.googleapis.com/auth/cloud-language'
-]
 
 logger = logging.getLogger(__name__)
 
@@ -43,34 +34,24 @@ class LLMAnalyzer:
         self.model = model
         self.location = location
 
-        # Initialize Google Cloud credentials
+        # Initialize Google GenAI
         if GOOGLE_APPLICATION_CREDENTIALS:
             try:
-                self.credentials = service_account.Credentials.from_service_account_file(
-                    GOOGLE_APPLICATION_CREDENTIALS,
-                    scopes=SCOPES  # Add the scopes here
+                credentials = service_account.Credentials.from_service_account_file(
+                    GOOGLE_APPLICATION_CREDENTIALS
                 )
-                aiplatform.init(
-                    project=GOOGLE_CLOUD_PROJECT,
-                    location=self.location,
-                    credentials=self.credentials
-                )
-                logger.info(f"Initialized Google Cloud with project: {GOOGLE_CLOUD_PROJECT}")
+                self.client = genai.Client(vertexai=True, credentials=credentials)
+                logger.info(f"Initialized Google GenAI with service account credentials")
             except Exception as e:
-                logger.error(f"Error initializing Google Cloud credentials: {e}")
+                logger.error(f"Error initializing Google GenAI credentials: {e}")
                 raise
         else:
-            # Use default credentials with scopes
+            # Use default credentials
             try:
-                credentials, _ = google.auth.default(scopes=SCOPES)  # Add scopes here too
-                aiplatform.init(
-                    project=GOOGLE_CLOUD_PROJECT,
-                    location=self.location,
-                    credentials=credentials
-                )
-                logger.info(f"Initialized Google Cloud with default credentials")
+                self.client = genai.Client(vertexai=True)
+                logger.info(f"Initialized Google GenAI with default credentials")
             except Exception as e:
-                logger.error(f"Error initializing Google Cloud with default credentials: {e}")
+                logger.error(f"Error initializing Google GenAI with default credentials: {e}")
                 raise
 
         logger.info(f"LLM Analyzer initialized with provider: {provider}, model: {model}")
@@ -99,8 +80,8 @@ class LLMAnalyzer:
             # Prepare prompt for LLM
             prompt = self._create_analysis_prompt(market_summary, trading_pair, additional_context)
 
-            # Call Vertex AI
-            analysis_result = self._call_vertex_ai(prompt)
+            # Call Google GenAI
+            analysis_result = self._call_genai(prompt)
             
             logger.info(f"LLM analysis completed for {trading_pair}")
             return analysis_result
@@ -114,19 +95,9 @@ class LLMAnalyzer:
                 "risk_assessment": "high"
             }
 
-    def _call_vertex_ai(self, prompt: str) -> Dict:
-        """Call Vertex AI for text generation using REST API"""
+    def _call_genai(self, prompt: str) -> Dict:
+        """Call Google GenAI for text generation"""
         try:
-            # Determine if we should use streaming endpoint
-            use_streaming = "gemini" in self.model.lower()
-
-            # Create the endpoint URL
-            endpoint_suffix = "generateContent" if use_streaming else "predict"  # Changed from streamGenerateContent to generateContent
-            url = f"https://{self.location}-aiplatform.googleapis.com/v1/projects/{GOOGLE_CLOUD_PROJECT}/locations/{self.location}/publishers/google/models/{self.model}:{endpoint_suffix}"
-
-            # Log the URL being called
-            logger.debug(f"Calling Vertex AI endpoint: {url}")
-
             # Enhance prompt to explicitly request JSON
             enhanced_prompt = f"""
             {prompt}
@@ -165,115 +136,28 @@ class LLMAnalyzer:
             Do not include any text outside of the JSON structure.
             """
 
-            # Create the request payload based on model type
-            if use_streaming:
-                # Gemini model format
-                payload = {
-                    "contents": [{
-                        "role": "user",
-                        "parts": [
-                            {
-                                "text": enhanced_prompt
-                            }
-                        ]
-                    }],
-                    "generationConfig": {
-                        "temperature": 0.2,
-                        "maxOutputTokens": 10000,  # Increased from 1024 to 4096
-                        "topP": 0.8,
-                        "topK": 40
-                    }
-                }
-            else:
-                # Standard text model format (text-bison, etc.)
-                payload = {
-                    "instances": [{"prompt": enhanced_prompt}],
-                    "parameters": {
-                        "temperature": 0.2,
-                        "maxOutputTokens": 10000,  # Increased from 1024 to 4096
-                        "topP": 0.8,
-                        "topK": 40
-                    }
-                }
+            # Generate content using the new API
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=[enhanced_prompt],
+                config=types.GenerateContentConfig(
+                    temperature=0.2,
+                    max_output_tokens=10000,
+                    top_p=0.8,
+                    top_k=40
+                )
+            )
 
-            # Get the access token with the proper scopes
-            if hasattr(self, 'credentials'):
-                credentials = self.credentials
-            else:
-                credentials, _ = google.auth.default(scopes=SCOPES)
-
-            auth_req = google.auth.transport.requests.Request()
-            credentials.refresh(auth_req)
-
-            # Make the request
-            headers = {
-                "Authorization": f"Bearer {credentials.token}",
-                "Content-Type": "application/json"
-            }
-
-            # Log the payload (excluding sensitive data)
-            logger.debug(f"Sending request to Vertex AI with payload structure: {list(payload.keys())}")
-
-            response = requests.post(url, headers=headers, json=payload)
-            response.raise_for_status()
-
-            # Log the raw response for debugging
-            logger.debug(f"Raw response from Vertex AI: {response.text}")
-
-            # Extract the prediction text based on model type
-            response_json = response.json()
-            logger.debug(f"Response JSON structure: {list(response_json.keys()) if isinstance(response_json, dict) else 'Not a dictionary'}")
-
-            if use_streaming:
-                # Handle Gemini response
-                prediction_text = ""
-
-                # Try different response structures
-                if isinstance(response_json, dict):
-                    # Try candidates path
-                    candidates = response_json.get("candidates", [])
-                    if candidates and isinstance(candidates, list) and len(candidates) > 0:
-                        content = candidates[0].get("content", {})
-                        if content:
-                            parts = content.get("parts", [])
-                            if parts and len(parts) > 0:
-                                part = parts[0]
-                                if isinstance(part, dict):
-                                    prediction_text = part.get("text", "")
-                                else:
-                                    prediction_text = str(part)
-
-                    # Try text path
-                    if not prediction_text and "text" in response_json:
-                        prediction_text = response_json["text"]
-
-                    # Try content path
-                    if not prediction_text and "content" in response_json:
-                        content = response_json["content"]
-                        if isinstance(content, dict) and "text" in content:
-                            prediction_text = content["text"]
-                        else:
-                            prediction_text = str(content)
-
-                # If still no text, use the whole response
-                if not prediction_text:
-                    prediction_text = str(response_json)
-            else:
-                # Handle standard response
-                if isinstance(response_json, dict):
-                    predictions = response_json.get("predictions", [])
-                    prediction_text = predictions[0] if predictions else ""
-                else:
-                    prediction_text = str(response_json)
-
-            # Log the extracted prediction text
-            logger.debug(f"Extracted prediction text: {prediction_text[:100]}...")
+            # Extract the response text
+            prediction_text = response.text if response.text else str(response)
+            
+            logger.debug(f"GenAI response: {prediction_text[:100]}...")
 
             # Parse the response to extract trading decision
             return self._parse_llm_response(prediction_text)
 
         except Exception as e:
-            logger.error(f"Error calling Vertex AI: {e}")
+            logger.error(f"Error calling Google GenAI: {e}")
             raise
 
     def _parse_llm_response(self, response_text: str) -> Dict:
@@ -744,10 +628,10 @@ Respond with ONLY a JSON object in this format:
             logger.error(f"Error parsing trading decision: {e}")
             return decision
     def _get_llm_response(self, prompt: str) -> str:
-        """Get response from LLM using Vertex AI"""
+        """Get response from LLM using Google GenAI"""
         try:
-            # Call Vertex AI directly
-            result = self._call_vertex_ai(prompt)
+            # Call Google GenAI directly
+            result = self._call_genai(prompt)
             # Convert dict response to JSON string for compatibility
             import json
             return json.dumps(result)

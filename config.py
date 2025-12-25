@@ -45,6 +45,13 @@ class Config:
         self.TARGET_CRYPTO_ALLOCATION = float(os.getenv("TARGET_CRYPTO_ALLOCATION", "80"))
         self.TARGET_BASE_ALLOCATION = float(os.getenv("TARGET_BASE_ALLOCATION", os.getenv("TARGET_USD_ALLOCATION", "20")))  # Backward compatibility
 
+        # Capital Management Settings
+        self.TARGET_EUR_ALLOCATION = float(os.getenv("TARGET_EUR_ALLOCATION", "25"))
+        self.REBALANCE_TRIGGER_EUR_PERCENT = float(os.getenv("REBALANCE_TRIGGER_EUR_PERCENT", "15"))
+        self.REBALANCE_TARGET_EUR_PERCENT = float(os.getenv("REBALANCE_TARGET_EUR_PERCENT", "25"))
+        self.MIN_EUR_RESERVE = float(os.getenv("MIN_EUR_RESERVE", "50"))
+        self.MAX_EUR_USAGE_PER_TRADE = float(os.getenv("MAX_EUR_USAGE_PER_TRADE", "30"))
+
         # Calculate individual crypto allocations based on trading pairs
         self.CRYPTO_ASSETS = [pair.split("-")[0] for pair in self.TRADING_PAIRS]
         self.CRYPTO_ASSETS = list(set(self.CRYPTO_ASSETS))  # Remove duplicates

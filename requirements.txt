@@ -1,11 +1,11 @@
-python-dotenv==1.0.0
-requests==2.31.0
-pandas==2.0.3
-numpy==1.24.3
-coinbase-advanced-py==1.8.2
-google-cloud-aiplatform>=1.25.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+pandas>=2.0.3
+numpy>=1.24.3
+coinbase-advanced-py>=1.8.2
+google-genai>=0.8.0
 google-auth>=2.22.0
-schedule==1.2.0
+schedule>=1.2.0
 dataclasses==0.6
 # python-pushover==0.4  # Using requests directly instead due to compatibility issues
 # psutil - removed (was only used for uptime monitoring)
