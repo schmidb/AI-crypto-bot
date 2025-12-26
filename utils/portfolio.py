@@ -321,7 +321,18 @@ class Portfolio:
         # Calculate initial value if not set or if it's zero
         if self.data.get("initial_value_usd", 0.0) == 0.0:
             self.data["initial_value_usd"] = initial_value_usd
-        if self.data.get("initial_value_eur", {}).get("amount", 0.0) == 0.0:
+        
+        # Handle initial_value_eur - ensure it's a dict structure
+        initial_eur_data = self.data.get("initial_value_eur", {})
+        if isinstance(initial_eur_data, (int, float)):
+            # Convert old float format to new dict format
+            initial_eur_amount = initial_eur_data
+        elif isinstance(initial_eur_data, dict):
+            initial_eur_amount = initial_eur_data.get("amount", 0.0)
+        else:
+            initial_eur_amount = 0.0
+            
+        if initial_eur_amount == 0.0:
             self.data["initial_value_eur"] = {"amount": initial_value_eur, "last_price_eur": 1.0}
         
         return total_value_usd

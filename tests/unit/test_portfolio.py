@@ -586,7 +586,7 @@ class TestExchangeSynchronization:
         
         result = portfolio.update_from_exchange(exchange_data)
         
-        assert result["success"] is True
+        assert result["status"] == "success"
         assert result["updated_assets"] == 3
         assert "Portfolio updated from exchange data" in result["message"]
         
@@ -607,7 +607,7 @@ class TestExchangeSynchronization:
         
         result = portfolio.update_from_exchange(exchange_data)
         
-        assert result["success"] is True
+        assert result["status"] == "success"
         
         # New asset should be added
         assert "SOL" in portfolio.data
@@ -624,7 +624,7 @@ class TestExchangeSynchronization:
         # Test with non-dict data
         result = portfolio.update_from_exchange("invalid_data")
         
-        assert result["success"] is False
+        assert result["status"] == "error"
         assert "Invalid exchange data type" in result["message"]
         
         # Test with dict containing invalid asset data
@@ -635,7 +635,7 @@ class TestExchangeSynchronization:
         
         result = portfolio.update_from_exchange(invalid_exchange_data)
         
-        assert result["success"] is True  # Should handle gracefully
+        assert result["status"] == "success"  # Should handle gracefully
         assert portfolio.data["USD"]["amount"] == 1000.0
     
     def test_update_from_exchange_error_handling(self):
@@ -647,7 +647,7 @@ class TestExchangeSynchronization:
             exchange_data = {"USD": {"amount": 1000.0}}
             result = portfolio.update_from_exchange(exchange_data)
             
-            assert result["success"] is False
+            assert result["status"] == "error"
             assert "Error updating portfolio" in result["message"]
 
 
