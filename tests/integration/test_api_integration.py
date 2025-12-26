@@ -11,7 +11,20 @@ Tests the integration between the bot and external APIs:
 import pytest
 import os
 import time
+import sys
 from unittest.mock import patch, MagicMock
+
+# Mock Google Cloud modules before importing components
+sys.modules['google'] = MagicMock()
+sys.modules['google.genai'] = MagicMock()
+sys.modules['google.genai.types'] = MagicMock()
+sys.modules['google.oauth2'] = MagicMock()
+sys.modules['google.oauth2.service_account'] = MagicMock()
+sys.modules['google.cloud'] = MagicMock()
+sys.modules['google.cloud.aiplatform'] = MagicMock()
+sys.modules['vertexai'] = MagicMock()
+sys.modules['vertexai.generative_models'] = MagicMock()
+
 from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer
 
@@ -152,7 +165,7 @@ class TestGoogleCloudAPIIntegration:
         import pandas as pd
         
         market_data = pd.DataFrame({
-            'price': [45000.0],
+            'close': [45000.0],  # Changed from 'price' to 'close'
             'rsi': [65.0],
             'macd': [0.5],
             'bb_position': [0.7]
@@ -269,7 +282,8 @@ class TestAPIIntegrationWorkflow:
     def test_market_analysis_workflow(self):
         """Test complete market analysis workflow"""
         # This tests the integration between Coinbase data and LLM analysis
-        coinbase_client = CoinbaseClient()
+        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+            coinbase_client = CoinbaseClient()
         
         # Get market data
         btc_price_data = coinbase_client.get_product_price('BTC-EUR')
@@ -316,7 +330,7 @@ class TestAPIIntegrationWorkflow:
             # Create market data for analysis
             import pandas as pd
             market_data = pd.DataFrame({
-                'price': [btc_price],
+                'close': [btc_price],  # Changed from 'price' to 'close'
                 'rsi': [60.0],
                 'macd': [0.2],
                 'bb_position': [0.7]
