@@ -72,10 +72,8 @@ class TestDataFlowIntegration:
     
     def test_coinbase_to_portfolio_integration(self, portfolio, mock_coinbase_data):
         """Test data flow from Coinbase client to portfolio"""
-        with patch('config.COINBASE_API_KEY', 'test_key'), \
-             patch('config.COINBASE_API_SECRET', 'test_secret'):
-            with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
-                coinbase_client = CoinbaseClient()
+        with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
+            coinbase_client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
                 
                 # Get data from Coinbase
                 coinbase_portfolio = coinbase_client.get_portfolio()
@@ -286,10 +284,8 @@ class TestErrorPropagation:
     
     def test_coinbase_error_to_portfolio(self):
         """Test error handling when Coinbase API fails"""
-        with patch('config.COINBASE_API_KEY', 'test_key'), \
-             patch('config.COINBASE_API_SECRET', 'test_secret'):
-            with patch.object(CoinbaseClient, 'get_portfolio', side_effect=Exception("API Error")):
-                coinbase_client = CoinbaseClient()
+        with patch.object(CoinbaseClient, 'get_portfolio', side_effect=Exception("API Error")):
+            coinbase_client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
                 
                 # Should handle API errors gracefully
                 try:
@@ -475,11 +471,9 @@ class TestComponentIntegrationWorkflows:
             'EUR': {'amount': 100.0, 'price': 1.0}
         }
         
-        with patch('config.COINBASE_API_KEY', 'test_key'), \
-             patch('config.COINBASE_API_SECRET', 'test_secret'):
-            with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
-                # 1. Get data from Coinbase
-                coinbase_client = CoinbaseClient()
+        with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
+            # 1. Get data from Coinbase
+            coinbase_client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
                 coinbase_portfolio = coinbase_client.get_portfolio()
                 
                 # 2. Update portfolio

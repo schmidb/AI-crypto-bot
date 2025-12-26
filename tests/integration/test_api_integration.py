@@ -196,27 +196,23 @@ class TestAPIErrorHandling:
     
     def test_coinbase_network_error_handling(self):
         """Test handling of network errors"""
-        with patch('config.COINBASE_API_KEY', 'test_key'), \
-             patch('config.COINBASE_API_SECRET', 'test_secret'):
-            client = CoinbaseClient()
-            
-            # Mock the SDK client to raise network error
-            with patch.object(client.client, 'get_product', side_effect=ConnectionError("Network error")):
-                # Should handle network errors gracefully
-                result = client.get_product_price('BTC-EUR')
-                assert result == {"price": 0.0}  # Should return default price on error
+        client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
+        
+        # Mock the SDK client to raise network error
+        with patch.object(client.client, 'get_product', side_effect=ConnectionError("Network error")):
+            # Should handle network errors gracefully
+            result = client.get_product_price('BTC-EUR')
+            assert result == {"price": 0.0}  # Should return default price on error
     
     def test_coinbase_api_error_handling(self):
         """Test handling of API errors"""
-        with patch('config.COINBASE_API_KEY', 'test_key'), \
-             patch('config.COINBASE_API_SECRET', 'test_secret'):
-            client = CoinbaseClient()
-            
-            # Mock the SDK client to raise API error
-            with patch.object(client.client, 'get_product', side_effect=Exception("API Error")):
-                # Should handle API errors gracefully
-                result = client.get_product_price('BTC-EUR')
-                assert result == {"price": 0.0}  # Should return default price on error
+        client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
+        
+        # Mock the SDK client to raise API error
+        with patch.object(client.client, 'get_product', side_effect=Exception("API Error")):
+            # Should handle API errors gracefully
+            result = client.get_product_price('BTC-EUR')
+            assert result == {"price": 0.0}  # Should return default price on error
     
     def test_gcp_quota_error_handling(self):
         """Test handling of GCP quota errors"""
@@ -283,9 +279,7 @@ class TestAPIIntegrationWorkflow:
     def test_market_analysis_workflow(self):
         """Test complete market analysis workflow"""
         # This tests the integration between Coinbase data and LLM analysis
-        with patch('config.COINBASE_API_KEY', 'test_key'), \
-             patch('config.COINBASE_API_SECRET', 'test_secret'):
-            coinbase_client = CoinbaseClient()
+        coinbase_client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
         
         # Get market data
         btc_price_data = coinbase_client.get_product_price('BTC-EUR')
