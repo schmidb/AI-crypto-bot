@@ -238,6 +238,7 @@ class TestInputValidation:
 class TestFilePermissions:
     """Test file permission security"""
     
+    @pytest.mark.skipif(os.name == 'nt', reason="File permission tests not applicable on Windows")
     def test_portfolio_file_permissions(self):
         """Test that portfolio files have secure permissions"""
         from utils.portfolio import Portfolio
@@ -261,6 +262,7 @@ class TestFilePermissions:
             if os.path.exists(portfolio_file):
                 os.unlink(portfolio_file)
     
+    @pytest.mark.skipif(os.name == 'nt', reason="File permission tests not applicable on Windows")
     def test_log_file_permissions(self):
         """Test that log files have secure permissions"""
         log_dir = Path("logs")
@@ -274,6 +276,7 @@ class TestFilePermissions:
                 # Should not be world-writable  
                 assert not (file_stat.st_mode & stat.S_IWOTH), f"Log file {log_file} is world-writable: {file_mode}"
     
+    @pytest.mark.skipif(os.name == 'nt', reason="File permission tests not applicable on Windows")
     def test_data_directory_permissions(self):
         """Test that data directories have secure permissions"""
         data_dirs = ["data", "logs"]

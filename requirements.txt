@@ -32,3 +32,4 @@ coverage>=7.2.0       # Additional coverage tools
 factory-boy>=3.3.0    # For test data generation
 freezegun>=1.2.0      # For time-based testing
 responses>=0.23.0     # For HTTP request mocking
+psutil>=5.9.0         # For system performance monitoring in tests

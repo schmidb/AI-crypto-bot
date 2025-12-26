@@ -47,7 +47,12 @@ class TestLLMAnalyzerInitialization:
         mock_service_account.Credentials.from_service_account_file.assert_called_once()
         
         # Verify GenAI Client was created
-        mock_genai_client.assert_called_once_with(vertexai=True, credentials=mock_credentials)
+        mock_genai_client.assert_called_once_with(
+            vertexai=True, 
+            credentials=mock_credentials,
+            project='test-project',
+            location='us-central1'
+        )
     
     @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
@@ -61,7 +66,11 @@ class TestLLMAnalyzerInitialization:
         analyzer = LLMAnalyzer()
         
         # Verify GenAI Client was created with default credentials
-        mock_genai_client.assert_called_once_with(vertexai=True)
+        mock_genai_client.assert_called_once_with(
+            vertexai=True,
+            project='test-project',
+            location='us-central1'
+        )
     
     @patch('llm_analyzer.service_account')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', '/invalid/path.json')
@@ -646,7 +655,11 @@ class TestConfigurationValidation:
         
         # Should initialize successfully
         assert analyzer.provider == "vertex_ai"
-        mock_genai_client.assert_called_once_with(vertexai=True)
+        mock_genai_client.assert_called_once_with(
+            vertexai=True,
+            project='intense-base-456414-u5',
+            location='us-central1'
+        )
     
     @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
@@ -659,7 +672,11 @@ class TestConfigurationValidation:
         
         # Should handle model configuration
         assert analyzer.model == "gemini-1.5-pro"
-        mock_genai_client.assert_called_once_with(vertexai=True)
+        mock_genai_client.assert_called_once_with(
+            vertexai=True,
+            project='intense-base-456414-u5',
+            location='us-central1'
+        )
     
     @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
@@ -672,7 +689,11 @@ class TestConfigurationValidation:
         
         # Should initialize with custom location
         assert analyzer.location == "europe-west1"
-        mock_genai_client.assert_called_once_with(vertexai=True)
+        mock_genai_client.assert_called_once_with(
+            vertexai=True,
+            project='intense-base-456414-u5',
+            location='europe-west1'
+        )
 
 
 if __name__ == "__main__":
