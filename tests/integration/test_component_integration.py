@@ -72,7 +72,8 @@ class TestDataFlowIntegration:
     
     def test_coinbase_to_portfolio_integration(self, portfolio, mock_coinbase_data):
         """Test data flow from Coinbase client to portfolio"""
-        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+        with patch('config.COINBASE_API_KEY', 'test_key'), \
+             patch('config.COINBASE_API_SECRET', 'test_secret'):
             with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
                 coinbase_client = CoinbaseClient()
                 
@@ -285,7 +286,8 @@ class TestErrorPropagation:
     
     def test_coinbase_error_to_portfolio(self):
         """Test error handling when Coinbase API fails"""
-        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+        with patch('config.COINBASE_API_KEY', 'test_key'), \
+             patch('config.COINBASE_API_SECRET', 'test_secret'):
             with patch.object(CoinbaseClient, 'get_portfolio', side_effect=Exception("API Error")):
                 coinbase_client = CoinbaseClient()
                 
@@ -473,7 +475,8 @@ class TestComponentIntegrationWorkflows:
             'EUR': {'amount': 100.0, 'price': 1.0}
         }
         
-        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+        with patch('config.COINBASE_API_KEY', 'test_key'), \
+             patch('config.COINBASE_API_SECRET', 'test_secret'):
             with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
                 # 1. Get data from Coinbase
                 coinbase_client = CoinbaseClient()

@@ -196,7 +196,8 @@ class TestAPIErrorHandling:
     
     def test_coinbase_network_error_handling(self):
         """Test handling of network errors"""
-        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+        with patch('config.COINBASE_API_KEY', 'test_key'), \
+             patch('config.COINBASE_API_SECRET', 'test_secret'):
             client = CoinbaseClient()
             
             # Mock the SDK client to raise network error
@@ -207,7 +208,8 @@ class TestAPIErrorHandling:
     
     def test_coinbase_api_error_handling(self):
         """Test handling of API errors"""
-        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+        with patch('config.COINBASE_API_KEY', 'test_key'), \
+             patch('config.COINBASE_API_SECRET', 'test_secret'):
             client = CoinbaseClient()
             
             # Mock the SDK client to raise API error
@@ -281,7 +283,8 @@ class TestAPIIntegrationWorkflow:
     def test_market_analysis_workflow(self):
         """Test complete market analysis workflow"""
         # This tests the integration between Coinbase data and LLM analysis
-        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+        with patch('config.COINBASE_API_KEY', 'test_key'), \
+             patch('config.COINBASE_API_SECRET', 'test_secret'):
             coinbase_client = CoinbaseClient()
         
         # Get market data
