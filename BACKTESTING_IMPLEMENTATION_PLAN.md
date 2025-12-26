@@ -137,11 +137,10 @@ The existing strategies in strategies/ must be adapted to run as vectorized func
 Add to requirements.txt:
 ```
 vectorbt>=0.25.0
-ta>=0.11.0  # Technical analysis library (Python 3.10 compatible)
+ta>=0.11.0  # Technical analysis library (Python 3.12 compatible)
 pyarrow>=10.0.0  # For parquet support
 google-cloud-storage>=2.10.0
 numba>=0.58.0  # For vectorbt performance
-talib-binary>=0.4.19  # Alternative technical analysis library
 fastparquet>=0.8.3  # Alternative parquet engine
 ```
 

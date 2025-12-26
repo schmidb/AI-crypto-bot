@@ -13,7 +13,6 @@ ta>=0.11.0  # Technical analysis library compatible with Python 3.10
 pyarrow>=10.0.0
 google-cloud-storage>=2.10.0
 numba>=0.58.0
-talib-binary>=0.4.19
 fastparquet>=0.8.3
 # python-pushover==0.4  # Using requests directly instead due to compatibility issues
 # psutil - removed (was only used for uptime monitoring)
