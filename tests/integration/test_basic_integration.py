@@ -19,7 +19,10 @@ class TestBasicAPIIntegration:
     
     def test_coinbase_price_retrieval(self):
         """Test basic Coinbase price retrieval"""
-        client = CoinbaseClient()
+        try:
+            client = CoinbaseClient()
+        except ValueError:
+            pytest.skip("Coinbase API credentials not available")
         
         try:
             price_data = client.get_product_price('BTC-EUR')
@@ -75,19 +78,22 @@ class TestComponentDataFlow:
         
         try:
             with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_data):
-                client = CoinbaseClient()
-                portfolio = Portfolio(portfolio_file=portfolio_file)
-                
-                # Get data from client
-                coinbase_data = client.get_portfolio()
-                
-                # Update portfolio
-                if coinbase_data:
-                    portfolio.update_from_exchange(coinbase_data)
-                
-                # Verify data flow
-                assert portfolio.get_asset_amount('BTC') >= 0
-                assert portfolio.get_asset_amount('EUR') >= 0
+                with patch.object(CoinbaseClient, '__init__', return_value=None):
+                    client = CoinbaseClient()
+                    client.api_key = "test"
+                    client.api_secret = "test"
+                    portfolio = Portfolio(portfolio_file=portfolio_file)
+                    
+                    # Get data from client
+                    coinbase_data = client.get_portfolio()
+                    
+                    # Update portfolio
+                    if coinbase_data:
+                        portfolio.update_from_exchange(coinbase_data)
+                    
+                    # Verify data flow
+                    assert portfolio.get_asset_amount('BTC') >= 0
+                    assert portfolio.get_asset_amount('EUR') >= 0
                 
         finally:
             os.unlink(portfolio_file)
@@ -118,15 +124,17 @@ class TestErrorHandling:
     
     def test_coinbase_error_handling(self):
         """Test Coinbase client handles errors gracefully"""
-        # The actual client might still return data even with network errors
-        # due to caching or fallback mechanisms, so let's test a different scenario
-        client = CoinbaseClient()
-        
-        # Test with invalid product ID
-        result = client.get_product_price('INVALID-PAIR')
-        
-        # Should handle gracefully (return None, empty dict, or valid error response)
-        assert result is None or result == {} or isinstance(result, dict)
+        # Mock the client to avoid credential requirements
+        with patch.object(CoinbaseClient, '__init__', return_value=None):
+            client = CoinbaseClient()
+            client.api_key = "test"
+            client.api_secret = "test"
+            
+            # Test with invalid product ID
+            result = client.get_product_price('INVALID-PAIR')
+            
+            # Should handle gracefully (return None, empty dict, or valid error response)
+            assert result is None or result == {} or isinstance(result, dict)
     
     def test_portfolio_corrupted_file_handling(self):
         """Test portfolio handles corrupted files"""
@@ -162,22 +170,25 @@ class TestIntegrationWorkflows:
             }
             
             with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_portfolio_data):
-                # 1. Get market data
-                client = CoinbaseClient()
-                market_data = client.get_portfolio()
-                
-                # 2. Update portfolio
-                portfolio = Portfolio(portfolio_file=portfolio_file)
-                if market_data:
-                    portfolio.update_from_exchange(market_data)
-                
-                # 3. Verify workflow
-                assert portfolio.get_asset_amount('BTC') >= 0
-                assert portfolio.get_asset_amount('EUR') >= 0
-                
-                # 4. Test portfolio calculations
-                allocations = portfolio.get_asset_allocation()
-                assert isinstance(allocations, dict)
+                with patch.object(CoinbaseClient, '__init__', return_value=None):
+                    # 1. Get market data
+                    client = CoinbaseClient()
+                    client.api_key = "test"
+                    client.api_secret = "test"
+                    market_data = client.get_portfolio()
+                    
+                    # 2. Update portfolio
+                    portfolio = Portfolio(portfolio_file=portfolio_file)
+                    if market_data:
+                        portfolio.update_from_exchange(market_data)
+                    
+                    # 3. Verify workflow
+                    assert portfolio.get_asset_amount('BTC') >= 0
+                    assert portfolio.get_asset_amount('EUR') >= 0
+                    
+                    # 4. Test portfolio calculations
+                    allocations = portfolio.get_asset_allocation()
+                    assert isinstance(allocations, dict)
                 
         finally:
             os.unlink(portfolio_file)

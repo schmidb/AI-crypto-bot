@@ -22,7 +22,11 @@ class TestCoinbaseAPIIntegration:
     @pytest.fixture
     def coinbase_client(self):
         """Create Coinbase client for testing"""
-        return CoinbaseClient()
+        try:
+            return CoinbaseClient()
+        except ValueError:
+            # API credentials not available in CI
+            pytest.skip("Coinbase API credentials not available")
     
     @pytest.fixture
     def has_coinbase_credentials(self):
@@ -174,7 +178,10 @@ class TestAPIErrorHandling:
         with patch('requests.get') as mock_get:
             mock_get.side_effect = ConnectionError("Network error")
             
-            client = CoinbaseClient()
+            try:
+                client = CoinbaseClient()
+            except ValueError:
+                pytest.skip("Coinbase API credentials not available")
             
             # Should handle network errors gracefully
             result = client.get_product_price('BTC-EUR')
@@ -188,7 +195,10 @@ class TestAPIErrorHandling:
             mock_response.json.return_value = {'error': 'Internal server error'}
             mock_get.return_value = mock_response
             
-            client = CoinbaseClient()
+            try:
+                client = CoinbaseClient()
+            except ValueError:
+                pytest.skip("Coinbase API credentials not available")
             
             # Should handle API errors gracefully
             result = client.get_product_price('BTC-EUR')
@@ -214,7 +224,10 @@ class TestAPIDataConsistency:
     
     def test_price_data_consistency(self):
         """Test that price data is consistent across calls"""
-        client = CoinbaseClient()
+        try:
+            client = CoinbaseClient()
+        except ValueError:
+            pytest.skip("Coinbase API credentials not available")
         
         # Get price twice in quick succession
         price_data1 = client.get_product_price('BTC-EUR')
@@ -233,7 +246,10 @@ class TestAPIDataConsistency:
         if not (os.getenv('COINBASE_API_KEY') and os.getenv('COINBASE_API_SECRET')):
             pytest.skip("Coinbase credentials not available")
         
-        client = CoinbaseClient()
+        try:
+            client = CoinbaseClient()
+        except ValueError:
+            pytest.skip("Coinbase API credentials not available")
         
         # Get portfolio twice
         portfolio1 = client.get_portfolio()
