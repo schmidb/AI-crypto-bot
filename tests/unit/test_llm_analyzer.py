@@ -646,6 +646,7 @@ class TestConfigurationValidation:
     
     @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
+    @patch('llm_analyzer.GOOGLE_CLOUD_PROJECT', 'test-project')
     def test_vertex_ai_provider_configuration(self, mock_genai_client):
         """Test vertex_ai provider configuration."""
         mock_client_instance = MagicMock()
@@ -657,12 +658,13 @@ class TestConfigurationValidation:
         assert analyzer.provider == "vertex_ai"
         mock_genai_client.assert_called_once_with(
             vertexai=True,
-            project='intense-base-456414-u5',
+            project='test-project',
             location='us-central1'
         )
     
     @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
+    @patch('llm_analyzer.GOOGLE_CLOUD_PROJECT', 'test-project')
     def test_model_configuration(self, mock_genai_client):
         """Test model configuration."""
         mock_client_instance = MagicMock()
@@ -674,12 +676,13 @@ class TestConfigurationValidation:
         assert analyzer.model == "gemini-1.5-pro"
         mock_genai_client.assert_called_once_with(
             vertexai=True,
-            project='intense-base-456414-u5',
+            project='test-project',
             location='us-central1'
         )
     
     @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
+    @patch('llm_analyzer.GOOGLE_CLOUD_PROJECT', 'test-project')
     def test_location_configuration(self, mock_genai_client):
         """Test location configuration."""
         mock_client_instance = MagicMock()
@@ -691,7 +694,7 @@ class TestConfigurationValidation:
         assert analyzer.location == "europe-west1"
         mock_genai_client.assert_called_once_with(
             vertexai=True,
-            project='intense-base-456414-u5',
+            project='test-project',
             location='europe-west1'
         )
 
