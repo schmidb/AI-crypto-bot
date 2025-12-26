@@ -6,11 +6,9 @@ coinbase-advanced-py>=1.8.2
 google-genai>=0.8.0
 google-auth>=2.22.0
 schedule>=1.2.0
-dataclasses==0.6
-
 # Backtesting Dependencies
-vectorbt>=0.25.0
-pandas-ta>=0.3.14b
+vectorbt>=0.25.0  # Compatible with Python 3.10
+pandas-ta>=0.4.71b0
 pyarrow>=10.0.0
 google-cloud-storage>=2.10.0
 numba>=0.58.0
