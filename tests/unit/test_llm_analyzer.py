@@ -221,13 +221,10 @@ class TestDataProcessing:
     @pytest.fixture
     def analyzer(self):
         """Create a mock LLMAnalyzer for testing."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
+        with patch('llm_analyzer.genai.Client'), \
              patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
             
             # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
             
             return LLMAnalyzer()
     
@@ -345,13 +342,10 @@ class TestResponseParsing:
     @pytest.fixture
     def analyzer(self):
         """Create a mock LLMAnalyzer for testing."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
+        with patch('llm_analyzer.genai.Client'), \
              patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
             
             # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
             
             return LLMAnalyzer()
     
@@ -429,13 +423,10 @@ class TestTradingDecisionMaking:
     @pytest.fixture
     def analyzer(self):
         """Create a mock LLMAnalyzer for testing."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
+        with patch('llm_analyzer.genai.Client'), \
              patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
             
             # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
             
             return LLMAnalyzer()
     
@@ -562,13 +553,10 @@ class TestErrorHandling:
     @pytest.fixture
     def analyzer(self):
         """Create a mock LLMAnalyzer for testing."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
+        with patch('llm_analyzer.genai.Client'), \
              patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
             
             # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
             
             return LLMAnalyzer()
     
