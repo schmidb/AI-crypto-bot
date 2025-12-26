@@ -161,11 +161,19 @@ class TestGoogleCloudAPIIntegration:
     )
     def test_llm_analysis_integration(self, llm_analyzer):
         """Test LLM analysis integration with real API"""
+        # Skip if we're using mocked modules (integration test environment)
+        import google.genai as genai
+        if isinstance(genai, MagicMock):
+            pytest.skip("Running in test environment with mocked Google Cloud modules")
+            
         # Create minimal test data as DataFrame
         import pandas as pd
         
         market_data = pd.DataFrame({
-            'close': [45000.0],  # Changed from 'price' to 'close'
+            'close': [45000.0],
+            'high': [46000.0],
+            'low': [44000.0],
+            'volume': [1000000],
             'rsi': [65.0],
             'macd': [0.5],
             'bb_position': [0.7]
@@ -188,34 +196,25 @@ class TestAPIErrorHandling:
     
     def test_coinbase_network_error_handling(self):
         """Test handling of network errors"""
-        with patch('requests.get') as mock_get:
-            mock_get.side_effect = ConnectionError("Network error")
+        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+            client = CoinbaseClient()
             
-            try:
-                client = CoinbaseClient()
-            except ValueError:
-                pytest.skip("Coinbase API credentials not available")
-            
-            # Should handle network errors gracefully
-            result = client.get_product_price('BTC-EUR')
-            assert result is None or result == {}  # Should return None or empty dict on error
+            # Mock the SDK client to raise network error
+            with patch.object(client.client, 'get_product', side_effect=ConnectionError("Network error")):
+                # Should handle network errors gracefully
+                result = client.get_product_price('BTC-EUR')
+                assert result == {"price": 0.0}  # Should return default price on error
     
     def test_coinbase_api_error_handling(self):
         """Test handling of API errors"""
-        with patch('requests.get') as mock_get:
-            mock_response = MagicMock()
-            mock_response.status_code = 500
-            mock_response.json.return_value = {'error': 'Internal server error'}
-            mock_get.return_value = mock_response
+        with patch.dict(os.environ, {'COINBASE_API_KEY': 'test_key', 'COINBASE_API_SECRET': 'test_secret'}):
+            client = CoinbaseClient()
             
-            try:
-                client = CoinbaseClient()
-            except ValueError:
-                pytest.skip("Coinbase API credentials not available")
-            
-            # Should handle API errors gracefully
-            result = client.get_product_price('BTC-EUR')
-            assert result is None or result == {}  # Should return None or empty dict on error
+            # Mock the SDK client to raise API error
+            with patch.object(client.client, 'get_product', side_effect=Exception("API Error")):
+                # Should handle API errors gracefully
+                result = client.get_product_price('BTC-EUR')
+                assert result == {"price": 0.0}  # Should return default price on error
     
     def test_gcp_quota_error_handling(self):
         """Test handling of GCP quota errors"""
@@ -320,6 +319,11 @@ class TestAPIIntegrationWorkflow:
     )
     def test_complete_decision_workflow(self):
         """Test complete decision-making workflow with real APIs"""
+        # Skip if we're using mocked modules
+        import google.genai as genai
+        if isinstance(genai, MagicMock):
+            pytest.skip("Running in test environment with mocked Google Cloud modules")
+            
         # Get real market data
         coinbase_client = CoinbaseClient()
         btc_price_data = coinbase_client.get_product_price('BTC-EUR')
@@ -330,7 +334,10 @@ class TestAPIIntegrationWorkflow:
             # Create market data for analysis
             import pandas as pd
             market_data = pd.DataFrame({
-                'close': [btc_price],  # Changed from 'price' to 'close'
+                'close': [btc_price],
+                'high': [btc_price * 1.02],
+                'low': [btc_price * 0.98],
+                'volume': [1000000],
                 'rsi': [60.0],
                 'macd': [0.2],
                 'bb_position': [0.7]
