@@ -60,7 +60,7 @@ class CapitalManager:
         
         # Check if rebalancing is needed first
         rebalance_action = self.check_rebalancing_needed(portfolio)
-        if rebalance_action and rebalance_action != action:
+        if rebalance_action == "FORCE_SELL" and action == "BUY":
             return 0, f"Rebalancing needed: {rebalance_action} required, but signal is {action}"
         
         if action == "BUY":

@@ -21,6 +21,7 @@ from utils.tax_report import TaxReportGenerator
 from utils.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
 from utils.notification_service import NotificationService
+from utils.cleanup_manager import CleanupManager
 
 # Import performance tracking
 try:
@@ -116,6 +117,9 @@ class TradingBot:
         
         # Initialize notification service
         self.notification_service = NotificationService()
+        
+        # Initialize cleanup manager
+        self.cleanup_manager = CleanupManager()
         
         # Initialize dashboard with existing data
         self.initialize_dashboard()
@@ -1284,6 +1288,9 @@ class TradingBot:
         # Schedule web server sync every 30 minutes (only sync point)
         schedule.every(30).minutes.do(self.sync_to_webserver)
         
+        # Schedule daily cleanup at 2 AM
+        schedule.every().day.at("02:00").do(self.run_daily_cleanup)
+        
 
         
         # Keep the script running
@@ -1410,6 +1417,32 @@ class TradingBot:
             return success
         except Exception as e:
             logger.error(f"Error generating strategy performance report: {e}")
+            return False
+    
+    def run_daily_cleanup(self):
+        """Run daily cleanup of old logs and data files"""
+        try:
+            logger.info("🧹 Starting daily cleanup...")
+            result = self.cleanup_manager.run_cleanup()
+            
+            # Send notification if significant cleanup occurred
+            if result['total_files'] > 0:
+                try:
+                    cleanup_msg = f"🧹 Daily Cleanup Complete\n\n"
+                    cleanup_msg += f"Files deleted: {result['total_files']}\n"
+                    cleanup_msg += f"Space freed: {result['space_saved_mb']:.1f}MB\n\n"
+                    
+                    for category, count in result['files_deleted'].items():
+                        if count > 0:
+                            cleanup_msg += f"• {category.replace('_', ' ').title()}: {count}\n"
+                    
+                    self.notification_service.send_status_notification(cleanup_msg)
+                except Exception as e:
+                    logger.warning(f"Failed to send cleanup notification: {e}")
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error during daily cleanup: {e}")
             return False
 
 if __name__ == "__main__":
