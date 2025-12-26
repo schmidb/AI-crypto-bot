@@ -8,6 +8,10 @@ import sys
 from google.cloud import storage
 from google.auth.exceptions import DefaultCredentialsError
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -17,11 +21,12 @@ def setup_gcs_bucket():
     """Set up GCS bucket for backtesting data"""
     
     try:
-        # Get project ID from environment or use default
-        project_id = os.getenv('GCP_PROJECT_ID', 'ai-crypto-bot')
+        # Get project ID from environment (use existing GOOGLE_CLOUD_PROJECT)
+        project_id = os.getenv('GOOGLE_CLOUD_PROJECT') or os.getenv('GCP_PROJECT_ID', 'ai-crypto-bot')
         bucket_name = f"{project_id}-backtest-data"
         
         logger.info(f"Setting up GCS bucket: {bucket_name}")
+        logger.info(f"Using project ID: {project_id}")
         
         # Initialize GCS client
         try:

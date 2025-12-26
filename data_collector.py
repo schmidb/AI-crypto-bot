@@ -18,7 +18,9 @@ class DataCollector:
     def __init__(self, coinbase_client: CoinbaseClient, gcs_bucket_name: Optional[str] = None):
         """Initialize the data collector with a Coinbase client"""
         self.client = coinbase_client
-        self.gcs_bucket_name = gcs_bucket_name or f"{os.getenv('GCP_PROJECT_ID', 'ai-crypto-bot')}-backtest-data"
+        # Use the existing GOOGLE_CLOUD_PROJECT from .env, fallback to GCP_PROJECT_ID, then default
+        project_id = os.getenv('GOOGLE_CLOUD_PROJECT') or os.getenv('GCP_PROJECT_ID', 'ai-crypto-bot')
+        self.gcs_bucket_name = gcs_bucket_name or f"{project_id}-backtest-data"
         self.gcs_client = None
         self.local_cache_dir = Path("./data/cache")
         self.local_cache_dir.mkdir(parents=True, exist_ok=True)
