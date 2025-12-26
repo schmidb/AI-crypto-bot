@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backtesting & Optimization - AI Crypto Trading Bot</title>
+    <!-- Bootstrap 5 CSS with Bootswatch Yeti Theme -->
+    <link href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.0/dist/yeti/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Shared Header CSS -->
+    <link rel="stylesheet" href="shared-header.css">
+    <style>
+        /* Backtesting Dashboard Styles */
+        :root {
+            --primary-color: #008cba;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --gradient-primary: linear-gradient(135deg, #008cba 0%, #0056b3 100%);
+            --gradient-success: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            --gradient-danger: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+            --gradient-warning: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+            --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Enhanced Card Styles */
+        .backtest-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            background: white;
+            margin-bottom: 1.5rem;
+        }
+
+        .backtest-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .backtest-card .card-header {
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            padding: 1rem 1.25rem;
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        /* Strategy Comparison Cards */
+        .strategy-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .strategy-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .strategy-card.best::before { background: var(--gradient-success); }
+        .strategy-card.good::before { background: var(--gradient-primary); }
+        .strategy-card.poor::before { background: var(--gradient-warning); }
+        .strategy-card.worst::before { background: var(--gradient-danger); }
+
+        .strategy-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .strategy-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+            text-transform: capitalize;
+        }
+
+        .strategy-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Optimization Results */
+        .optimization-result {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .param-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .param-item {
+            background: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .param-name {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .param-value {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-running {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--success-color);
+        }
+
+        .status-completed {
+            background-color: rgba(0, 140, 186, 0.1);
+            color: var(--primary-color);
+        }
+
+        .status-error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--danger-color);
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Loading States */
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .strategy-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .param-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        /* Walk-Forward Analysis */
+        .walkforward-period {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #dee2e6;
+            transition: all 0.2s ease;
+        }
+
+        .walkforward-period:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .period-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .period-dates {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .period-performance {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Shared Header -->
+    <div id="shared-header"></div>
+
+    <div class="container-fluid mt-4">
+        <!-- Page Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="fas fa-chart-line text-primary me-2"></i>
+                            Backtesting & Optimization
+                        </h2>
+                        <p class="text-muted mb-0">Strategy performance analysis and parameter optimization</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary action-btn" onclick="runBacktest()">
+                            <i class="fas fa-play me-1"></i>Run Backtest
+                        </button>
+                        <button class="btn btn-outline-primary action-btn" onclick="optimizeParameters()">
+                            <i class="fas fa-cogs me-1"></i>Optimize Parameters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Row -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2"></i>Backtest Status
+                    </div>
+                    <div class="card-body">
+                        <div id="backtest-status">
+                            <div class="status-indicator status-completed">
+                                <i class="fas fa-check-circle me-1"></i>Ready
+                            </div>
+                            <p class="mb-2">Last run: <span id="last-run-time">Never</span></p>
+                            <p class="mb-0">Data period: <span id="data-period">Loading...</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-database me-2"></i>Data Summary
+                    </div>
+                    <div class="card-body">
+                        <div id="data-summary">
+                            <p class="mb-2">Available data: <span id="available-data">Loading...</span></p>
+                            <p class="mb-2">Data quality: <span id="data-quality">Loading...</span></p>
+                            <p class="mb-0">Last update: <span id="last-update">Loading...</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-trophy me-2"></i>Best Strategy
+                    </div>
+                    <div class="card-body">
+                        <div id="best-strategy">
+                            <h5 class="mb-2" id="best-strategy-name">Loading...</h5>
+                            <p class="mb-1">Return: <span class="text-success" id="best-return">-</span></p>
+                            <p class="mb-0">Sharpe: <span class="text-info" id="best-sharpe">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategy Comparison -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-balance-scale me-2"></i>Strategy Comparison
+                    </div>
+                    <div class="card-body">
+                        <div id="strategy-comparison">
+                            <!-- Strategy cards will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Charts -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-area me-2"></i>Equity Curves
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="equity-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar me-2"></i>Risk-Return Analysis
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="risk-return-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Parameter Optimization -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-sliders-h me-2"></i>Parameter Optimization Results
+                    </div>
+                    <div class="card-body">
+                        <div id="optimization-results">
+                            <!-- Optimization results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Walk-Forward Analysis -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="backtest-card">
+                    <div class="card-header">
+                        <i class="fas fa-forward me-2"></i>Walk-Forward Analysis
+                    </div>
+                    <div class="card-body">
+                        <div id="walkforward-analysis">
+                            <!-- Walk-forward results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Shared Header JS -->
+    <script src="shared-header.js"></script>
+
+    <script>
+        // Global variables
+        let backtestData = null;
+        let optimizationData = null;
+        let walkforwardData = null;
+        let equityChart = null;
+        let riskReturnChart = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initBacktestDashboard();
+            // Auto-refresh every 30 seconds
+            setInterval(loadBacktestData, 30000);
+        });
+
+        async function initBacktestDashboard() {
+            try {
+                await loadBacktestData();
+                await loadOptimizationData();
+                await loadWalkforwardData();
+                updateDashboard();
+            } catch (error) {
+                console.error('Error initializing backtest dashboard:', error);
+                showError('Failed to initialize dashboard');
+            }
+        }
+
+        async function loadBacktestData() {
+            try {
+                // Load latest backtest results
+                const response = await fetch('../data/backtest_results/latest_backtest.json');
+                if (response.ok) {
+                    backtestData = await response.json();
+                } else {
+                    // Try to load the most recent backtest file
+                    const files = await fetch('../data/backtest_results/');
+                    if (files.ok) {
+                        // This would need server-side directory listing
+                        // For now, we'll use a fallback approach
+                        backtestData = await loadMostRecentBacktest();
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading backtest data:', error);
+                backtestData = null;
+            }
+        }
+
+        async function loadMostRecentBacktest() {
+            // Try common backtest file patterns
+            const patterns = [
+                'backtest_BTC-USD_latest.json',
+                'comprehensive_backtest_results.json'
+            ];
+            
+            for (const pattern of patterns) {
+                try {
+                    const response = await fetch(`../data/backtest_results/${pattern}`);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (error) {
+                    continue;
+                }
+            }
+            return null;
+        }
+
+        async function loadOptimizationData() {
+            try {
+                const response = await fetch('../data/backtest_results/latest_optimization.json');
+                if (response.ok) {
+                    optimizationData = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading optimization data:', error);
+                optimizationData = null;
+            }
+        }
+
+        async function loadWalkforwardData() {
+            try {
+                const response = await fetch('../data/backtest_results/latest_walkforward.json');
+                if (response.ok) {
+                    walkforwardData = await response.json();
+                }
+            } catch (error) {
+                console.error('Error loading walk-forward data:', error);
+                walkforwardData = null;
+            }
+        }
+
+        function updateDashboard() {
+            updateStatus();
+            updateDataSummary();
+            updateBestStrategy();
+            updateStrategyComparison();
+            updateCharts();
+            updateOptimizationResults();
+            updateWalkforwardAnalysis();
+        }
+
+        function updateStatus() {
+            const statusElement = document.getElementById('backtest-status');
+            const lastRunElement = document.getElementById('last-run-time');
+            const dataPeriodElement = document.getElementById('data-period');
+
+            if (backtestData) {
+                const timestamp = new Date(backtestData.timestamp);
+                lastRunElement.textContent = timestamp.toLocaleString();
+                
+                if (backtestData.data_period) {
+                    const start = new Date(backtestData.data_period.start).toLocaleDateString();
+                    const end = new Date(backtestData.data_period.end).toLocaleDateString();
+                    dataPeriodElement.textContent = `${start} - ${end}`;
+                }
+            } else {
+                lastRunElement.textContent = 'No data available';
+                dataPeriodElement.textContent = 'No data available';
+            }
+        }
+
+        function updateDataSummary() {
+            const availableDataElement = document.getElementById('available-data');
+            const dataQualityElement = document.getElementById('data-quality');
+            const lastUpdateElement = document.getElementById('last-update');
+
+            if (backtestData && backtestData.data_period) {
+                availableDataElement.textContent = `${backtestData.data_period.rows} data points`;
+                dataQualityElement.innerHTML = '<span class="text-success">Good</span>';
+                lastUpdateElement.textContent = new Date(backtestData.timestamp).toLocaleString();
+            } else {
+                availableDataElement.textContent = 'No data';
+                dataQualityElement.innerHTML = '<span class="text-warning">Unknown</span>';
+                lastUpdateElement.textContent = 'Never';
+            }
+        }
+
+        function updateBestStrategy() {
+            const nameElement = document.getElementById('best-strategy-name');
+            const returnElement = document.getElementById('best-return');
+            const sharpeElement = document.getElementById('best-sharpe');
+
+            if (backtestData && backtestData.comparative_analysis && backtestData.comparative_analysis.best_strategy) {
+                const best = backtestData.comparative_analysis.best_strategy;
+                const bestResult = backtestData.individual_results[best.name];
+                
+                nameElement.textContent = best.name.replace('_', ' ').toUpperCase();
+                returnElement.textContent = `${bestResult.total_return.toFixed(2)}%`;
+                sharpeElement.textContent = bestResult.sharpe_ratio.toFixed(3);
+            } else {
+                nameElement.textContent = 'No data';
+                returnElement.textContent = '-';
+                sharpeElement.textContent = '-';
+            }
+        }
+
+        function updateStrategyComparison() {
+            const container = document.getElementById('strategy-comparison');
+            
+            if (!backtestData || !backtestData.individual_results) {
+                container.innerHTML = '<p class="text-muted">No backtest data available</p>';
+                return;
+            }
+
+            const strategies = Object.entries(backtestData.individual_results);
+            const sortedStrategies = strategies.sort((a, b) => b[1].total_return - a[1].total_return);
+
+            let html = '<div class="row">';
+            
+            sortedStrategies.forEach(([name, result], index) => {
+                if (result.error) return;
+                
+                let cardClass = 'good';
+                if (index === 0) cardClass = 'best';
+                else if (index === sortedStrategies.length - 1) cardClass = 'worst';
+                else if (result.total_return < 0) cardClass = 'poor';
+
+                html += `
+                    <div class="col-md-6 col-lg-3">
+                        <div class="strategy-card ${cardClass}">
+                            <div class="strategy-name">${name.replace('_', ' ')}</div>
+                            <div class="strategy-metrics">
+                                <div class="metric-item">
+                                    <div class="metric-value ${result.total_return >= 0 ? 'text-success' : 'text-danger'}">
+                                        ${result.total_return.toFixed(2)}%
+                                    </div>
+                                    <div class="metric-label">Return</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value text-info">
+                                        ${result.sharpe_ratio.toFixed(2)}
+                                    </div>
+                                    <div class="metric-label">Sharpe</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value text-warning">
+                                        ${Math.abs(result.max_drawdown).toFixed(2)}%
+                                    </div>
+                                    <div class="metric-label">Max DD</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value text-primary">
+                                        ${result.total_trades}
+                                    </div>
+                                    <div class="metric-label">Trades</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function updateCharts() {
+            updateEquityChart();
+            updateRiskReturnChart();
+        }
+
+        function updateEquityChart() {
+            const ctx = document.getElementById('equity-chart').getContext('2d');
+            
+            if (equityChart) {
+                equityChart.destroy();
+            }
+
+            if (!backtestData || !backtestData.individual_results) {
+                return;
+            }
+
+            // Create sample equity curve data (in real implementation, this would come from backtest results)
+            const strategies = Object.keys(backtestData.individual_results);
+            const datasets = strategies.map((strategy, index) => {
+                const result = backtestData.individual_results[strategy];
+                if (result.error) return null;
+                
+                // Generate sample equity curve (replace with actual data)
+                const points = 50;
+                const data = [];
+                let value = 10000;
+                
+                for (let i = 0; i < points; i++) {
+                    const change = (Math.random() - 0.5) * 0.02; // Random walk
+                    value *= (1 + change);
+                    data.push({
+                        x: new Date(Date.now() - (points - i) * 24 * 60 * 60 * 1000),
+                        y: value
+                    });
+                }
+                
+                const colors = ['#008cba', '#28a745', '#dc3545', '#ffc107', '#17a2b8'];
+                
+                return {
+                    label: strategy.replace('_', ' '),
+                    data: data,
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length] + '20',
+                    fill: false,
+                    tension: 0.1
+                };
+            }).filter(Boolean);
+
+            equityChart = new Chart(ctx, {
+                type: 'line',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Portfolio Value ($)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Strategy Performance Comparison'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRiskReturnChart() {
+            const ctx = document.getElementById('risk-return-chart').getContext('2d');
+            
+            if (riskReturnChart) {
+                riskReturnChart.destroy();
+            }
+
+            if (!backtestData || !backtestData.comparative_analysis || !backtestData.comparative_analysis.risk_return_profile) {
+                return;
+            }
+
+            const riskReturnData = backtestData.comparative_analysis.risk_return_profile;
+            
+            const datasets = [{
+                label: 'Strategies',
+                data: riskReturnData.map(item => ({
+                    x: Math.abs(item.risk),
+                    y: item.return,
+                    strategy: item.strategy
+                })),
+                backgroundColor: riskReturnData.map(item => 
+                    item.return >= 0 ? '#28a74580' : '#dc354580'
+                ),
+                borderColor: riskReturnData.map(item => 
+                    item.return >= 0 ? '#28a745' : '#dc3545'
+                ),
+                pointRadius: 8,
+                pointHoverRadius: 10
+            }];
+
+            riskReturnChart = new Chart(ctx, {
+                type: 'scatter',
+                data: { datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Risk (Max Drawdown %)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Return (%)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Risk vs Return Analysis'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = context.parsed;
+                                    const strategy = riskReturnData[context.dataIndex].strategy;
+                                    return `${strategy}: ${point.y.toFixed(2)}% return, ${point.x.toFixed(2)}% risk`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateOptimizationResults() {
+            const container = document.getElementById('optimization-results');
+            
+            if (!optimizationData) {
+                container.innerHTML = '<p class="text-muted">No optimization data available. Run parameter optimization to see results.</p>';
+                return;
+            }
+
+            let html = `
+                <div class="optimization-result">
+                    <h6 class="mb-2">
+                        <i class="fas fa-trophy text-warning me-2"></i>
+                        Best Parameters for ${optimizationData.strategy_name}
+                    </h6>
+                    <p class="mb-2">
+                        Optimization metric: <strong>${optimizationData.optimization_metric}</strong> = 
+                        <span class="text-success">${optimizationData.best_performance.toFixed(3)}</span>
+                    </p>
+                    <div class="param-grid">
+            `;
+            
+            Object.entries(optimizationData.best_params).forEach(([param, value]) => {
+                html += `
+                    <div class="param-item">
+                        <div class="param-name">${param.replace('_', ' ')}</div>
+                        <div class="param-value">${value}</div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                    <small class="text-muted">
+                        Optimized on ${new Date(optimizationData.timestamp).toLocaleString()}
+                    </small>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function updateWalkforwardAnalysis() {
+            const container = document.getElementById('walkforward-analysis');
+            
+            if (!walkforwardData || !walkforwardData.analysis) {
+                container.innerHTML = '<p class="text-muted">No walk-forward analysis data available.</p>';
+                return;
+            }
+
+            const analysis = walkforwardData.analysis;
+            
+            let html = `
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <div class="metric-value text-primary">${analysis.periods_tested}</div>
+                            <div class="metric-label">Periods Tested</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <div class="metric-value ${analysis.avg_test_return >= 0 ? 'text-success' : 'text-danger'}">
+                                ${analysis.avg_test_return.toFixed(2)}%
+                            </div>
+                            <div class="metric-label">Avg Return</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <div class="metric-value text-info">${analysis.win_rate.toFixed(1)}%</div>
+                            <div class="metric-label">Win Rate</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-item">
+                            <div class="metric-value text-warning">${(analysis.parameter_stability * 100).toFixed(1)}%</div>
+                            <div class="metric-label">Param Stability</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (walkforwardData.periods && walkforwardData.periods.length > 0) {
+                html += '<h6 class="mb-3">Recent Periods:</h6>';
+                
+                walkforwardData.periods.slice(-5).forEach((period, index) => {
+                    const testPerf = period.test_performance;
+                    html += `
+                        <div class="walkforward-period">
+                            <div class="period-header">
+                                <div>
+                                    <strong>Period ${period.period_id + 1}</strong>
+                                    <div class="period-dates">
+                                        ${new Date(period.test_start).toLocaleDateString()} - 
+                                        ${new Date(period.test_end).toLocaleDateString()}
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge ${testPerf.total_return >= 0 ? 'bg-success' : 'bg-danger'}">
+                                        ${testPerf.total_return.toFixed(2)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="period-performance">
+                                <div class="metric-item">
+                                    <div class="metric-value">${testPerf.sharpe_ratio.toFixed(2)}</div>
+                                    <div class="metric-label">Sharpe</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value">${Math.abs(testPerf.max_drawdown).toFixed(2)}%</div>
+                                    <div class="metric-label">Max DD</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-value">${testPerf.total_trades}</div>
+                                    <div class="metric-label">Trades</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
+        }
+
+        // Action functions
+        async function runBacktest() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<span class="loading-spinner"></span>Running...';
+            button.disabled = true;
+            
+            try {
+                // In a real implementation, this would trigger the backtest
+                const response = await fetch('/api/run-backtest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        strategies: ['all'],
+                        period: '6months'
+                    })
+                });
+                
+                if (response.ok) {
+                    showSuccess('Backtest started successfully');
+                    setTimeout(() => {
+                        loadBacktestData();
+                        updateDashboard();
+                    }, 2000);
+                } else {
+                    throw new Error('Failed to start backtest');
+                }
+            } catch (error) {
+                console.error('Error running backtest:', error);
+                showError('Failed to run backtest. Please check the console for details.');
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        async function optimizeParameters() {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<span class="loading-spinner"></span>Optimizing...';
+            button.disabled = true;
+            
+            try {
+                // In a real implementation, this would trigger parameter optimization
+                const response = await fetch('/api/optimize-parameters', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        strategy: 'momentum',
+                        metric: 'sortino_ratio'
+                    })
+                });
+                
+                if (response.ok) {
+                    showSuccess('Parameter optimization started');
+                    setTimeout(() => {
+                        loadOptimizationData();
+                        updateOptimizationResults();
+                    }, 2000);
+                } else {
+                    throw new Error('Failed to start optimization');
+                }
+            } catch (error) {
+                console.error('Error optimizing parameters:', error);
+                showError('Failed to optimize parameters. Please check the console for details.');
+            } finally {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // Utility functions
+        function showSuccess(message) {
+            // Create a simple toast notification
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-success position-fixed';
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${message}
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        function showError(message) {
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-danger position-fixed';
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                <i class="fas fa-exclamation-circle me-2"></i>${message}
+                <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 8000);
+        }
+    </script>
+</body>
+</html>
