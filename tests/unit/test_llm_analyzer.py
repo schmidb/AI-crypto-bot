@@ -126,7 +126,7 @@ class TestMarketDataAnalysis:
             "risk_assessment": "medium"
         }
         
-        with patch.object(analyzer, '_call_vertex_ai', return_value=mock_response):
+        with patch.object(analyzer, '_call_genai', return_value=mock_response):
             result = analyzer.analyze_market_data(
                 market_data=sample_market_data,
                 current_price=51000.0,
@@ -152,7 +152,7 @@ class TestMarketDataAnalysis:
             "risk_assessment": "low"
         }
         
-        with patch.object(analyzer, '_call_vertex_ai', return_value=mock_response) as mock_call:
+        with patch.object(analyzer, '_call_genai', return_value=mock_response) as mock_call:
             result = analyzer.analyze_market_data(
                 market_data=sample_market_data,
                 current_price=51000.0,
@@ -166,7 +166,7 @@ class TestMarketDataAnalysis:
     
     def test_analyze_market_data_llm_error_handling(self, analyzer, sample_market_data):
         """Test error handling when LLM call fails."""
-        with patch.object(analyzer, '_call_vertex_ai', side_effect=Exception("API Error")):
+        with patch.object(analyzer, '_call_genai', side_effect=Exception("API Error")):
             result = analyzer.analyze_market_data(
                 market_data=sample_market_data,
                 current_price=51000.0,
@@ -181,7 +181,7 @@ class TestMarketDataAnalysis:
 
 
 class TestVertexAIProviderCalls:
-    """Test Vertex AI provider implementation."""
+    """Test GenAI provider implementation."""
     
     @pytest.fixture
     def analyzer(self):
@@ -191,55 +191,28 @@ class TestVertexAIProviderCalls:
             
             return LLMAnalyzer()
     
-    @patch('llm_analyzer.requests.post')
-    def test_call_vertex_ai_success(self, mock_post, analyzer):
-        """Test successful Vertex AI API call."""
-        # Mock successful API response
+    def test_call_genai_success(self, analyzer):
+        """Test successful GenAI API call."""
+        # Mock the client's generate_content method
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "candidates": [{
-                "content": {
-                    "parts": [{
-                        "text": '{"decision": "BUY", "confidence": 80, "reasoning": "Test reasoning", "risk_assessment": "medium"}'
-                    }]
-                }
-            }]
-        }
-        mock_post.return_value = mock_response
+        mock_response.text = '{"decision": "BUY", "confidence": 80, "reasoning": "Test reasoning", "risk_assessment": "medium"}'
         
-        # Mock credentials - create the attribute if it doesn't exist
-        if not hasattr(analyzer, 'credentials'):
-            analyzer.credentials = MagicMock()
-        analyzer.credentials.token = "test_token"
+        analyzer.client.models.generate_content = MagicMock(return_value=mock_response)
         
-        result = analyzer._call_vertex_ai("test prompt")
+        result = analyzer._call_genai("test prompt")
         
         assert result["decision"] == "BUY"
         assert result["confidence"] == 80
         assert result["reasoning"] == "Test reasoning"
     
-    @patch('llm_analyzer.requests.post')
-    def test_call_vertex_ai_api_error(self, mock_post, analyzer):
-        """Test Vertex AI API error handling."""
-        # Mock API error response
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.text = "Bad Request"
-        mock_response.json.return_value = {"error": "Bad Request"}
-        mock_post.return_value = mock_response
+    def test_call_genai_api_error(self, analyzer):
+        """Test GenAI API error handling."""
+        # Mock API error
+        analyzer.client.models.generate_content = MagicMock(side_effect=Exception("API Error"))
         
-        # Mock credentials - create the attribute if it doesn't exist
-        if not hasattr(analyzer, 'credentials'):
-            analyzer.credentials = MagicMock()
-        analyzer.credentials.token = "test_token"
-        
-        # The method returns a default response instead of raising an exception
-        result = analyzer._call_vertex_ai("test prompt")
-        
-        # Should return safe defaults on API error
-        assert result["decision"] == "HOLD"
-        assert result["confidence"] == 50
+        # The method should raise the exception
+        with pytest.raises(Exception, match="API Error"):
+            analyzer._call_genai("test prompt")
 
 
 class TestDataProcessing:
