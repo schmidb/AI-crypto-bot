@@ -74,15 +74,15 @@ class TestDataFlowIntegration:
         """Test data flow from Coinbase client to portfolio"""
         with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
             coinbase_client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
-                
-                # Get data from Coinbase
-                coinbase_portfolio = coinbase_client.get_portfolio()
-                
-                # Verify the mock data is returned correctly
-                assert coinbase_portfolio == mock_coinbase_data
-                assert coinbase_portfolio['BTC']['amount'] == 0.001
-                assert coinbase_portfolio['ETH']['amount'] == 0.01
-                assert coinbase_portfolio['EUR']['amount'] == 100.0
+            
+            # Get data from Coinbase
+            coinbase_portfolio = coinbase_client.get_portfolio()
+            
+            # Verify the mock data is returned correctly
+            assert coinbase_portfolio == mock_coinbase_data
+            assert coinbase_portfolio['BTC']['amount'] == 0.001
+            assert coinbase_portfolio['ETH']['amount'] == 0.01
+            assert coinbase_portfolio['EUR']['amount'] == 100.0
     
     def test_portfolio_to_strategy_integration(self, portfolio, temp_dir):
         """Test data flow from portfolio to strategy manager"""
@@ -287,13 +287,13 @@ class TestErrorPropagation:
         with patch.object(CoinbaseClient, 'get_portfolio', side_effect=Exception("API Error")):
             coinbase_client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
                 
-                # Should handle API errors gracefully
-                try:
-                    portfolio_data = coinbase_client.get_portfolio()
-                    assert False, "Expected exception was not raised"
-                except Exception as e:
-                    assert "API Error" in str(e)
-                    # Test passed - exception was properly raised
+            # Should handle API errors gracefully
+            try:
+                portfolio_data = coinbase_client.get_portfolio()
+                assert False, "Expected exception was not raised"
+            except Exception as e:
+                assert "API Error" in str(e)
+                # Test passed - exception was properly raised
     
     def test_llm_error_to_strategy(self):
         """Test error handling when LLM analysis fails"""
@@ -474,28 +474,28 @@ class TestComponentIntegrationWorkflows:
         with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
             # 1. Get data from Coinbase
             coinbase_client = CoinbaseClient(api_key='test_key', api_secret='test_secret')
-                coinbase_portfolio = coinbase_client.get_portfolio()
-                
-                # 2. Update portfolio
-                portfolio_file = os.path.join(temp_dir, "portfolio.json")
-                portfolio = Portfolio(portfolio_file=portfolio_file)
-                portfolio.update_from_exchange(coinbase_portfolio)
-                
-                # 3. Track performance
-                tracker = PerformanceTracker(config_path=temp_dir)
-                tracker.initialize_tracking(
-                    initial_portfolio_value=145.0,
-                    initial_portfolio_composition=portfolio.data
-                )
-                tracker.take_portfolio_snapshot(portfolio.to_dict())
-                
-                # 4. Calculate performance
-                calculator = PerformanceCalculator()
-                
-                # Verify complete pipeline
-                assert portfolio.get_asset_amount('BTC') == 0.001
-                # Just verify tracker is initialized instead of checking snapshots_count
-                assert tracker.config.get('tracking_enabled') == True
+            coinbase_portfolio = coinbase_client.get_portfolio()
+            
+            # 2. Update portfolio
+            portfolio_file = os.path.join(temp_dir, "portfolio.json")
+            portfolio = Portfolio(portfolio_file=portfolio_file)
+            portfolio.update_from_exchange(coinbase_portfolio)
+            
+            # 3. Track performance
+            tracker = PerformanceTracker(config_path=temp_dir)
+            tracker.initialize_tracking(
+                initial_portfolio_value=145.0,
+                initial_portfolio_composition=portfolio.data
+            )
+            tracker.take_portfolio_snapshot(portfolio.to_dict())
+            
+            # 4. Calculate performance
+            calculator = PerformanceCalculator()
+            
+            # Verify complete pipeline
+            assert portfolio.get_asset_amount('BTC') == 0.001
+            # Just verify tracker is initialized instead of checking snapshots_count
+            assert tracker.config.get('tracking_enabled') == True
     
     def test_decision_making_workflow(self, temp_dir):
         """Test complete decision-making workflow"""
