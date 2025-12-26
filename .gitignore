@@ -42,6 +42,8 @@ data/
 reports/
 *.db
 *.sqlite
+data/historical/
+*.parquet
 
 # IDE
 .vscode/
@@ -108,6 +110,7 @@ PROJECT_*.md
 # Credentials (should be in secure location)
 google.json
 *.json.backup
+intense-base*.json
 
 # Coverage files
 .coverage
