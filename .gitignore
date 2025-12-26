@@ -101,6 +101,8 @@ analyze_*.py
 cleanup_*.py
 *_analysis.py
 *_cleanup.py
+# But keep the utils cleanup manager
+!utils/cleanup_manager.py
 
 # Temporary documentation
 *_COMPLETE.md
