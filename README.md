@@ -1,28 +1,38 @@
 # 🤖 AI Crypto Trading Bot
 
-An intelligent cryptocurrency trading bot that uses AI analysis to make data-driven trading decisions on Coinbase Advanced Trade.
+An advanced multi-strategy cryptocurrency trading bot that combines AI analysis with traditional technical indicators for intelligent trading decisions on Coinbase Advanced Trade.
 
-## 🎯 **Core Philosophy: AI-First Trading**
+## 🎯 **Core Philosophy: Adaptive Multi-Strategy Trading**
 
-This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalancing, allowing for:
-- **Market-responsive trading** based on technical indicators and trends
-- **Dynamic position sizing** that adapts to confidence levels and market conditions  
-- **Smart safety limits** that protect your portfolio without blocking profitable trades
-- **Momentum-based strategies** that can ride winners and cut losers
+This bot uses a sophisticated **multi-strategy framework** that adapts to market conditions:
+- **4 Parallel Strategies**: LLM AI analysis, trend following, mean reversion, and momentum trading
+- **Market Regime Detection**: Automatically identifies trending, ranging, or volatile market conditions
+- **Adaptive Strategy Prioritization**: Different strategies take priority based on current market regime
+- **Phase 3 Enhancements**: News sentiment analysis and volatility assessment integration
 
 ## ✨ **Key Features**
 
-### 🧠 **AI-Powered Decision Making**
-- **Advanced LLM Analysis**: Uses Google's Gemini 2.5 Pro for market analysis
-- **Technical Indicators**: RSI, MACD, Bollinger Bands, Moving Averages
-- **Market Sentiment**: Analyzes price trends, volume, and volatility
-- **Confidence Scoring**: 0-100% confidence levels for each trading decision
+### 🧠 **Multi-Strategy Decision Making**
+- **Adaptive Strategy Manager**: Hierarchical decision making with 4 parallel strategies
+- **Market Regime Detection**: Automatically identifies trending, ranging, or volatile conditions
+- **Strategy Prioritization**: Different strategies take priority based on market regime:
+  - **Trending Markets**: Trend following → Momentum → LLM → Mean reversion
+  - **Ranging Markets**: Mean reversion → LLM → Momentum → Trend following  
+  - **Volatile Markets**: LLM → Mean reversion → Trend following → Momentum
+- **Confidence Thresholds**: Adaptive thresholds based on market conditions and strategy type
 
-### 📊 **Smart Trading Strategy**
-- **AI Priority**: Market analysis drives all trading decisions
-- **Dynamic Position Sizing**: Trade sizes adapt to confidence (10-25% of balance)
-- **Intelligent Rebalancing**: Automatic portfolio rebalancing every 3 hours based on market conditions
-- **Safety Limits**: Minimum €50 EUR balance, 3% minimum crypto allocation
+### 📊 **Phase 3 Enhanced Analysis**
+- **News Sentiment Integration**: Real-time cryptocurrency news sentiment analysis
+- **Volatility Assessment**: Market volatility analysis affecting strategy weights
+- **Advanced LLM Analysis**: Google's Gemini 3.0 Flash for comprehensive market analysis
+- **Technical Indicators**: RSI, MACD, Bollinger Bands, Moving Averages
+- **Performance Tracking**: Historical strategy performance with 64,650+ decisions tracked
+
+### 🎯 **Intelligent Trading Strategy**
+- **Hierarchical Decision Making**: First strategy to meet confidence threshold executes
+- **Dynamic Position Sizing**: Trade sizes adapt to confidence and market conditions
+- **Capital Management**: Sophisticated EUR reserve management (12% target allocation)
+- **Safety Limits**: Minimum €15 EUR balance, maximum 50% EUR usage per trade
 
 ### 📱 **Push Notifications**
 - **Real-time Trade Alerts**: Instant notifications for BUY/SELL executions
@@ -32,7 +42,7 @@ This bot prioritizes **AI-driven market analysis** over rigid portfolio rebalanc
 
 ### 🛡️ **Risk Management**
 - **Dual-Layer System**: Static risk configuration + dynamic market assessment
-- **Confidence Thresholds**: 70% minimum confidence for BUY/SELL decisions
+- **Confidence Thresholds**: 55% minimum confidence for BUY/SELL decisions
 - **Position Sizing**: Risk-adjusted trade sizes (HIGH=50% reduction, MEDIUM=25%, LOW=0%)
 - **Market Volatility**: Real-time assessment (high/medium/low) affects trading decisions
 - **Balance Protection**: Maintains minimum balances for continued trading
@@ -140,6 +150,25 @@ First Phase 2 component with 100% test coverage and 26 comprehensive tests.
 
 📚 **[Complete Test Documentation →](tests/README.md)**
 
+## 📊 **Current Status**
+
+### **Active Trading Pairs**
+- **BTC-EUR**: Bitcoin trading against Euro
+- **ETH-EUR**: Ethereum trading against Euro
+- **SOL**: Held but not actively traded (legacy position)
+
+### **Portfolio Composition** (as of latest run)
+- **BTC**: 0.00215666 (~€162.50)
+- **ETH**: 0.01527914 (~€38.50)
+- **SOL**: 0.042109793 (~€8.00) - *Legacy holding*
+- **EUR**: €15.38 (6.9% allocation)
+- **Total Value**: €224.37
+
+### **Strategy Performance**
+- **64,650+ Trading Decisions** tracked and analyzed
+- **Multi-Strategy Framework** with adaptive market regime detection
+- **Live Trading Mode** with real-time portfolio synchronization
+
 ## 🚀 **Quick Start**
 
 ### Prerequisites
@@ -198,21 +227,22 @@ Both include automated scripts for dependencies, web server setup, and service c
 ```env
 # Trading Configuration
 BASE_CURRENCY=EUR                    # Base currency for trading
-TRADING_PAIRS=BTC-EUR,ETH-EUR,SOL-EUR  # Trading pairs
+TRADING_PAIRS=BTC-EUR,ETH-EUR        # Trading pairs (SOL removed from active trading)
 RISK_LEVEL=HIGH                      # LOW, MEDIUM, HIGH
 SIMULATION_MODE=False                # Set to True for paper trading
 
-# AI Decision Thresholds
-CONFIDENCE_THRESHOLD_BUY=70          # Minimum confidence for BUY orders
-CONFIDENCE_THRESHOLD_SELL=70         # Minimum confidence for SELL orders
+# Multi-Strategy Thresholds
+CONFIDENCE_THRESHOLD_BUY=55          # Minimum confidence for BUY orders
+CONFIDENCE_THRESHOLD_SELL=55         # Minimum confidence for SELL orders
 
 # Trade Size Limits
-MIN_TRADE_AMOUNT=30.0               # Minimum trade size (EUR)
-MAX_POSITION_SIZE=1000.0            # Maximum single trade size (EUR)
+MIN_TRADE_AMOUNT=5.0                # Minimum trade size (EUR)
+MAX_POSITION_SIZE_PERCENT=75        # Maximum single trade size (% of EUR balance)
 
-# Portfolio Strategy
-TARGET_CRYPTO_ALLOCATION=90         # Target crypto allocation %
-TARGET_BASE_ALLOCATION=10           # Target EUR allocation %
+# Capital Management Strategy
+TARGET_EUR_ALLOCATION=12            # Target EUR allocation %
+MIN_EUR_RESERVE=15.0                # Minimum EUR reserve
+MAX_EUR_USAGE_PER_TRADE=50.0        # Maximum EUR usage per trade %
 ```
 
 ### **API Configuration**
@@ -225,7 +255,7 @@ COINBASE_API_SECRET=your_private_key
 # Google Cloud (for AI analysis)
 GOOGLE_CLOUD_PROJECT=your_project_id
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
-LLM_MODEL=gemini-2.5-pro
+LLM_MODEL=gemini-3-flash-preview
 
 # Push Notifications (Pushover)
 NOTIFICATIONS_ENABLED=true
@@ -262,31 +292,41 @@ PUSHOVER_USER=your_pushover_user_key
 
 ## 🎛️ **Trading Strategy Details**
 
-### **AI-First Approach**
-Unlike traditional rebalancing bots that force rigid allocation percentages, this bot:
+### **Multi-Strategy Framework**
+Unlike traditional single-strategy bots, this bot employs a sophisticated multi-strategy approach:
 
-1. **Analyzes Market Conditions** using AI and technical indicators
-2. **Makes Trading Decisions** based on market opportunities
-3. **Applies Smart Safety Limits** to protect your portfolio
-4. **Sizes Positions Dynamically** based on confidence and allocation
+1. **Market Regime Detection**: Analyzes 24h price changes and Bollinger Band width to classify markets as:
+   - **Trending**: Strong directional movement (>2% daily change)
+   - **Ranging**: Sideways movement with low volatility
+   - **Volatile**: High volatility with uncertain direction
 
-### **Smart Safety Limits**
-- **Minimum EUR Balance**: €50 (ensures ability to make BUY orders)
-- **Maximum EUR Allocation**: 35% (prevents holding too much cash)
-- **Minimum Crypto Allocation**: 3% per asset (maintains diversification)
-- **Trade Size Scaling**: Higher confidence = larger positions (up to 1.5x)
+2. **Strategy Hierarchy**: Based on market regime, strategies are prioritized:
+   - **Trend Following**: Momentum-based signals for trending markets
+   - **Mean Reversion**: Counter-trend signals for ranging markets  
+   - **Momentum**: Short-term momentum indicators
+   - **LLM Strategy**: AI-powered analysis with news sentiment integration
+
+3. **Adaptive Confidence Thresholds**: Each strategy has different confidence requirements based on market conditions:
+   - Lower thresholds for favored strategies in their optimal market regime
+   - Higher thresholds for strategies working against market conditions
 
 ### **Decision Process**
 ```
-Market Data → AI Analysis → Confidence Score → Safety Check → Position Sizing → Execute Trade
+Market Data → Regime Detection → Strategy Prioritization → Confidence Check → Position Sizing → Execute Trade
 ```
+
+### **Capital Management**
+- **Target EUR Allocation**: 12% (€15+ minimum reserve)
+- **Maximum Trade Size**: 50% of available EUR balance
+- **Position Sizing**: Scales with strategy confidence and market conditions
+- **Risk Management**: Integrated position multipliers based on market volatility
 
 ## 📊 **Dashboard Features**
 
 ### **Portfolio Overview**
 - **Total Value**: Real-time EUR portfolio value
 - **Asset Allocation**: Current vs target percentages
-- **AI-First Strategy Status**: Smart safety limits and trading capability
+- **Multi-Strategy Status**: Current market regime and active strategy priorities
 - **Performance Metrics**: P&L, returns, win rates
 
 ### **Enhanced AI Analysis**
@@ -297,6 +337,7 @@ Market Data → AI Analysis → Confidence Score → Safety Check → Position S
   - **Market Context**: Price trends, conditions, and analysis quality
 - **Recent Decisions**: Latest BUY/SELL/HOLD recommendations
 - **Confidence Levels**: AI confidence scores (0-100%)
+- **Strategy Performance**: Individual strategy success rates and performance metrics
 
 ### **Live Logs Dashboard**
 - **Real-time Log Monitoring**: Last 30 lines of bot activity
@@ -318,13 +359,22 @@ AI-crypto-bot/
 ├── config.py              # Configuration management
 ├── coinbase_client.py     # Coinbase API client
 ├── llm_analyzer.py        # AI analysis engine
-├── trading_strategy.py    # Trading strategy implementation
 ├── data_collector.py      # Market data collection
+├── strategies/            # Multi-strategy framework
+│   ├── adaptive_strategy_manager.py
+│   ├── llm_strategy.py
+│   ├── trend_following.py
+│   ├── mean_reversion.py
+│   ├── momentum.py
+│   └── base_strategy.py
 ├── utils/                 # Utility modules
 │   ├── dashboard_updater.py
 │   ├── webserver_sync.py
 │   ├── logger.py
 │   ├── portfolio.py
+│   ├── capital_manager.py
+│   ├── news_sentiment.py
+│   ├── volatility_analyzer.py
 │   └── ...
 ├── dashboard/             # Web dashboard
 │   ├── static/
@@ -376,6 +426,28 @@ python3 bot_manager.py status
 
 ## 🔧 **Advanced Configuration**
 
+### **Multi-Strategy Settings**
+```env
+# Strategy Confidence Thresholds (per market regime)
+# Trending Markets
+TREND_FOLLOWING_BUY_THRESHOLD=55
+MOMENTUM_BUY_THRESHOLD=60
+LLM_STRATEGY_BUY_THRESHOLD=65
+MEAN_REVERSION_BUY_THRESHOLD=75
+
+# Ranging Markets  
+MEAN_REVERSION_BUY_THRESHOLD=60
+LLM_STRATEGY_BUY_THRESHOLD=65
+MOMENTUM_BUY_THRESHOLD=70
+TREND_FOLLOWING_BUY_THRESHOLD=75
+
+# Volatile Markets
+LLM_STRATEGY_BUY_THRESHOLD=70
+MEAN_REVERSION_BUY_THRESHOLD=75
+TREND_FOLLOWING_BUY_THRESHOLD=80
+MOMENTUM_BUY_THRESHOLD=80
+```
+
 ### **Risk Management**
 ```env
 # Position Sizing Multipliers
@@ -401,14 +473,20 @@ DASHBOARD_TRADE_HISTORY_LIMIT=10    # Number of recent trades to show
 
 ### **Confidence-Based Trading**
 - **High Confidence (80%+)**: Larger position sizes, immediate execution
-- **Medium Confidence (70-79%)**: Standard position sizes
-- **Low Confidence (<70%)**: No trade execution (HOLD)
+- **Medium Confidence (60-79%)**: Standard position sizes
+- **Low Confidence (<60%)**: No trade execution (HOLD)
 
 ### **Dynamic Position Sizing**
 - **Over-allocated assets**: Smaller SELL positions to maintain balance
 - **Under-allocated assets**: Larger BUY positions when EUR is available
 - **High EUR allocation**: Larger BUY positions to deploy cash
 - **Low EUR allocation**: Smaller BUY positions to preserve liquidity
+
+### **Strategy Performance Tracking**
+- **64,650+ Decisions Tracked**: Comprehensive historical performance data
+- **Individual Strategy Metrics**: Success rates and performance per strategy
+- **Market Regime Analysis**: Strategy effectiveness in different market conditions
+- **Adaptive Learning**: Strategy weights adjust based on historical performance
 
 ## 🛠️ **Maintenance & Monitoring**
 
@@ -437,14 +515,14 @@ SIMULATION_MODE=True
 ```
 
 ### **Emergency Stops**
-- **Insufficient Balance**: Stops BUY orders if EUR < €50
+- **Insufficient Balance**: Stops BUY orders if EUR < €15
 - **API Failures**: Graceful degradation with error logging
 - **Invalid Decisions**: Defaults to HOLD on analysis errors
 
 ### **Portfolio Protection**
-- **Minimum Holdings**: Prevents selling below 3% allocation
-- **Maximum Cash**: Limits EUR allocation to 35%
-- **Trade Size Limits**: €30 minimum, €1000 maximum per trade
+- **Minimum Holdings**: Prevents selling below minimum thresholds
+- **Maximum Cash**: Limits EUR allocation based on target settings
+- **Trade Size Limits**: €5 minimum, maximum 50% EUR usage per trade
 
 ## 🔄 **Deployment**
 
@@ -586,8 +664,8 @@ gcloud compute firewall-rules create allow-http-crypto-bot \
 ### **Common Issues**
 
 **Bot not trading:**
-- Check EUR balance (minimum €50 required)
-- Verify AI confidence meets 70% threshold
+- Check EUR balance (minimum €15 required)
+- Verify AI confidence meets 55% threshold
 - Confirm API keys are valid
 
 **Dashboard not updating:**
