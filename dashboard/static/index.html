@@ -1273,20 +1273,20 @@
                                 <div class="row text-center">
                                     <div class="col-4">
                                         <div class="metric-small">
-                                            <div class="metric-value text-info">€50</div>
+                                            <div class="metric-value text-info">€15</div>
                                             <div class="metric-label">Min EUR</div>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="metric-small">
-                                            <div class="metric-value text-warning">35%</div>
-                                            <div class="metric-label">Max EUR</div>
+                                            <div class="metric-value text-warning">12%</div>
+                                            <div class="metric-label">Target EUR</div>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="metric-small">
-                                            <div class="metric-value text-success">3%</div>
-                                            <div class="metric-label">Min Crypto</div>
+                                            <div class="metric-value text-success">88%</div>
+                                            <div class="metric-label">Target Crypto</div>
                                         </div>
                                     </div>
                                 </div>
@@ -2891,8 +2891,9 @@
                 const eurBalance = portfolioData?.EUR?.amount || 0;
                 
                 // Check safety limits
-                const minEurBalance = 50.0;
-                const maxEurAllocation = 35.0;
+                const minEurBalance = 15.0;  // From MIN_EUR_RESERVE
+                const maxEurAllocation = 12.0;  // From TARGET_EUR_ALLOCATION
+                const minCryptoAllocation = 3.0;  // Minimum crypto holding
                 
                 let statusMessage = 'AI decisions prioritized with smart safety limits';
                 let statusClass = 'text-success';
