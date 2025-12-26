@@ -4,7 +4,7 @@
 
 ### **✅ COMPLETED TASKS**
 - **✅ Phase 1.1**: Updated requirements.txt with backtesting dependencies
-  - Added vectorbt>=0.25.0, pandas-ta>=0.3.14b, pyarrow>=10.0.0
+  - Added vectorbt>=0.25.0, ta>=0.11.0 (technical analysis), pyarrow>=10.0.0
   - Added google-cloud-storage>=2.10.0, numba>=0.58.0
   - Added talib-binary>=0.4.19, fastparquet>=0.8.3
 
@@ -130,18 +130,18 @@ To ensure high-fidelity results, we must support high-resolution (1-minute) data
 
 ## **3. Phase 2: Strategy Vectorization & Dependencies**
 
-The existing strategies in strategies/ must be adapted to run as vectorized functions using **VectorBT** and **Pandas-TA**.
+The existing strategies in strategies/ must be adapted to run as vectorized functions using **VectorBT** and **TA** (technical analysis library).
 
 ### **3.1. Required Dependencies**
 
 Add to requirements.txt:
 ```
 vectorbt>=0.25.0
-pandas-ta>=0.3.14b
+ta>=0.11.0  # Technical analysis library (Python 3.10 compatible)
 pyarrow>=10.0.0  # For parquet support
 google-cloud-storage>=2.10.0
 numba>=0.58.0  # For vectorbt performance
-talib-binary>=0.4.19  # Alternative to pandas-ta for some indicators
+talib-binary>=0.4.19  # Alternative technical analysis library
 fastparquet>=0.8.3  # Alternative parquet engine
 ```
 
