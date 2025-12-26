@@ -70,12 +70,22 @@ class HybridPerformanceTracker:
         
         # Record individual strategy decisions
         for strategy_name, signal in strategy_signals.items():
+            # Handle both TradingSignal objects and dictionaries
+            if hasattr(signal, 'action'):
+                # TradingSignal object
+                action = signal.action
+                confidence = signal.confidence
+            else:
+                # Dictionary format
+                action = signal.get('action', 'HOLD')
+                confidence = signal.get('confidence', 50.0)
+            
             decision_record = DecisionRecord(
                 timestamp=timestamp,
                 product_id=product_id,
                 strategy_name=strategy_name,
-                action=signal.action,
-                confidence=signal.confidence,
+                action=action,
+                confidence=confidence,
                 price_at_decision=current_price
             )
             
@@ -271,16 +281,26 @@ class HybridPerformanceTracker:
         perf = self.strategy_performance[strategy_name]
         perf.total_decisions += 1
         
+        # Handle both TradingSignal objects and dictionaries
+        if hasattr(signal, 'action'):
+            # TradingSignal object
+            action = signal.action
+            confidence = signal.confidence
+        else:
+            # Dictionary format
+            action = signal.get('action', 'HOLD')
+            confidence = signal.get('confidence', 50.0)
+        
         # Update action counts
-        if signal.action == "BUY":
+        if action == "BUY":
             perf.buy_decisions += 1
-        elif signal.action == "SELL":
+        elif action == "SELL":
             perf.sell_decisions += 1
         else:
             perf.hold_decisions += 1
         
         # Update average confidence
-        perf.avg_confidence = (perf.avg_confidence * (perf.total_decisions - 1) + signal.confidence) / perf.total_decisions
+        perf.avg_confidence = (perf.avg_confidence * (perf.total_decisions - 1) + confidence) / perf.total_decisions
         perf.last_updated = datetime.now().isoformat()
     
     def _evaluate_decision_accuracy(self, record: DecisionRecord) -> Optional[bool]:
