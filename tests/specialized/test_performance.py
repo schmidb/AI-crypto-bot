@@ -96,15 +96,15 @@ class TestResponseTimes:
         collector = DataCollector(client)
         
         # Mock the data collection
-        with patch.object(collector, 'collect_market_data') as mock_collect:
+        with patch.object(collector, 'get_historical_data') as mock_get:
             mock_data = pd.DataFrame({
                 'close': [45000.0, 45100.0, 45200.0],
                 'volume': [1000000, 1100000, 1200000]
             })
-            mock_collect.return_value = mock_data
+            mock_get.return_value = mock_data
             
             start_time = time.time()
-            result = collector.collect_market_data('BTC-EUR', '1h', 100)
+            result = collector.get_historical_data('BTC-EUR', '1h', 7)
             elapsed = time.time() - start_time
             
             # Should collect data within 5 seconds
@@ -271,7 +271,7 @@ class TestScalability:
         # Process the large dataset
         rsi_values = []
         for i in range(14, len(large_data)):  # RSI needs 14 periods
-            window = large_data['close'].iloc[i-14:i]
+            window = large_data['close'].iloc[i-14:i+1]  # Include current point
             gains = window.diff().clip(lower=0)
             losses = (-window.diff()).clip(lower=0)
             avg_gain = gains.mean()
