@@ -41,7 +41,12 @@ class LLMAnalyzer:
                     GOOGLE_APPLICATION_CREDENTIALS,
                     scopes=['https://www.googleapis.com/auth/cloud-platform']
                 )
-                self.client = genai.Client(vertexai=True, credentials=credentials)
+                self.client = genai.Client(
+                    vertexai=True, 
+                    credentials=credentials,
+                    project=GOOGLE_CLOUD_PROJECT,
+                    location=self.location
+                )
                 logger.info(f"Initialized Google GenAI with service account credentials")
             except Exception as e:
                 logger.error(f"Error initializing Google GenAI credentials: {e}")
@@ -49,7 +54,11 @@ class LLMAnalyzer:
         else:
             # Use default credentials
             try:
-                self.client = genai.Client(vertexai=True)
+                self.client = genai.Client(
+                    vertexai=True,
+                    project=GOOGLE_CLOUD_PROJECT,
+                    location=self.location
+                )
                 logger.info(f"Initialized Google GenAI with default credentials")
             except Exception as e:
                 logger.error(f"Error initializing Google GenAI with default credentials: {e}")
