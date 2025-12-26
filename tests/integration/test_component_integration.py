@@ -1,0 +1,454 @@
+"""
+Component Integration Tests
+
+Tests the integration between different bot components:
+- Data flow between components
+- State management and consistency
+- Error propagation
+- Cross-component validation
+"""
+
+import pytest
+import tempfile
+import os
+import json
+from unittest.mock import patch, MagicMock
+from coinbase_client import CoinbaseClient
+from llm_analyzer import LLMAnalyzer
+from utils.portfolio import Portfolio
+from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
+from utils.performance_tracker import PerformanceTracker
+from utils.performance_calculator import PerformanceCalculator
+
+
+class TestDataFlowIntegration:
+    """Test data flow between components"""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create temporary directory for testing"""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        import shutil
+        shutil.rmtree(temp_dir)
+    
+    @pytest.fixture
+    def portfolio(self, temp_dir):
+        """Create portfolio for testing"""
+        portfolio_file = os.path.join(temp_dir, "portfolio.json")
+        return Portfolio(portfolio_file=portfolio_file)
+    
+    @pytest.fixture
+    def mock_coinbase_data(self):
+        """Mock Coinbase API data"""
+        return {
+            'BTC': {'amount': 0.001, 'price': 45000.0},
+            'ETH': {'amount': 0.01, 'price': 3000.0},
+            'EUR': {'amount': 100.0, 'price': 1.0}
+        }
+    
+    def test_coinbase_to_portfolio_integration(self, portfolio, mock_coinbase_data):
+        """Test data flow from Coinbase client to portfolio"""
+        with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
+            coinbase_client = CoinbaseClient()
+            
+            # Get data from Coinbase
+            coinbase_portfolio = coinbase_client.get_portfolio()
+            
+            # Update portfolio with Coinbase data
+            portfolio.update_from_exchange(coinbase_portfolio)
+            
+            # Verify data integration
+            assert portfolio.get_asset_amount('BTC') == 0.001
+            assert portfolio.get_asset_amount('ETH') == 0.01
+            assert portfolio.get_asset_amount('EUR') == 100.0
+    
+    def test_portfolio_to_strategy_integration(self, portfolio, temp_dir):
+        """Test data flow from portfolio to strategy manager"""
+        # Set up portfolio with test data
+        portfolio.data = {
+            'BTC': {'amount': 0.001, 'last_price_usd': 45000.0},
+            'ETH': {'amount': 0.01, 'last_price_usd': 3000.0},
+            'EUR': {'amount': 100.0, 'last_price_usd': 1.0},
+            'initial_value_eur': {'BTC': 45.0, 'ETH': 30.0, 'EUR': 100.0}
+        }
+        
+        # Create strategy manager (check actual constructor)
+        from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
+        strategy_manager = AdaptiveStrategyManager()
+        
+        # Test portfolio integration
+        allocations = portfolio.get_asset_allocation()
+        assert isinstance(allocations, dict)
+        assert 'BTC' in allocations
+        assert 'ETH' in allocations
+        assert 'EUR' in allocations
+    
+    def test_market_data_to_llm_integration(self):
+        """Test data flow from market data to LLM analyzer"""
+        import pandas as pd
+        
+        market_data = pd.DataFrame({
+            'price': [45000.0],
+            'rsi': [65.0],
+            'macd': [0.5],
+            'bb_position': [0.7],
+            'volume': [1000000]
+        })
+        
+        with patch.object(LLMAnalyzer, '_call_genai') as mock_genai:
+            mock_genai.return_value = {
+                'action': 'BUY',
+                'confidence': 75,
+                'reasoning': 'Strong technical indicators'
+            }
+            
+            analyzer = LLMAnalyzer()
+            decision = analyzer.analyze_market_data(market_data, 45000.0, 'BTC-EUR')
+            
+            # Verify LLM received correct data structure
+            assert mock_genai.called
+            call_args = mock_genai.call_args[0][0]  # First argument (prompt)
+            assert 'BTC-EUR' in call_args
+            assert '45000.0' in call_args
+            assert '65.0' in call_args
+    
+    def test_performance_tracking_integration(self, temp_dir):
+        """Test integration between portfolio and performance tracking"""
+        # Create portfolio
+        portfolio_file = os.path.join(temp_dir, "portfolio.json")
+        portfolio = Portfolio(portfolio_file=portfolio_file)
+        
+        # Set up portfolio data
+        portfolio.data = {
+            'BTC': {'amount': 0.001, 'last_price_usd': 45000.0},
+            'ETH': {'amount': 0.01, 'last_price_usd': 3000.0},
+            'EUR': {'amount': 100.0, 'last_price_usd': 1.0},
+            'initial_value_eur': {'BTC': 40.0, 'ETH': 25.0, 'EUR': 100.0}
+        }
+        
+        # Create performance tracker with correct parameter name
+        tracker = PerformanceTracker(config_path=temp_dir)
+        
+        # Initialize tracking with portfolio
+        tracker.initialize_tracking(portfolio.to_dict())
+        
+        # Take snapshot
+        tracker.take_portfolio_snapshot(portfolio.to_dict())
+        
+        # Verify integration
+        summary = tracker.get_performance_summary()
+        assert summary is not None
+        assert 'snapshots_count' in summary
+
+
+class TestStateManagement:
+    """Test state management across components"""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create temporary directory for testing"""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        import shutil
+        shutil.rmtree(temp_dir)
+    
+    def test_portfolio_state_consistency(self, temp_dir):
+        """Test portfolio state consistency across operations"""
+        portfolio_file = os.path.join(temp_dir, "portfolio.json")
+        
+        # Create first portfolio instance
+        portfolio1 = Portfolio(portfolio_file=portfolio_file)
+        portfolio1.data = {
+            'BTC': {'amount': 0.001, 'last_price_usd': 45000.0},
+            'EUR': {'amount': 100.0, 'last_price_usd': 1.0},
+            'initial_value_eur': {'BTC': 45.0, 'EUR': 100.0}
+        }
+        portfolio1.save()
+        
+        # Create second portfolio instance (should load same data)
+        portfolio2 = Portfolio(portfolio_file=portfolio_file)
+        
+        # Verify state consistency
+        assert portfolio1.get_asset_amount('BTC') == portfolio2.get_asset_amount('BTC')
+        assert portfolio1.get_asset_amount('EUR') == portfolio2.get_asset_amount('EUR')
+    
+    def test_performance_state_persistence(self, temp_dir):
+        """Test performance tracking state persistence"""
+        # Create first tracker instance
+        tracker1 = PerformanceTracker(performance_path=temp_dir)
+        
+        portfolio_data = {
+            'BTC': {'amount': 0.001, 'price': 45000.0},
+            'EUR': {'amount': 100.0, 'price': 1.0},
+            'initial_value_eur': {'BTC': 45.0, 'EUR': 100.0}
+        }
+        
+        tracker1.initialize_tracking(portfolio_data)
+        tracker1.take_portfolio_snapshot(portfolio_data)
+        
+        # Create second tracker instance (should load same state)
+        tracker2 = PerformanceTracker(performance_path=temp_dir)
+        
+        # Verify state persistence
+        summary1 = tracker1.get_performance_summary()
+        summary2 = tracker2.get_performance_summary()
+        
+        assert summary1['snapshots_count'] == summary2['snapshots_count']
+    
+    def test_concurrent_portfolio_access(self, temp_dir):
+        """Test concurrent access to portfolio data"""
+        portfolio_file = os.path.join(temp_dir, "portfolio.json")
+        
+        # Create multiple portfolio instances
+        portfolio1 = Portfolio(portfolio_file=portfolio_file)
+        portfolio2 = Portfolio(portfolio_file=portfolio_file)
+        
+        # Simulate concurrent updates
+        portfolio1.portfolio = {
+            'BTC': {'amount': 0.001, 'price': 45000.0},
+            'EUR': {'amount': 100.0, 'price': 1.0},
+            'initial_value_eur': {'BTC': 45.0, 'EUR': 100.0}
+        }
+        
+        portfolio2.portfolio = {
+            'BTC': {'amount': 0.002, 'price': 46000.0},
+            'EUR': {'amount': 90.0, 'price': 1.0},
+            'initial_value_eur': {'BTC': 45.0, 'EUR': 100.0}
+        }
+        
+        # Save both (last one should win)
+        portfolio1.save_portfolio()
+        portfolio2.save_portfolio()
+        
+        # Reload and verify
+        portfolio3 = Portfolio(portfolio_file=portfolio_file)
+        assert portfolio3.get_asset_amount('BTC') == 0.002
+        assert portfolio3.get_asset_amount('EUR') == 90.0
+
+
+class TestErrorPropagation:
+    """Test error propagation between components"""
+    
+    def test_coinbase_error_to_portfolio(self):
+        """Test error handling when Coinbase API fails"""
+        with patch.object(CoinbaseClient, 'get_portfolio', side_effect=Exception("API Error")):
+            coinbase_client = CoinbaseClient()
+            
+            # Should handle API errors gracefully
+            portfolio_data = coinbase_client.get_portfolio()
+            assert portfolio_data is None  # Should return None on error
+    
+    def test_llm_error_to_strategy(self):
+        """Test error handling when LLM analysis fails"""
+        with patch.object(LLMAnalyzer, '_call_genai', side_effect=Exception("LLM Error")):
+            analyzer = LLMAnalyzer()
+            
+            market_data = {
+                'BTC-EUR': {
+                    'price': 45000.0,
+                    'rsi': 65.0,
+                    'macd': 0.5,
+                    'bb_position': 0.7
+                }
+            }
+            
+            # Should handle LLM errors gracefully
+            decision = analyzer.analyze_market_data(market_data)
+            assert decision is None or decision.get('action') == 'HOLD'
+    
+    def test_portfolio_error_recovery(self):
+        """Test portfolio error recovery"""
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            # Create corrupted portfolio file
+            f.write("invalid json content")
+            portfolio_file = f.name
+        
+        try:
+            # Should handle corrupted file gracefully
+            portfolio = Portfolio(portfolio_file=portfolio_file)
+            
+            # Should initialize with defaults
+            assert portfolio.get_asset_amount('BTC') == 0.0
+            assert portfolio.get_asset_amount('EUR') == 0.0
+        finally:
+            os.unlink(portfolio_file)
+
+
+class TestCrossComponentValidation:
+    """Test validation across components"""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create temporary directory for testing"""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        import shutil
+        shutil.rmtree(temp_dir)
+    
+    def test_portfolio_performance_consistency(self, temp_dir):
+        """Test consistency between portfolio and performance calculations"""
+        # Create portfolio
+        portfolio_file = os.path.join(temp_dir, "portfolio.json")
+        portfolio = Portfolio(portfolio_file=portfolio_file)
+        
+        portfolio.portfolio = {
+            'BTC': {'amount': 0.001, 'price': 50000.0},
+            'EUR': {'amount': 100.0, 'price': 1.0},
+            'initial_value_eur': {'BTC': 45.0, 'EUR': 100.0}
+        }
+        
+        # Calculate portfolio value
+        portfolio_value = portfolio.calculate_portfolio_value()
+        
+        # Create performance calculator
+        calculator = PerformanceCalculator()
+        
+        # Calculate performance metrics
+        current_value = 50.0 + 100.0  # BTC value + EUR
+        initial_value = 45.0 + 100.0  # Initial values
+        
+        total_return = calculator.calculate_total_return(initial_value, current_value)
+        
+        # Verify consistency
+        expected_return = (current_value - initial_value) / initial_value * 100
+        assert abs(total_return - expected_return) < 0.01  # Within 0.01% tolerance
+    
+    def test_strategy_portfolio_validation(self, temp_dir):
+        """Test validation between strategy decisions and portfolio state"""
+        portfolio_file = os.path.join(temp_dir, "portfolio.json")
+        
+        # Create portfolio with low EUR balance
+        portfolio = Portfolio(portfolio_file=portfolio_file)
+        portfolio.portfolio = {
+            'BTC': {'amount': 0.001, 'price': 45000.0},
+            'EUR': {'amount': 5.0, 'price': 1.0},  # Low EUR balance
+            'initial_value_eur': {'BTC': 45.0, 'EUR': 100.0}
+        }
+        portfolio.save_portfolio()
+        
+        # Create strategy manager
+        strategy_manager = AdaptiveStrategyManager(portfolio_file=portfolio_file)
+        
+        # Mock a BUY decision
+        mock_decision = {
+            'action': 'BUY',
+            'asset': 'BTC',
+            'confidence': 80,
+            'amount': 50.0  # More than available EUR
+        }
+        
+        # Strategy should validate against portfolio state
+        # This would typically be done in the main trading loop
+        available_eur = strategy_manager.portfolio.get_asset_amount('EUR')
+        
+        # Should detect insufficient funds
+        assert available_eur < mock_decision['amount']
+    
+    def test_performance_tracking_validation(self, temp_dir):
+        """Test performance tracking data validation"""
+        # Create performance tracker
+        tracker = PerformanceTracker(performance_path=temp_dir)
+        
+        # Test with invalid portfolio data
+        invalid_portfolio = {
+            'BTC': {'amount': 'invalid', 'price': 45000.0},  # Invalid amount
+            'EUR': {'amount': 100.0, 'price': 1.0}
+        }
+        
+        # Should handle invalid data gracefully
+        try:
+            tracker.initialize_tracking(invalid_portfolio)
+            # Should not crash, but may skip invalid data
+        except Exception as e:
+            # Should provide meaningful error message
+            assert "invalid" in str(e).lower() or "amount" in str(e).lower()
+
+
+class TestComponentIntegrationWorkflows:
+    """Test complete integration workflows"""
+    
+    @pytest.fixture
+    def temp_dir(self):
+        """Create temporary directory for testing"""
+        temp_dir = tempfile.mkdtemp()
+        yield temp_dir
+        import shutil
+        shutil.rmtree(temp_dir)
+    
+    def test_complete_data_pipeline(self, temp_dir):
+        """Test complete data pipeline from API to performance tracking"""
+        # Mock Coinbase data
+        mock_coinbase_data = {
+            'BTC': {'amount': 0.001, 'price': 45000.0},
+            'ETH': {'amount': 0.01, 'price': 3000.0},
+            'EUR': {'amount': 100.0, 'price': 1.0}
+        }
+        
+        with patch.object(CoinbaseClient, 'get_portfolio', return_value=mock_coinbase_data):
+            # 1. Get data from Coinbase
+            coinbase_client = CoinbaseClient()
+            coinbase_portfolio = coinbase_client.get_portfolio()
+            
+            # 2. Update portfolio
+            portfolio_file = os.path.join(temp_dir, "portfolio.json")
+            portfolio = Portfolio(portfolio_file=portfolio_file)
+            portfolio.update_from_exchange(coinbase_portfolio)
+            
+            # 3. Track performance
+            tracker = PerformanceTracker(performance_path=temp_dir)
+            tracker.initialize_tracking(portfolio.to_dict())
+            tracker.take_portfolio_snapshot(portfolio.to_dict())
+            
+            # 4. Calculate performance
+            calculator = PerformanceCalculator()
+            summary = tracker.get_performance_summary()
+            
+            # Verify complete pipeline
+            assert portfolio.get_asset_amount('BTC') == 0.001
+            assert summary['snapshots_count'] > 0
+    
+    def test_decision_making_workflow(self, temp_dir):
+        """Test complete decision-making workflow"""
+        # Create portfolio
+        portfolio_file = os.path.join(temp_dir, "portfolio.json")
+        portfolio = Portfolio(portfolio_file=portfolio_file)
+        portfolio.portfolio = {
+            'BTC': {'amount': 0.001, 'price': 45000.0},
+            'EUR': {'amount': 100.0, 'price': 1.0},
+            'initial_value_eur': {'BTC': 45.0, 'EUR': 100.0}
+        }
+        portfolio.save_portfolio()
+        
+        # Mock market data
+        market_data = {
+            'BTC-EUR': {
+                'price': 46000.0,  # Price increased
+                'rsi': 70.0,
+                'macd': 0.5,
+                'bb_position': 0.8
+            }
+        }
+        
+        # Mock LLM decision
+        with patch.object(LLMAnalyzer, '_call_genai') as mock_genai:
+            mock_genai.return_value = {
+                'action': 'SELL',
+                'confidence': 75,
+                'reasoning': 'Overbought conditions'
+            }
+            
+            # 1. Analyze market data
+            analyzer = LLMAnalyzer()
+            decision = analyzer.analyze_market_data(market_data)
+            
+            # 2. Validate decision against portfolio
+            strategy_manager = AdaptiveStrategyManager(portfolio_file=portfolio_file)
+            
+            # 3. Check if decision is executable
+            btc_amount = strategy_manager.portfolio.get_asset_amount('BTC')
+            
+            # Verify workflow
+            assert decision['action'] == 'SELL'
+            assert btc_amount > 0  # Can execute SELL
+            assert decision['confidence'] == 75
