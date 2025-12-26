@@ -309,6 +309,9 @@ class TestPortfolioValueCalculations:
         """Test portfolio value calculation."""
         portfolio = Portfolio(portfolio_file=self.portfolio_file)
         
+        # Clear any existing data to ensure clean test state
+        portfolio.data.clear()
+        
         # Set up test data
         portfolio.data["BTC"] = {"amount": 0.1, "initial_amount": 0.05, "last_price_usd": 50000.0}
         portfolio.data["ETH"] = {"amount": 1.0, "initial_amount": 0.5, "last_price_usd": 3000.0}
@@ -324,6 +327,9 @@ class TestPortfolioValueCalculations:
     def test_update_prices(self):
         """Test price updates and portfolio recalculation."""
         portfolio = Portfolio(portfolio_file=self.portfolio_file)
+        
+        # Clear any existing data to ensure clean test state
+        portfolio.data.clear()
         
         # Set initial data
         portfolio.data["BTC"] = {"amount": 0.1, "initial_amount": 0.1, "last_price_usd": 40000.0}
@@ -860,6 +866,9 @@ class TestPortfolioIntegration:
     def test_portfolio_large_numbers_precision(self):
         """Test portfolio handling of large numbers and precision."""
         portfolio = Portfolio(portfolio_file=self.portfolio_file)
+        
+        # Clear any existing data to ensure clean test state
+        portfolio.data.clear()
         
         # Test with very large USD amounts
         portfolio.data["USD"] = {"amount": 1000000.0, "initial_amount": 500000.0}
