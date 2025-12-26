@@ -3,7 +3,7 @@ Unit tests for LLM Analyzer.
 
 This module tests the LLMAnalyzer class and all AI-related functionality
 to ensure proper market analysis, decision making, and error handling.
-Only tests Vertex AI provider as it's the only supported provider.
+Tests the Google GenAI provider implementation.
 """
 
 import pytest
@@ -23,52 +23,45 @@ from llm_analyzer import LLMAnalyzer
 class TestLLMAnalyzerInitialization:
     """Test LLMAnalyzer initialization and authentication."""
     
-    @patch('llm_analyzer.aiplatform')
+    @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.service_account')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', '/path/to/credentials.json')
     @patch('llm_analyzer.GOOGLE_CLOUD_PROJECT', 'test-project')
-    def test_initialization_with_service_account(self, mock_service_account, mock_aiplatform):
+    def test_initialization_with_service_account(self, mock_service_account, mock_genai_client):
         """Test LLMAnalyzer initialization with service account credentials."""
         # Setup mocks
         mock_credentials = MagicMock()
         mock_service_account.Credentials.from_service_account_file.return_value = mock_credentials
+        mock_client_instance = MagicMock()
+        mock_genai_client.return_value = mock_client_instance
         
         # Initialize analyzer
-        analyzer = LLMAnalyzer(provider="vertex_ai", model="gemini-1.5-pro", location="us-central1")
+        analyzer = LLMAnalyzer(provider="vertex_ai", model="gemini-3-flash-preview", location="us-central1")
         
         # Verify initialization
         assert analyzer.provider == "vertex_ai"
-        assert analyzer.model == "gemini-1.5-pro"
+        assert analyzer.model == "gemini-3-flash-preview"
         assert analyzer.location == "us-central1"
         
-        # Verify Google Cloud setup
+        # Verify service account credentials were loaded
         mock_service_account.Credentials.from_service_account_file.assert_called_once()
-        mock_aiplatform.init.assert_called_once_with(
-            project='test-project',
-            location='us-central1',
-            credentials=mock_credentials
-        )
+        
+        # Verify GenAI Client was created
+        mock_genai_client.assert_called_once_with(vertexai=True, credentials=mock_credentials)
     
-    @patch('llm_analyzer.aiplatform')
-    @patch('llm_analyzer.google.auth.default')
+    @patch('llm_analyzer.genai.Client')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
     @patch('llm_analyzer.GOOGLE_CLOUD_PROJECT', 'test-project')
-    def test_initialization_with_default_credentials(self, mock_google_auth_default, mock_aiplatform):
+    def test_initialization_with_default_credentials(self, mock_genai_client):
         """Test LLMAnalyzer initialization with default credentials."""
-        # Setup mocks
-        mock_credentials = MagicMock()
-        mock_google_auth_default.return_value = (mock_credentials, 'test-project')
+        mock_client_instance = MagicMock()
+        mock_genai_client.return_value = mock_client_instance
         
         # Initialize analyzer
         analyzer = LLMAnalyzer()
         
-        # Verify Google Cloud setup with default credentials
-        mock_google_auth_default.assert_called_once()
-        mock_aiplatform.init.assert_called_once_with(
-            project='test-project',
-            location='us-central1',
-            credentials=mock_credentials
-        )
+        # Verify GenAI Client was created with default credentials
+        mock_genai_client.assert_called_once_with(vertexai=True)
     
     @patch('llm_analyzer.service_account')
     @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', '/invalid/path.json')
@@ -81,25 +74,22 @@ class TestLLMAnalyzerInitialization:
         with pytest.raises(Exception, match="Invalid credentials"):
             LLMAnalyzer()
     
-    def test_initialization_with_custom_parameters(self):
+    @patch('llm_analyzer.genai.Client')
+    @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
+    def test_initialization_with_custom_parameters(self, mock_genai_client):
         """Test LLMAnalyzer initialization with custom parameters."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
-             patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
-            
-            # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
-            
-            analyzer = LLMAnalyzer(
-                provider="vertex_ai",
-                model="gemini-2.5-pro",
-                location="europe-west1"
-            )
-            
-            assert analyzer.provider == "vertex_ai"
-            assert analyzer.model == "gemini-2.5-pro"
-            assert analyzer.location == "europe-west1"
+        mock_client_instance = MagicMock()
+        mock_genai_client.return_value = mock_client_instance
+        
+        analyzer = LLMAnalyzer(
+            provider="vertex_ai",
+            model="gemini-2.5-pro",
+            location="europe-west1"
+        )
+        
+        assert analyzer.provider == "vertex_ai"
+        assert analyzer.model == "gemini-2.5-pro"
+        assert analyzer.location == "europe-west1"
 
 
 class TestMarketDataAnalysis:
@@ -108,13 +98,8 @@ class TestMarketDataAnalysis:
     @pytest.fixture
     def analyzer(self):
         """Create a mock LLMAnalyzer for testing."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
+        with patch('llm_analyzer.genai.Client'), \
              patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
-            
-            # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
             
             return LLMAnalyzer()
     
@@ -201,13 +186,8 @@ class TestVertexAIProviderCalls:
     @pytest.fixture
     def analyzer(self):
         """Create a mock LLMAnalyzer for testing."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
+        with patch('llm_analyzer.genai.Client'), \
              patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
-            
-            # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
             
             return LLMAnalyzer()
     
@@ -694,50 +674,44 @@ class TestErrorHandling:
 class TestConfigurationValidation:
     """Test configuration validation and parameter handling."""
     
-    def test_vertex_ai_provider_configuration(self):
+    @patch('llm_analyzer.genai.Client')
+    @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
+    def test_vertex_ai_provider_configuration(self, mock_genai_client):
         """Test vertex_ai provider configuration."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
-             patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
-            
-            # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
-            
-            analyzer = LLMAnalyzer(provider="vertex_ai")
-            
-            # Should initialize successfully
-            assert analyzer.provider == "vertex_ai"
+        mock_client_instance = MagicMock()
+        mock_genai_client.return_value = mock_client_instance
+        
+        analyzer = LLMAnalyzer(provider="vertex_ai")
+        
+        # Should initialize successfully
+        assert analyzer.provider == "vertex_ai"
+        mock_genai_client.assert_called_once_with(vertexai=True)
     
-    def test_model_configuration(self):
+    @patch('llm_analyzer.genai.Client')
+    @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
+    def test_model_configuration(self, mock_genai_client):
         """Test model configuration."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
-             patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
-            
-            # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
-            
-            analyzer = LLMAnalyzer(model="gemini-1.5-pro")
-            
-            # Should handle model configuration
-            assert analyzer.model == "gemini-1.5-pro"
+        mock_client_instance = MagicMock()
+        mock_genai_client.return_value = mock_client_instance
+        
+        analyzer = LLMAnalyzer(model="gemini-1.5-pro")
+        
+        # Should handle model configuration
+        assert analyzer.model == "gemini-1.5-pro"
+        mock_genai_client.assert_called_once_with(vertexai=True)
     
-    def test_location_configuration(self):
+    @patch('llm_analyzer.genai.Client')
+    @patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None)
+    def test_location_configuration(self, mock_genai_client):
         """Test location configuration."""
-        with patch('llm_analyzer.aiplatform'), \
-             patch('llm_analyzer.google.auth.default') as mock_auth, \
-             patch('llm_analyzer.GOOGLE_APPLICATION_CREDENTIALS', None):
-            
-            # Setup mock to return proper tuple
-            mock_credentials = MagicMock()
-            mock_auth.return_value = (mock_credentials, 'test-project')
-            
-            analyzer = LLMAnalyzer(location="europe-west1")
-            
-            # Should initialize with custom location
-            assert analyzer.location == "europe-west1"
+        mock_client_instance = MagicMock()
+        mock_genai_client.return_value = mock_client_instance
+        
+        analyzer = LLMAnalyzer(location="europe-west1")
+        
+        # Should initialize with custom location
+        assert analyzer.location == "europe-west1"
+        mock_genai_client.assert_called_once_with(vertexai=True)
 
 
 if __name__ == "__main__":
