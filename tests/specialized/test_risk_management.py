@@ -14,7 +14,6 @@ import pandas as pd
 from coinbase_client import CoinbaseClient
 from utils.portfolio import Portfolio
 from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
-from utils.risk_management import RiskManager
 from llm_analyzer import LLMAnalyzer
 
 

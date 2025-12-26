@@ -15,7 +15,10 @@ from pathlib import Path
 
 from config import COINBASE_API_KEY, COINBASE_API_SECRET
 from coinbase_client import CoinbaseClient
-from utils.logger import logger
+from utils.logger import setup_logger
+
+# Set up logger for tests
+logger = setup_logger('security_tests')
 
 
 class TestCredentialSecurity:
