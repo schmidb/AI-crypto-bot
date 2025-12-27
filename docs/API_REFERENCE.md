@@ -291,7 +291,7 @@ def is_tracking_enabled() -> bool:
 Performance metrics calculation.
 
 ```python
-from utils.performance_calculator import PerformanceCalculator
+from utils.performance.performance_calculator import PerformanceCalculator
 
 calculator = PerformanceCalculator()
 ```

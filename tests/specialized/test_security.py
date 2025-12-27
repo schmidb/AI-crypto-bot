@@ -84,7 +84,7 @@ class TestDataSecurity:
     
     def test_portfolio_data_sanitization(self):
         """Test that portfolio data is properly sanitized"""
-        from utils.portfolio import Portfolio
+        from utils.trading.portfolio import Portfolio
         
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             # Create portfolio with potentially sensitive data
@@ -166,7 +166,7 @@ class TestInputValidation:
     
     def test_amount_validation(self):
         """Test amount input validation"""
-        from utils.portfolio import Portfolio
+        from utils.trading.portfolio import Portfolio
         
         portfolio = Portfolio()
         
@@ -197,7 +197,7 @@ class TestInputValidation:
     
     def test_path_traversal_prevention(self):
         """Test prevention of path traversal attacks"""
-        from utils.portfolio import Portfolio
+        from utils.trading.portfolio import Portfolio
         
         # Test that path traversal attempts are handled safely
         malicious_paths = [
@@ -241,7 +241,7 @@ class TestFilePermissions:
     @pytest.mark.skipif(os.name == 'nt', reason="File permission tests not applicable on Windows")
     def test_portfolio_file_permissions(self):
         """Test that portfolio files have secure permissions"""
-        from utils.portfolio import Portfolio
+        from utils.trading.portfolio import Portfolio
         
         with tempfile.NamedTemporaryFile(delete=False) as f:
             portfolio_file = f.name

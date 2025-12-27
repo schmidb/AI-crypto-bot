@@ -11,7 +11,7 @@ import tempfile
 from unittest.mock import patch, MagicMock
 from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer
-from utils.portfolio import Portfolio
+from utils.trading.portfolio import Portfolio
 
 
 class TestBasicAPIIntegration:

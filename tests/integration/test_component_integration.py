@@ -28,10 +28,10 @@ sys.modules['vertexai.generative_models'] = MagicMock()
 
 from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer
-from utils.portfolio import Portfolio
+from utils.trading.portfolio import Portfolio
 from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
-from utils.performance_tracker import PerformanceTracker
-from utils.performance_calculator import PerformanceCalculator
+from utils.performance.performance_tracker import PerformanceTracker
+from utils.performance.performance_calculator import PerformanceCalculator
 
 
 class TestDataFlowIntegration:

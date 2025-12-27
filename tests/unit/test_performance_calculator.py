@@ -10,7 +10,7 @@ import math
 from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 
-from utils.performance_calculator import PerformanceCalculator
+from utils.performance.performance_calculator import PerformanceCalculator
 
 
 class TestPerformanceCalculatorInitialization:

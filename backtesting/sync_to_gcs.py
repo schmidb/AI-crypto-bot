@@ -197,36 +197,34 @@ class GCSBacktestSync:
         }
         
         try:
-            # Define reports needed for dashboard
-            dashboard_reports = [
-                ('interval_optimization', 'interval_optimization.json'),
-                ('daily', 'daily_health.json'),
-                ('weekly', 'weekly_validation.json'),
-                ('monthly', 'monthly_analysis.json'),
-                ('parameter_optimization', 'optimization.json'),
-                ('walk_forward', 'walkforward.json')
-            ]
+            # Get the most recent reports from each category
+            report_categories = ['daily', 'weekly', 'monthly', 'interval_optimization', 'parameter_optimization', 'walk_forward']
             
-            for report_type, report_name in dashboard_reports:
+            for category in report_categories:
                 try:
-                    report_data = self.download_report(report_type, report_name)
+                    # Find the most recent date/folder for this category
+                    latest_reports = self._find_latest_reports_in_category(category)
                     
-                    if report_data:
-                        # Save to dashboard data directory
-                        dashboard_file = self.dashboard_data_dir / f"gcs_{report_name}"
-                        with open(dashboard_file, 'w') as f:
-                            json.dump(report_data, f, indent=2, default=str)
-                        
-                        results['downloaded'].append(report_name)
-                        results['reports'][report_type] = report_data
-                        
-                        logger.info(f"Downloaded for dashboard: {report_name}")
+                    if latest_reports:
+                        for report_name, report_data in latest_reports.items():
+                            # Save to dashboard data directory
+                            dashboard_file = self.dashboard_data_dir / f"gcs_{category}_{report_name}"
+                            with open(dashboard_file, 'w') as f:
+                                json.dump(report_data, f, indent=2, default=str)
+                            
+                            results['downloaded'].append(f"{category}_{report_name}")
+                            if category not in results['reports']:
+                                results['reports'][category] = {}
+                            results['reports'][category][report_name] = report_data
+                            
+                            logger.info(f"Downloaded for dashboard: {category}/{report_name}")
                     else:
-                        results['failed'].append(report_name)
+                        results['failed'].append(category)
+                        logger.warning(f"No reports found for category: {category}")
                         
                 except Exception as e:
-                    logger.error(f"Failed to download {report_name}: {e}")
-                    results['failed'].append(report_name)
+                    logger.error(f"Failed to download {category} reports: {e}")
+                    results['failed'].append(category)
             
             # Create sync status file
             sync_status = {
@@ -245,6 +243,61 @@ class GCSBacktestSync:
         except Exception as e:
             logger.error(f"Failed to download reports for dashboard: {e}")
             return results
+    
+    def _find_latest_reports_in_category(self, category: str) -> Dict[str, Any]:
+        """Find the most recent reports in a given category"""
+        try:
+            # List all blobs in this category
+            prefix = f"reports/{category}/"
+            blobs = list(self.client.list_blobs(self.bucket, prefix=prefix))
+            
+            if not blobs:
+                return {}
+            
+            # Group by date/folder and find the most recent
+            date_folders = {}
+            for blob in blobs:
+                if blob.name.endswith('.json'):
+                    # Extract date folder from path like "reports/daily/2025-12-26/file.json"
+                    path_parts = blob.name.split('/')
+                    if len(path_parts) >= 4:
+                        date_folder = path_parts[2]  # e.g., "2025-12-26" or "2025-W51"
+                        file_name = path_parts[3]    # e.g., "latest_backtest.json"
+                        
+                        if date_folder not in date_folders:
+                            date_folders[date_folder] = []
+                        date_folders[date_folder].append((file_name, blob))
+            
+            if not date_folders:
+                return {}
+            
+            # Find the most recent date folder
+            latest_date = max(date_folders.keys())
+            latest_files = date_folders[latest_date]
+            
+            # Download all files from the latest date
+            reports = {}
+            for file_name, blob in latest_files:
+                try:
+                    data = blob.download_as_bytes()
+                    
+                    # Try to decompress first, if that fails, treat as plain JSON
+                    try:
+                        report_data = self.decompress_json(data)
+                    except:
+                        # Not compressed, treat as plain JSON
+                        json_str = data.decode('utf-8')
+                        report_data = json.loads(json_str)
+                    
+                    reports[file_name] = report_data
+                except Exception as e:
+                    logger.warning(f"Failed to download {blob.name}: {e}")
+            
+            return reports
+            
+        except Exception as e:
+            logger.error(f"Failed to find latest reports for {category}: {e}")
+            return {}
     
     def list_available_reports(self, report_type: str = None) -> List[Dict[str, Any]]:
         """List all available reports in GCS"""

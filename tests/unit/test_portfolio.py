@@ -32,7 +32,7 @@ sys.modules['coinbase_client'] = MagicMock()
 sys.modules['utils.trade_logger'] = MagicMock()
 
 # Now import the modules we need to test
-from utils.portfolio import Portfolio
+from utils.trading.portfolio import Portfolio
 
 
 class TestPortfolioInitialization:

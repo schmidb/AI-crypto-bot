@@ -13,7 +13,7 @@ from typing import Dict, List, Any, Optional
 from pathlib import Path
 
 from utils.performance_tracker import PerformanceTracker
-from utils.performance_calculator import PerformanceCalculator
+from utils.performance.performance_calculator import PerformanceCalculator
 from utils.performance_manager import PerformanceManager
 
 logger = logging.getLogger(__name__)

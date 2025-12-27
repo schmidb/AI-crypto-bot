@@ -10,9 +10,9 @@ import pandas as pd
 import numpy as np
 import logging
 from pathlib import Path
-from utils.indicator_factory import calculate_indicators
-from utils.strategy_vectorizer import VectorizedStrategyAdapter, vectorize_all_strategies_for_backtest
-from utils.backtest_engine import BacktestEngine
+from utils.performance.indicator_factory import calculate_indicators
+from utils.backtest.strategy_vectorizer import VectorizedStrategyAdapter, vectorize_all_strategies_for_backtest
+from utils.backtest.backtest_engine import BacktestEngine
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

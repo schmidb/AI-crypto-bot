@@ -13,12 +13,12 @@ from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer
 from data_collector import DataCollector
 from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
-from utils.portfolio import Portfolio
-from utils.capital_manager import CapitalManager
-from utils.dashboard_updater import DashboardUpdater
-from utils.webserver_sync import WebServerSync
-from utils.tax_report import TaxReportGenerator
-from utils.strategy_evaluator import StrategyEvaluator
+from utils.trading.portfolio import Portfolio
+from utils.trading.capital_manager import CapitalManager
+from utils.dashboard.dashboard_updater import DashboardUpdater
+from utils.dashboard.webserver_sync import WebServerSync
+from utils.trading.tax_report import TaxReportGenerator
+from utils.backtest.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
 from utils.notification_service import NotificationService
 from utils.cleanup_manager import CleanupManager

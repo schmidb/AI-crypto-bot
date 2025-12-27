@@ -17,7 +17,7 @@ import pandas as pd
 
 from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer
-from utils.portfolio import Portfolio
+from utils.trading.portfolio import Portfolio
 from utils.performance_tracker import PerformanceTracker
 from data_collector import DataCollector
 

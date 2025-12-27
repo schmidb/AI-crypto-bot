@@ -15,7 +15,7 @@ from pathlib import Path
 import uuid
 
 from utils.performance_tracker import PerformanceTracker
-from utils.performance_calculator import PerformanceCalculator
+from utils.performance.performance_calculator import PerformanceCalculator
 
 logger = logging.getLogger(__name__)
 

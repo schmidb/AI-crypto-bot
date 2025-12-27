@@ -20,7 +20,7 @@ import numpy as np
 
 from config import Config
 from data_collector import DataCollector
-from utils.portfolio import Portfolio
+from utils.trading.portfolio import Portfolio
 
 
 class TestMarketDataQuality:

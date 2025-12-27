@@ -21,7 +21,7 @@ def test_simple_backtest():
         # Test individual imports first
         logger.info("Testing individual imports...")
         
-        from utils.backtest_engine import BacktestEngine
+        from utils.backtest.backtest_engine import BacktestEngine
         logger.info("✅ BacktestEngine imported successfully")
         
         from utils.strategy_vectorizer import VectorizedStrategyAdapter
