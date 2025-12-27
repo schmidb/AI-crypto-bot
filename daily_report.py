@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 class DailyReportGenerator:
     def __init__(self):
         self.config = Config()
-        # Use gemini-1.5-pro for detailed email reports
-        self.llm_analyzer = LLMAnalyzer(model="gemini-1.5-pro")
+        # Use gemini-3-flash-preview for detailed email reports
+        self.llm_analyzer = LLMAnalyzer(model="gemini-3-flash-preview")
         
     def analyze_logs_last_24h(self) -> Dict[str, Any]:
         """Analyze bot logs from last 24 hours"""
@@ -194,7 +194,7 @@ Bot Status: {"ðŸŸ¢ Running" if log_data.get('total_log_entries', 0) > 0 else "ðŸ
 
 ---
 This is an automated report from your AI Crypto Trading Bot.
-Dashboard: http://your-vm-ip/crypto-bot/
+Dashboard: http://34.29.9.115/crypto-bot/
             """
             
             # Send email
