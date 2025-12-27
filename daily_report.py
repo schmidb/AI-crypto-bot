@@ -108,9 +108,25 @@ class DailyReportGenerator:
             })
             
             if isinstance(response, dict):
-                return response.get('reasoning', response.get('analysis', str(response)))
+                analysis = response.get('reasoning', response.get('analysis', str(response)))
             else:
-                return str(response)
+                analysis = str(response)
+            
+            # Format analysis if it's a list or contains list-like structure
+            if isinstance(analysis, list):
+                formatted_analysis = "\n".join([f"• {item}" for item in analysis])
+            elif analysis.startswith('[') and analysis.endswith(']'):
+                # Handle string representation of list
+                try:
+                    import ast
+                    analysis_list = ast.literal_eval(analysis)
+                    formatted_analysis = "\n".join([f"• {item}" for item in analysis_list])
+                except:
+                    formatted_analysis = analysis
+            else:
+                formatted_analysis = analysis
+            
+            return f"=== AI MARKET ANALYSIS ===\n\n{formatted_analysis}"
             
         except Exception as e:
             logger.error(f"Error generating AI analysis: {e}")
