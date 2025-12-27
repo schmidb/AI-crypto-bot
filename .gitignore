@@ -114,7 +114,6 @@ PROJECT_*.md
 
 # Credentials (should be in secure location)
 *.json
-!google.json.template
 !package.json
 !package-lock.json
 !**/package.json
