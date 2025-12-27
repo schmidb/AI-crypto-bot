@@ -245,11 +245,33 @@ class CoinbaseClient:
                     base_size=str(rounded_size)
                 )
             
-            # If order was successful, send notification
-            if response and not response.get('error'):
-                self._send_trade_notification(response, side, product_id, size, confidence)
+            # Handle response object instead of dict
+            if hasattr(response, '__dict__'):
+                # Convert response object to dict for consistent handling
+                response_dict = {
+                    'success': True,
+                    'order_id': getattr(response, 'order_id', None),
+                    'client_order_id': getattr(response, 'client_order_id', None),
+                    'product_id': getattr(response, 'product_id', product_id),
+                    'side': getattr(response, 'side', side),
+                    'order_configuration': getattr(response, 'order_configuration', {}),
+                    'filled_size': getattr(response, 'filled_size', '0'),
+                    'average_filled_price': getattr(response, 'average_filled_price', '0'),
+                    'total_fees': getattr(response, 'total_fees', '0'),
+                    'total_value_after_fees': getattr(response, 'total_value_after_fees', '0')
+                }
                 
-            return response
+                # If order was successful, send notification
+                if response:
+                    self._send_trade_notification(response_dict, side, product_id, size, confidence)
+                    
+                return response_dict
+            else:
+                # Handle dict response
+                if response and not response.get('error'):
+                    self._send_trade_notification(response, side, product_id, size, confidence)
+                    
+                return response
         except Exception as e:
             logger.error(f"Error placing market order for {product_id}: {e}")
             return {"success": False, "error": str(e)}
@@ -402,7 +424,9 @@ class CoinbaseClient:
                 'price': current_price,
                 'total_value': total_value,
                 'confidence': float(confidence),
-                'order_id': getattr(order_response, 'order_id', None) or order_response.get('order_id', 'unknown'),
+                'order_id': (getattr(order_response, 'order_id', None) if hasattr(order_response, 'order_id') 
+                           else order_response.get('order_id', 'unknown') if isinstance(order_response, dict) 
+                           else 'unknown'),
                 'timestamp': datetime.now().isoformat(),
                 # Enhanced fee information
                 'total_fees': total_fees,

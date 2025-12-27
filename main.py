@@ -1294,7 +1294,9 @@ class TradingBot:
         # Schedule integrated analysis tasks
         schedule.every().day.at("06:00").do(self.run_daily_health_check_task)
         schedule.every().monday.at("07:00").do(self.run_weekly_validation_task)
-        schedule.every().month.at("08:00").do(self.run_monthly_stability_task)
+        # Monthly stability task - run on 1st of each month at 08:00
+        # Note: schedule library doesn't support monthly directly, using daily check
+        schedule.every().day.at("08:00").do(self._check_monthly_stability_task)
         
         logger.info("📅 Scheduled tasks configured:")
         logger.info("  - Daily health check: 6:00 AM daily")
@@ -1496,7 +1498,11 @@ class TradingBot:
             logger.error(f"Error in scheduled weekly validation: {e}")
             return False
     
-    def run_monthly_stability_task(self):
+    def _check_monthly_stability_task(self):
+        """Check if monthly stability task should run (1st of month)"""
+        from datetime import datetime
+        if datetime.now().day == 1:
+            self.run_monthly_stability_task()
         """Scheduled task wrapper for monthly stability analysis"""
         try:
             logger.info("🔬 Running scheduled monthly stability analysis...")
