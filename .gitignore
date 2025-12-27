@@ -96,13 +96,15 @@ data/old_*
 logs/*.log.*
 logs/*_old.log
 
-# Analysis and cleanup files
-analyze_*.py
+# Analysis and cleanup files (temporary/debug scripts)
+analyze_temp*.py
+analyze_debug*.py
 cleanup_*.py
 *_analysis.py
 *_cleanup.py
-# But keep the utils cleanup manager
+# But keep the utils cleanup manager and important analysis scripts
 !utils/cleanup_manager.py
+!backtesting/analyze_*.py
 
 # Temporary documentation
 *_COMPLETE.md
