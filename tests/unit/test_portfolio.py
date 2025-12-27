@@ -94,7 +94,7 @@ class TestPortfolioInitialization:
         with open(self.portfolio_file, 'w') as f:
             f.write("invalid json content")
         
-        with patch('utils.portfolio.CoinbaseClient') as mock_client:
+        with patch('utils.trading.portfolio.CoinbaseClient') as mock_client:
             mock_client.return_value.get_portfolio.side_effect = Exception("API Error")
             
             portfolio = Portfolio(portfolio_file=self.portfolio_file)
@@ -104,7 +104,7 @@ class TestPortfolioInitialization:
             assert "trades_executed" in portfolio.data
             assert "portfolio_value_usd" in portfolio.data
     
-    @patch('utils.portfolio.CoinbaseClient')
+    @patch('utils.trading.portfolio.CoinbaseClient')
     def test_portfolio_initialization_from_coinbase(self, mock_client_class):
         """Test portfolio initialization from Coinbase API."""
         mock_client = Mock()
@@ -122,7 +122,7 @@ class TestPortfolioInitialization:
         assert portfolio.data["ETH"]["amount"] == 1.0
         assert portfolio.data["USD"]["amount"] == 1000.0
     
-    @patch('utils.portfolio.CoinbaseClient')
+    @patch('utils.trading.portfolio.CoinbaseClient')
     def test_portfolio_fallback_to_defaults(self, mock_client_class):
         """Test portfolio fallback to default values when all else fails."""
         mock_client_class.side_effect = Exception("Connection error")
