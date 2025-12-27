@@ -24,7 +24,7 @@ class Config:
         # LLM settings
         self.LLM_PROVIDER = os.getenv("LLM_PROVIDER", "vertex")
         self.LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash")
-        self.LLM_LOCATION = os.getenv("LLM_LOCATION", "us-central1")
+        self.LLM_LOCATION = os.getenv("LLM_LOCATION", "global")
 
         # Trading settings
         self.TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")

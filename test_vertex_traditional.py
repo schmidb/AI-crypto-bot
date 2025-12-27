@@ -7,7 +7,7 @@ try:
     print("Testing traditional Vertex AI approach...")
     
     # Initialize Vertex AI
-    vertexai.init(project="intense-base-456414-u5", location="us-central1")
+    vertexai.init(project="intense-base-456414-u5", location="global")
     print("✅ Vertex AI initialized")
     
     # Create model

@@ -3,34 +3,33 @@
 import os
 import sys
 import google.genai as genai
-from google.genai import types
 from google.oauth2 import service_account
 
 # Load credentials
-GOOGLE_APPLICATION_CREDENTIALS = "google.json"
-MODEL = "gemini-3-flash-preview"
+GOOGLE_APPLICATION_CREDENTIALS = "/home/markus/intense-base-456414-u5-01cb88d878f7.json"
 
 try:
-    print("Testing Gemini API with new Vertex AI Service Agent role...")
+    print("Testing gemini-3-flash-preview with GLOBAL location...")
     
-    # Initialize with service account
     credentials = service_account.Credentials.from_service_account_file(
-        GOOGLE_APPLICATION_CREDENTIALS
+        GOOGLE_APPLICATION_CREDENTIALS,
+        scopes=['https://www.googleapis.com/auth/cloud-platform']
     )
-    client = genai.Client(vertexai=True, credentials=credentials)
-    print("✅ Client initialized successfully")
     
-    # Test simple generation
+    client = genai.Client(
+        vertexai=True,
+        project="intense-base-456414-u5",
+        location="global",  # <-- THE FIX!
+        credentials=credentials
+    )
+    print("✅ Client initialized with global location")
+    
     response = client.models.generate_content(
-        model=MODEL,
-        contents=["What is 2+2? Respond with just the number."],
-        config=types.GenerateContentConfig(
-            temperature=0.1,
-            max_output_tokens=10
-        )
+        model="gemini-3-flash-preview",
+        contents="What is 2+2? Respond with just the number."
     )
     
-    print(f"✅ API call successful!")
+    print(f"✅ SUCCESS! gemini-3-flash-preview is working with global location!")
     print(f"Response: {response.text}")
     
 except Exception as e:
