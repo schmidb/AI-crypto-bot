@@ -7,11 +7,15 @@ import os
 import sys
 import argparse
 from datetime import datetime, timedelta
-from data_collector import DataCollector
-from coinbase_client import CoinbaseClient
 import pandas as pd
 from pathlib import Path
 import logging
+
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from data_collector import DataCollector
+from coinbase_client import CoinbaseClient
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
