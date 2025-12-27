@@ -219,9 +219,14 @@ class TestVertexAIProviderCalls:
         # Mock API error
         analyzer.client.models.generate_content = MagicMock(side_effect=Exception("API Error"))
         
-        # The method should raise the exception
-        with pytest.raises(Exception, match="API Error"):
-            analyzer._call_genai("test prompt")
+        # The method should handle the error gracefully and return fallback response
+        result = analyzer._call_genai("test prompt")
+        
+        # Verify fallback response structure
+        assert result['decision'] == 'HOLD'
+        assert result['confidence'] == 0
+        assert 'AI analysis unavailable' in result['reasoning'][0]
+        assert result['fallback_used'] is True
 
 
 class TestDataProcessing:

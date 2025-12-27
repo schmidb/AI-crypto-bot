@@ -25,8 +25,8 @@ class TestConfigInitialization:
             assert config.DECISION_INTERVAL_MINUTES == 60
             assert config.RISK_LEVEL == "medium"
             assert config.SIMULATION_MODE is False
-            assert config.LLM_PROVIDER == "vertex"
-            assert config.LLM_MODEL == "gemini-1.5-flash"
+            assert config.LLM_PROVIDER == "google_ai"  # Default value from config.py
+            assert config.LLM_MODEL == "gemini-3-flash-preview"
             assert config.LLM_LOCATION == "global"
     
     def test_config_initialization_with_env_vars(self):
