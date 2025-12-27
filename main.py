@@ -1440,7 +1440,7 @@ class TradingBot:
             logger.info("🏥 Running scheduled daily health check...")
             
             # Import and run the daily health check
-            from run_daily_health_check import run_daily_health_check
+            from backtesting.run_daily_health_check import run_daily_health_check
             success = run_daily_health_check(sync_gcs=True)
             
             if success:
@@ -1474,7 +1474,7 @@ class TradingBot:
             logger.info("📊 Running scheduled weekly validation...")
             
             # Import and run the weekly validation
-            from run_weekly_validation import run_weekly_validation
+            from backtesting.run_weekly_validation import run_weekly_validation
             success = run_weekly_validation(sync_gcs=True)
             
             if success:
@@ -1514,7 +1514,7 @@ class TradingBot:
             logger.info("🔬 Running scheduled monthly stability analysis...")
             
             # Import and run the monthly stability analysis
-            from run_monthly_stability import run_monthly_stability
+            from backtesting.run_monthly_stability import run_monthly_stability
             success = run_monthly_stability(sync_gcs=True)
             
             if success:
@@ -1548,7 +1548,7 @@ class TradingBot:
             logger.info("🔍 Running scheduled parameter monitoring...")
             
             # Import and run parameter monitoring
-            from run_parameter_monitoring import ParameterMonitoringService
+            from backtesting.run_parameter_monitoring import ParameterMonitoringService
             
             # Initialize monitoring service with GCS sync
             monitoring_service = ParameterMonitoringService(sync_to_gcs=True)
