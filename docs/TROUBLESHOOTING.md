@@ -549,7 +549,7 @@ print(json.dumps(portfolio.to_dict(), indent=2))
 
 # Check performance data
 python -c "
-from utils.performance_tracker import PerformanceTracker
+from utils.performance.performance_tracker import PerformanceTracker
 tracker = PerformanceTracker()
 summary = tracker.get_performance_summary()
 print(json.dumps(summary, indent=2))

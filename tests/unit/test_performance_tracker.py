@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
-from utils.performance_tracker import PerformanceTracker
+from utils.performance.performance_tracker import PerformanceTracker
 
 
 class TestPerformanceTrackerInitialization:

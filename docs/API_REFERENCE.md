@@ -265,7 +265,7 @@ def validate_data_quality(data: Dict) -> bool:
 Performance tracking and analysis.
 
 ```python
-from utils.performance_tracker import PerformanceTracker
+from utils.performance.performance_tracker import PerformanceTracker
 
 tracker = PerformanceTracker()
 ```

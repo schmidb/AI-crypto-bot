@@ -25,7 +25,7 @@ from utils.cleanup_manager import CleanupManager
 
 # Import performance tracking
 try:
-    from utils.performance_tracker import PerformanceTracker
+    from utils.performance.performance_tracker import PerformanceTracker
     PERFORMANCE_TRACKING_AVAILABLE = True
 except ImportError:
     PERFORMANCE_TRACKING_AVAILABLE = False
@@ -252,7 +252,7 @@ class TradingBot:
             # Also sync to web server if enabled
             if WEBSERVER_SYNC_ENABLED:
                 try:
-                    from utils.webserver_sync import WebServerSync
+                    from utils.dashboard.webserver_sync import WebServerSync
                     web_sync = WebServerSync()
                     web_sync.sync_to_webserver()
                     logger.info("Dashboard synced to web server with offline status")

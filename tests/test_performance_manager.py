@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
-from utils.performance_manager import PerformanceManager
+from utils.performance.performance_manager import PerformanceManager
 
 
 class TestPerformanceManager:

@@ -10,7 +10,7 @@ import logging
 # Add the current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from utils.webserver_sync import WebServerSync
+from utils.dashboard.webserver_sync import WebServerSync
 
 # Set up logging
 logging.basicConfig(
