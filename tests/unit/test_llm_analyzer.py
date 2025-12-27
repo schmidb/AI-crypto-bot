@@ -36,12 +36,12 @@ class TestLLMAnalyzerInitialization:
         mock_genai_client.return_value = mock_client_instance
         
         # Initialize analyzer
-        analyzer = LLMAnalyzer(provider="vertex_ai", model="gemini-3-flash-preview", location="us-central1")
+        analyzer = LLMAnalyzer(provider="vertex_ai", model="gemini-3-flash-preview", location="global")
         
         # Verify initialization
         assert analyzer.provider == "vertex_ai"
         assert analyzer.model == "gemini-3-flash-preview"
-        assert analyzer.location == "us-central1"
+        assert analyzer.location == "global"
         
         # Verify service account credentials were loaded
         mock_service_account.Credentials.from_service_account_file.assert_called_once()
@@ -51,7 +51,7 @@ class TestLLMAnalyzerInitialization:
             vertexai=True, 
             credentials=mock_credentials,
             project='test-project',
-            location='us-central1'
+            location='global'
         )
     
     @patch('llm_analyzer.genai.Client')
@@ -69,7 +69,7 @@ class TestLLMAnalyzerInitialization:
         mock_genai_client.assert_called_once_with(
             vertexai=True,
             project='test-project',
-            location='us-central1'
+            location='global'
         )
     
     @patch('llm_analyzer.service_account')
@@ -659,7 +659,7 @@ class TestConfigurationValidation:
         mock_genai_client.assert_called_once_with(
             vertexai=True,
             project='test-project',
-            location='us-central1'
+            location='global'
         )
     
     @patch('llm_analyzer.genai.Client')
@@ -677,7 +677,7 @@ class TestConfigurationValidation:
         mock_genai_client.assert_called_once_with(
             vertexai=True,
             project='test-project',
-            location='us-central1'
+            location='global'
         )
     
     @patch('llm_analyzer.genai.Client')
