@@ -199,12 +199,12 @@ class GCSBacktestSync:
         try:
             # Define reports needed for dashboard
             dashboard_reports = [
-                ('interval_optimization', 'latest_interval_optimization.json'),
-                ('daily', 'latest_daily_health.json'),
-                ('weekly', 'latest_weekly_validation.json'),
-                ('monthly', 'latest_monthly_analysis.json'),
-                ('parameter_optimization', 'latest_optimization.json'),
-                ('walk_forward', 'latest_walkforward.json')
+                ('interval_optimization', 'interval_optimization.json'),
+                ('daily', 'daily_health.json'),
+                ('weekly', 'weekly_validation.json'),
+                ('monthly', 'monthly_analysis.json'),
+                ('parameter_optimization', 'optimization.json'),
+                ('walk_forward', 'walkforward.json')
             ]
             
             for report_type, report_name in dashboard_reports:
