@@ -5,20 +5,24 @@
 ### Current Setup
 - **Python Version**: 3.11.2
 - **Virtual Environment**: `venv` (Python's built-in virtual environment)
-- **Location**: `/home/markus/AI-crypto-bot/venv/`
+- **Location**: `./venv/` (Windows: `venv\` directory)
+- **Platform**: Windows (win32)
 
 ### Virtual Environment Management
 
 #### Creating Virtual Environment
 ```bash
 # Create venv (already done)
-python3 -m venv venv
+python -m venv venv
 ```
 
 #### Activating Virtual Environment
 ```bash
-# Activate venv for development
-source venv/bin/activate
+# Windows Command Prompt
+venv\Scripts\activate
+
+# Windows PowerShell
+venv\Scripts\Activate.ps1
 
 # Deactivate when done
 deactivate
@@ -26,8 +30,8 @@ deactivate
 
 #### Installing Dependencies
 ```bash
-# Always use venv pip for installations
-./venv/bin/pip install -r requirements.txt
+# Always use venv pip for installations (Windows)
+venv\Scripts\pip install -r requirements.txt
 
 # Or if venv is activated
 pip install -r requirements.txt
@@ -36,13 +40,13 @@ pip install -r requirements.txt
 ### Production Deployment
 
 #### Supervisor Configuration
-- **Python Executable**: `/home/markus/AI-crypto-bot/venv/bin/python`
-- **Working Directory**: `/home/markus/AI-crypto-bot`
-- **User**: `markus`
+- **Python Executable**: `./venv/Scripts/python.exe` (Windows)
+- **Working Directory**: Current project directory
+- **User**: Current user
 
 #### Key Points
-1. **Always use venv Python**: `./venv/bin/python` for production
-2. **Never use system Python**: Avoid `/usr/bin/python3` for the bot
+1. **Always use venv Python**: `./venv/Scripts/python.exe` for production (Windows)
+2. **Never use system Python**: Avoid global Python installation for the bot
 3. **Dependency isolation**: All packages installed in venv only
 4. **Consistent environment**: Same venv for development and production
 
@@ -55,23 +59,26 @@ git clone <repo-url>
 cd AI-crypto-bot
 
 # Create virtual environment
-python3 -m venv venv
+python -m venv venv
 
-# Activate environment
-source venv/bin/activate
+# Activate environment (Windows)
+venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
+# Install development dependencies
+pip install -r requirements-dev.txt
+
 # Configure environment
-cp .env.example .env
+copy .env.example .env
 # Edit .env with your settings
 ```
 
 #### Daily Development
 ```bash
-# Always activate venv first
-source venv/bin/activate
+# Always activate venv first (Windows)
+venv\Scripts\activate
 
 # Run bot for testing
 python main.py
@@ -86,17 +93,26 @@ deactivate
 
 ### Package Management
 
-#### Current Dependencies
-- Core: `python-dotenv`, `requests`, `pandas`, `numpy`
-- Trading: `coinbase-advanced-py`
-- AI: `google-genai`, `google-auth`
-- Analysis: `ta`, `vectorbt`, `pyarrow`
-- Scheduling: `schedule`
+#### Current Dependencies (Following AI_MODEL_STEERING.md)
+- **Core**: `python-dotenv`, `requests`, `pandas`, `numpy`
+- **Trading**: `coinbase-advanced-py`
+- **AI**: `google-genai` (NEW unified Google AI/Vertex AI SDK), `google-auth`
+- **Analysis**: `ta`, `vectorbt`, `pyarrow`
+- **Scheduling**: `schedule`
+- **Cloud Storage**: `google-cloud-storage`
+- **Performance**: `numba`, `fastparquet`
+
+#### Development Dependencies
+- **Testing**: `pytest`, `pytest-mock`, `pytest-asyncio`, `pytest-cov`, `pytest-benchmark`
+- **Code Quality**: `black`, `isort`, `flake8`, `mypy`, `bandit`
+- **Development Tools**: `pre-commit`, `tox`, `sphinx`
+- **Debugging**: `pdbpp`, `ipdb`
+- **Profiling**: `memory-profiler`, `line-profiler`, `py-spy`
 
 #### Adding New Dependencies
 ```bash
-# Activate venv
-source venv/bin/activate
+# Activate venv (Windows)
+venv\Scripts\activate
 
 # Install package
 pip install new-package
@@ -109,23 +125,44 @@ git add requirements.txt
 git commit -m "Add new-package dependency"
 ```
 
+#### Requirements File Management
+```bash
+# Install production dependencies only
+pip install -r requirements.txt
+
+# Install development dependencies (includes production)
+pip install -r requirements-dev.txt
+
+# Update all packages to latest versions
+pip install --upgrade -r requirements.txt
+pip freeze > requirements.txt
+
+# Check for outdated packages
+pip list --outdated
+```
+
 ### Troubleshooting
 
 #### Common Issues
-1. **Import errors**: Ensure venv is activated or use `./venv/bin/python`
+1. **Import errors**: Ensure venv is activated or use `./venv/Scripts/python.exe`
 2. **Package not found**: Install in venv, not system Python
 3. **Version conflicts**: Use `pip list` to check installed versions
+4. **Windows path issues**: Use backslashes `\` for Windows paths
 
 #### Verification Commands
 ```bash
-# Check Python version
-./venv/bin/python --version
+# Check Python version (Windows)
+venv\Scripts\python.exe --version
 
 # Check installed packages
-./venv/bin/pip list
+venv\Scripts\pip.exe list
 
 # Verify venv is isolated
-./venv/bin/python -c "import sys; print(sys.path)"
+venv\Scripts\python.exe -c "import sys; print(sys.path)"
+
+# Check if specific packages are installed
+venv\Scripts\pip.exe show google-generativeai
+venv\Scripts\pip.exe show coinbase-advanced-py
 ```
 
 ### Best Practices
@@ -135,3 +172,31 @@ git commit -m "Add new-package dependency"
 3. **Update requirements.txt**: After installing new packages
 4. **Test in venv**: Run all tests with venv Python
 5. **Production consistency**: Use same venv setup in production
+6. **Separate dev dependencies**: Keep development tools in requirements-dev.txt
+7. **Version pinning**: Use `>=` for minimum versions, exact versions for critical packages
+8. **Regular updates**: Periodically update dependencies and test compatibility
+
+### AI Model Configuration (Following AI_MODEL_STEERING.md)
+
+#### Required Configuration
+```env
+# Use NEW Google AI SDK, not legacy
+LLM_PROVIDER=google_ai
+LLM_MODEL=gemini-3-flash-preview
+LLM_FALLBACK_MODEL=gemini-3-pro-preview
+LLM_LOCATION=global
+
+# Authentication: Use existing service account
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
+GOOGLE_CLOUD_PROJECT=your-project-id
+
+# Optional: API key as fallback (not required if using service account)
+# GOOGLE_AI_API_KEY=your_api_key_here
+```
+
+#### Package Requirements
+- **Use**: `google-genai` (NEW unified Google AI/Vertex AI SDK)
+- **Avoid**: `google-generativeai` (legacy first generation SDK)
+- **Location**: Must be `global` for preview models
+- **Models**: Only `gemini-3-flash-preview` and `gemini-3-pro-preview` supported
+- **Authentication**: Service account with AI Platform User role works with new SDK

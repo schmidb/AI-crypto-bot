@@ -3,7 +3,8 @@ requests>=2.31.0
 pandas>=2.0.3
 numpy>=1.24.3
 coinbase-advanced-py>=1.8.2
-google-genai>=0.8.0
+# AI Dependencies - Following AI_MODEL_STEERING.md
+google-genai>=0.3.0  # NEW unified Google AI/Vertex AI SDK for preview models
 google-auth>=2.22.0
 schedule>=1.2.0
 # Backtesting Dependencies

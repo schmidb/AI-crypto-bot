@@ -4,7 +4,7 @@ import re
 from typing import Dict, List, Any
 import pandas as pd
 import os
-import google.genai as genai
+import google.genai as genai  # NEW google-genai library
 from google.genai import types
 from google.oauth2 import service_account
 
@@ -13,6 +13,7 @@ from config import (
     GOOGLE_APPLICATION_CREDENTIALS,
     LLM_PROVIDER,
     LLM_MODEL,
+    LLM_FALLBACK_MODEL,
     LLM_LOCATION,
     TRADING_STYLE,
     TRADING_TIMEFRAME,
@@ -23,46 +24,64 @@ from config import (
 logger = logging.getLogger(__name__)
 
 class LLMAnalyzer:
-    """Uses Google Cloud Vertex AI LLMs to analyze market data and make trading decisions"""
+    """Uses NEW google-genai library with genai.Client() to analyze market data and make trading decisions"""
 
     def __init__(self,
                 provider: str = LLM_PROVIDER,
                 model: str = LLM_MODEL,
+                fallback_model: str = LLM_FALLBACK_MODEL,
                 location: str = LLM_LOCATION):
-        """Initialize the LLM analyzer"""
+        """Initialize the LLM analyzer following AI_MODEL_STEERING.md guidelines"""
         self.provider = provider
         self.model = model
+        self.fallback_model = fallback_model
         self.location = location
 
-        # Initialize Google GenAI
-        if GOOGLE_APPLICATION_CREDENTIALS:
-            try:
+        # Initialize NEW google-genai library with genai.Client()
+        try:
+            if GOOGLE_APPLICATION_CREDENTIALS:
+                # Option 1: Service Account (Recommended for Production)
                 credentials = service_account.Credentials.from_service_account_file(
                     GOOGLE_APPLICATION_CREDENTIALS,
                     scopes=['https://www.googleapis.com/auth/cloud-platform']
                 )
+                
                 self.client = genai.Client(
-                    vertexai=True, 
-                    credentials=credentials,
+                    vertexai=True,  # CRITICAL: Use Vertex AI for service account authentication
+                    project=GOOGLE_CLOUD_PROJECT,
+                    location=self.location,
+                    credentials=credentials
+                )
+                
+                logger.info(f"Initialized NEW google-genai library with service account credentials (Vertex AI)")
+                
+            elif os.getenv('GOOGLE_AI_API_KEY'):
+                # Option 2: API Key (Alternative) - uses Google AI Studio
+                api_key = os.getenv('GOOGLE_AI_API_KEY')
+                
+                self.client = genai.Client(
+                    vertexai=False,  # Use Google AI Studio for API key authentication
+                    api_key=api_key
+                )
+                
+                logger.info("Initialized NEW google-genai library with API key authentication (Google AI Studio)")
+                
+            else:
+                # Option 3: Default Credentials (ADC) - uses Vertex AI
+                self.client = genai.Client(
+                    vertexai=True,  # CRITICAL: Use Vertex AI for GCP default credentials
                     project=GOOGLE_CLOUD_PROJECT,
                     location=self.location
                 )
-                logger.info(f"Initialized Google GenAI with service account credentials")
-            except Exception as e:
-                logger.error(f"Error initializing Google GenAI credentials: {e}")
-                raise
-        else:
-            # Use default credentials
-            try:
-                self.client = genai.Client(
-                    vertexai=True,
-                    project=GOOGLE_CLOUD_PROJECT,
-                    location=self.location
-                )
-                logger.info(f"Initialized Google GenAI with default credentials")
-            except Exception as e:
-                logger.error(f"Error initializing Google GenAI with default credentials: {e}")
-                raise
+                
+                logger.info("Initialized NEW google-genai library with default credentials (Vertex AI)")
+                
+            logger.info(f"Models: {self.model} (primary), {self.fallback_model} (fallback)")
+            logger.info(f"Location: {self.location} (required for preview models)")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize NEW google-genai library: {e}")
+            raise ValueError(f"Could not initialize google-genai client: {str(e)}")
 
         logger.info(f"LLM Analyzer initialized with provider: {provider}, model: {model}")
 
@@ -106,7 +125,7 @@ class LLMAnalyzer:
             }
 
     def _call_genai(self, prompt: str) -> Dict:
-        """Call Google GenAI for text generation"""
+        """Call NEW google-genai library for text generation"""
         try:
             # Enhance prompt to explicitly request JSON
             enhanced_prompt = f"""
@@ -146,20 +165,40 @@ class LLMAnalyzer:
             Do not include any text outside of the JSON structure.
             """
 
-            # Generate content using the new API
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=[enhanced_prompt],
-                config=types.GenerateContentConfig(
-                    temperature=0.2,
-                    max_output_tokens=10000,
-                    top_p=0.8,
-                    top_k=40
+            try:
+                # Try primary model first using NEW google-genai API
+                response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=[enhanced_prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.2,
+                        max_output_tokens=10000,
+                        top_p=0.8,
+                        top_k=40
+                    )
                 )
-            )
-
-            # Extract the response text
-            prediction_text = response.text if response.text else str(response)
+                
+                # Extract the response text
+                prediction_text = response.text if hasattr(response, 'text') and response.text else str(response)
+                
+            except Exception as primary_error:
+                logger.warning(f"Primary model {self.model} failed: {primary_error}, trying fallback")
+                
+                # Try fallback model
+                response = self.client.models.generate_content(
+                    model=self.fallback_model,
+                    contents=[enhanced_prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.2,
+                        max_output_tokens=10000,
+                        top_p=0.8,
+                        top_k=40
+                    )
+                )
+                
+                # Extract the response text
+                prediction_text = response.text if hasattr(response, 'text') and response.text else str(response)
+                logger.info(f"Successfully used fallback model: {self.fallback_model}")
             
             logger.debug(f"GenAI response: {prediction_text[:100]}...")
 
@@ -167,8 +206,16 @@ class LLMAnalyzer:
             return self._parse_llm_response(prediction_text)
 
         except Exception as e:
-            logger.error(f"Error calling Google GenAI: {e}")
-            raise
+            logger.error(f"Error calling NEW google-genai library: {e}")
+            # Return safe fallback analysis
+            return {
+                'decision': 'HOLD',
+                'confidence': 0,
+                'reasoning': [f'AI analysis unavailable: {str(e)}', 'Defaulting to HOLD for safety'],
+                'risk_assessment': 'HIGH',
+                'technical_indicators': {},
+                'fallback_used': True
+            }
 
     def _parse_llm_response(self, response_text: str) -> Dict:
         """Parse the LLM response to extract trading decision"""
@@ -638,9 +685,9 @@ Respond with ONLY a JSON object in this format:
             logger.error(f"Error parsing trading decision: {e}")
             return decision
     def _get_llm_response(self, prompt: str) -> str:
-        """Get response from LLM using Google GenAI"""
+        """Get response from LLM using NEW google-genai library"""
         try:
-            # Call Google GenAI directly
+            # Call NEW google-genai library directly
             result = self._call_genai(prompt)
             # Convert dict response to JSON string for compatibility
             import json

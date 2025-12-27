@@ -17,7 +17,7 @@
 - **Error Recovery**: Automatic retry with exponential backoff
 
 #### Google AI (Gemini) Integration
-- **SDK**: Google AI SDK (`google-generativeai`), NOT Vertex AI SDK
+- **SDK**: NEW `google-genai` library (unified Google AI/Vertex AI SDK)
 - **Models**: `gemini-3-flash-preview` (primary), `gemini-3-pro-preview` (fallback)
 - **Location**: `global` (required for preview models)
 - **Authentication**: Service account with AI Platform permissions

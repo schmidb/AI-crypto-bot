@@ -21,10 +21,11 @@ class Config:
         self.GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
         self.GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
-        # LLM settings
-        self.LLM_PROVIDER = os.getenv("LLM_PROVIDER", "vertex")
-        self.LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash")
-        self.LLM_LOCATION = os.getenv("LLM_LOCATION", "global")
+        # LLM settings - Following AI_MODEL_STEERING.md
+        self.LLM_PROVIDER = os.getenv("LLM_PROVIDER", "google_ai")  # Use Google AI SDK, not Vertex AI
+        self.LLM_MODEL = os.getenv("LLM_MODEL", "gemini-3-flash-preview")  # Required preview model
+        self.LLM_FALLBACK_MODEL = os.getenv("LLM_FALLBACK_MODEL", "gemini-3-pro-preview")  # Alternative model
+        self.LLM_LOCATION = os.getenv("LLM_LOCATION", "global")  # Required for preview models
 
         # Trading settings
         self.TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")
@@ -145,9 +146,10 @@ COINBASE_API_SECRET = config.COINBASE_API_SECRET
 GOOGLE_CLOUD_PROJECT = config.GOOGLE_CLOUD_PROJECT
 GOOGLE_APPLICATION_CREDENTIALS = config.GOOGLE_APPLICATION_CREDENTIALS
 
-# LLM settings
+# LLM settings - Following AI_MODEL_STEERING.md
 LLM_PROVIDER = config.LLM_PROVIDER
 LLM_MODEL = config.LLM_MODEL
+LLM_FALLBACK_MODEL = config.LLM_FALLBACK_MODEL
 LLM_LOCATION = config.LLM_LOCATION
 
 # Trading settings
