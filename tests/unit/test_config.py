@@ -27,7 +27,7 @@ class TestConfigInitialization:
             assert config.SIMULATION_MODE is False
             assert config.LLM_PROVIDER == "vertex"
             assert config.LLM_MODEL == "gemini-1.5-flash"
-            assert config.LLM_LOCATION == "us-central1"
+            assert config.LLM_LOCATION == "global"
     
     def test_config_initialization_with_env_vars(self):
         """Test Config initialization with custom environment variables."""
@@ -553,7 +553,7 @@ class TestConfigIntegration:
             # LLM Settings
             'LLM_PROVIDER': 'vertex',
             'LLM_MODEL': 'gemini-2.5-pro',
-            'LLM_LOCATION': 'us-central1',
+            'LLM_LOCATION': 'global',
             
             # Trading Settings
             'TRADING_PAIRS': 'BTC-EUR,ETH-EUR,SOL-EUR',
