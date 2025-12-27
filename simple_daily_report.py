@@ -154,7 +154,7 @@ def main():
     report_file = reporter.save_report(analysis)
     
     print(f"\n✅ Daily report generated: {report_file}")
-    print("💡 To set up email delivery, run: ./setup_daily_reports.sh")
+    print("💡 Email delivery is configured automatically with GCP deployment (gcp_deployment/setup_gcp.sh)")
 
 if __name__ == "__main__":
     main()

@@ -150,7 +150,7 @@ This bot uses a sophisticated **multi-strategy framework** that adapts to market
 ### ☁️ **Cloud Deployment**
 For production deployment on cloud platforms, use the automated setup scripts:
 - **AWS EC2**: See [`aws_setup/README.md`](aws_setup/README.md) for complete AWS deployment guide
-- **Google Cloud**: See [`gcp_setup/README.md`](gcp_setup/README.md) for complete GCP deployment guide
+- **Google Cloud**: See [`gcp_deployment/README.md`](gcp_deployment/README.md) for complete GCP deployment guide
 
 Both include automated scripts for dependencies, web server setup, and service configuration.
 
@@ -318,8 +318,8 @@ AI-crypto-bot/
 │   ├── iam_policy.json
 │   ├── cloudwatch_setup.sh
 │   └── create_secrets.sh
-├── gcp_setup/             # Google Cloud deployment scripts
-│   ├── setup_gce.sh
+├── gcp_deployment/        # Google Cloud deployment scripts
+│   ├── setup_gcp.sh
 │   └── README.md
 ├── data/                  # Runtime data
 ├── logs/                  # Application logs
@@ -539,7 +539,7 @@ git clone https://github.com/schmidb/AI-crypto-bot.git
 cd AI-crypto-bot
 
 # Run setup script
-bash gcp_setup/setup_gce.sh
+bash gcp_deployment/setup_gcp.sh
 ```
 
 **3. Configure and Start**

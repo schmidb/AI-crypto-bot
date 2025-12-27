@@ -1,6 +1,6 @@
-# Google Cloud Deployment Guide
+# Google Cloud Platform Deployment Guide
 
-This guide provides step-by-step instructions for deploying the AI Crypto Trading Bot on a Google Compute Engine (GCE) instance.
+This guide provides step-by-step instructions for deploying the AI Crypto Trading Bot on Google Cloud Platform (GCP) using Compute Engine.
 
 ## Deployment Steps
 
@@ -35,8 +35,8 @@ gcloud compute ssh your-instance-name --zone=your-zone
 git clone https://github.com/yourusername/AI-crypto-bot.git
 cd AI-crypto-bot
 
-# Run the Google Cloud setup script
-bash gcp_setup/setup_gce.sh
+# Run the Google Cloud Platform setup script
+bash gcp_deployment/setup_gcp.sh
 ```
 
 The setup script will:
@@ -45,6 +45,8 @@ The setup script will:
 - Configure a supervisor service for the bot with proper uptime tracking
 - Install Apache for the web dashboard
 - Create a template .env file
+- Set up daily email reports with cron job
+- Configure email settings in .env
 
 ### 4. Configure Your API Keys
 
@@ -53,7 +55,30 @@ The setup script will:
 nano .env
 ```
 
-Add your Coinbase API credentials and Google Cloud credentials to the .env file.
+Add your API credentials to the .env file:
+
+#### Required Configuration
+```env
+# Coinbase API credentials
+COINBASE_API_KEY=organizations/your-org-id/apiKeys/your-key-id
+COINBASE_API_SECRET=-----BEGIN EC PRIVATE KEY-----\n...\n-----END EC PRIVATE KEY-----\n
+
+# Google Cloud AI
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account.json
+LLM_MODEL=gemini-3-flash-preview
+LLM_LOCATION=global
+
+# Email Configuration for Daily Reports
+GMAIL_USER=your-email@gmail.com
+GMAIL_APP_PASSWORD=your-gmail-app-password
+```
+
+#### Getting Gmail App Password
+1. Go to Google Account settings
+2. Enable 2-factor authentication
+3. Generate App Password for 'Mail'
+4. Use this password in GMAIL_APP_PASSWORD
 
 ### 5. Manage the Bot Service
 
@@ -62,7 +87,7 @@ Add your Coinbase API credentials and Google Cloud credentials to the .env file.
 sudo supervisorctl status crypto-bot
 
 # View logs
-tail -f /var/log/crypto-bot/crypto-bot.log
+tail -f ~/AI-crypto-bot/logs/supervisor.log
 
 # Restart the service
 sudo supervisorctl restart crypto-bot
@@ -108,6 +133,15 @@ The dashboard provides:
 
 Make sure your firewall rules allow HTTP traffic (port 80).
 
+### 8. Daily Email Reports
+
+The setup automatically configures daily email reports that will be sent at 8:00 AM every day. To test the report:
+
+```bash
+cd ~/AI-crypto-bot
+python3 daily_report.py
+```
+
 ## Uptime Management
 
 The bot features intelligent uptime tracking:
@@ -127,12 +161,38 @@ The bot features intelligent uptime tracking:
 | `python bot_manager.py restart` | ✅ Preserves | Manual restart |
 | `python bot_manager.py stop` | ❌ Resets | Manual stop |
 
+## Features Included
+
+### Core Trading Bot
+- Automated cryptocurrency trading with AI analysis
+- Risk management and position sizing
+- Real-time market data processing
+- Portfolio tracking and rebalancing
+
+### Web Dashboard
+- Real-time portfolio visualization
+- Trading history and performance metrics
+- AI analysis insights
+- Market data and trends
+
+### Daily Email Reports
+- Automated daily portfolio summaries
+- Performance analysis and insights
+- Trading activity reports
+- Sent automatically at 8:00 AM daily
+
+### Monitoring & Management
+- Supervisor-based service management
+- Comprehensive logging
+- Uptime tracking
+- Health monitoring
+
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Service fails to start:**
-   - Check logs with `tail -f /var/log/crypto-bot/crypto-bot.log`
+   - Check logs with `tail -f ~/AI-crypto-bot/logs/supervisor.log`
    - Verify your API keys are correctly formatted in the .env file
    - Ensure your Google Cloud service account has the necessary permissions
 
@@ -141,13 +201,24 @@ The bot features intelligent uptime tracking:
    - Verify firewall rules allow HTTP traffic
    - Check Apache error logs: `sudo tail -f /var/log/apache2/error.log`
 
-3. **High CPU or memory usage:**
+3. **Daily reports not working:**
+   - Check cron job: `crontab -l`
+   - Test manually: `cd ~/AI-crypto-bot && python3 daily_report.py`
+   - Check email credentials in .env file
+   - Review daily report logs: `tail -f ~/AI-crypto-bot/logs/daily_report.log`
+
+4. **High CPU or memory usage:**
    - Consider upgrading your instance type
    - Adjust the trading interval in the .env file
 
-4. **Uptime not tracking correctly:**
+5. **Uptime not tracking correctly:**
    - Check bot_manager.py status for service detection
    - Verify dependencies are installed: `pip install -r requirements.txt`
    - Review supervisor logs for uptime-related messages
+
+6. **AI analysis failures:**
+   - Verify Google Cloud credentials and permissions
+   - Check LLM_LOCATION is set to 'global' for preview models
+   - Ensure using new google-genai library (not legacy google-generativeai)
 
 For additional help, please open an issue on the GitHub repository.
