@@ -113,9 +113,14 @@ TEMP_*_ANALYSIS.md
 PROJECT_*.md
 
 # Credentials (should be in secure location)
-google.json
-*.json.backup
-intense-base*.json
+*.json
+!google.json.template
+!package.json
+!package-lock.json
+!**/package.json
+!**/package-lock.json
+!data/**/*.json
+!tests/**/*.json
 
 # Coverage files
 .coverage
