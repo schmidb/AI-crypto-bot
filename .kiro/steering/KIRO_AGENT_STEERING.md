@@ -1,6 +1,4 @@
-# Kiro Agent Steering Document
-
-## AI Model Configuration
+# AI Model Steering
 
 ### Required Gemini Models
 - **Primary Model**: `gemini-3-flash-preview`
