@@ -117,7 +117,7 @@ class TestPerformanceManager:
         assert "warning" in result
         assert "permanently delete" in result["warning"].lower()
     
-    @patch('utils.performance_manager.PerformanceTracker')
+    @patch('utils.performance.performance_manager.PerformanceTracker')
     def test_reset_performance_with_confirmation(self, mock_tracker_class, performance_manager):
         """Test performance reset with valid confirmation code"""
         # Mock the tracker reset method
@@ -150,7 +150,7 @@ class TestPerformanceManager:
         assert len(reset_history) == 1
         assert reset_history[0]["confirmation_code"] == confirmation_code
     
-    @patch('utils.performance_manager.PerformanceTracker')
+    @patch('utils.performance.performance_manager.PerformanceTracker')
     def test_reset_performance_error_handling(self, mock_tracker_class, performance_manager):
         """Test error handling during performance reset"""
         # Mock the tracker to raise an exception
@@ -351,7 +351,7 @@ class TestPerformanceManager:
     
     # ===== DATA EXPORT TESTS =====
     
-    @patch('utils.performance_manager.PerformanceTracker')
+    @patch('utils.performance.performance_manager.PerformanceTracker')
     def test_export_performance_data_json(self, mock_tracker_class, performance_manager):
         """Test exporting performance data as JSON"""
         # Mock tracker methods
@@ -382,7 +382,7 @@ class TestPerformanceManager:
         assert "performance_metrics" in export_data
         assert "performance_periods" in export_data
     
-    @patch('utils.performance_manager.PerformanceTracker')
+    @patch('utils.performance.performance_manager.PerformanceTracker')
     def test_export_performance_data_csv(self, mock_tracker_class, performance_manager):
         """Test exporting performance data as CSV"""
         # Mock tracker methods
@@ -415,7 +415,7 @@ class TestPerformanceManager:
     
     # ===== ADVANCED ANALYTICS TESTS =====
     
-    @patch('utils.performance_manager.PerformanceTracker')
+    @patch('utils.performance.performance_manager.PerformanceTracker')
     def test_generate_performance_report(self, mock_tracker_class, performance_manager, sample_metrics):
         """Test generating comprehensive performance report"""
         # Mock tracker methods
@@ -531,7 +531,7 @@ class TestPerformanceManager:
         # Should return error status but not crash
         assert result["status"] == "error"
     
-    @patch('utils.performance_manager.json.dump')
+    @patch('utils.performance.performance_manager.json.dump')
     def test_error_handling_json_operations(self, mock_json_dump, performance_manager):
         """Test error handling for JSON operations"""
         # Mock json.dump to raise an exception
@@ -567,7 +567,7 @@ class TestPerformanceManager:
         assert benchmark_comparison["status"] == "success"
         
         # 6. Export data
-        with patch('utils.performance_manager.PerformanceTracker') as mock_tracker_class:
+        with patch('utils.performance.performance_manager.PerformanceTracker') as mock_tracker_class:
             mock_tracker = Mock()
             mock_tracker.get_portfolio_snapshots.return_value = {"snapshots": []}
             mock_tracker.get_performance_metrics.return_value = sample_metrics
@@ -577,7 +577,7 @@ class TestPerformanceManager:
             assert export_result["status"] == "success"
         
         # 7. Generate report
-        with patch('utils.performance_manager.PerformanceTracker') as mock_tracker_class:
+        with patch('utils.performance.performance_manager.PerformanceTracker') as mock_tracker_class:
             mock_tracker = Mock()
             mock_tracker.get_portfolio_snapshots.return_value = {"snapshots": []}
             mock_tracker.get_performance_metrics.return_value = sample_metrics
