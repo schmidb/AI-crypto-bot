@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 class DailyReportGenerator:
     def __init__(self):
         self.config = Config()
-        # Use gemini-3-flash-preview for detailed email reports
-        self.llm_analyzer = LLMAnalyzer(model="gemini-3-flash-preview")
+        # Use gemini-3-pro-preview for detailed email reports
+        self.llm_analyzer = LLMAnalyzer(model="gemini-3-pro-preview")
         
     def analyze_logs_last_24h(self) -> Dict[str, Any]:
         """Analyze bot logs from last 24 hours"""
