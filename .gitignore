@@ -86,7 +86,8 @@ TEMP_*.md
 
 # Support files
 *support_ticket*
-*troubleshooting*
+*troubleshooting_temp*
+temp_troubleshooting*
 
 # Old data files
 data/*_USD_*.json
@@ -108,7 +109,7 @@ cleanup_*.py
 
 # Temporary documentation
 *_COMPLETE.md
-*_ANALYSIS.md
+TEMP_*_ANALYSIS.md
 PROJECT_*.md
 
 # Credentials (should be in secure location)
