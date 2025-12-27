@@ -69,6 +69,9 @@ class WebServerSync:
             # Sync data files
             self._sync_data_files()
             
+            # Sync backtesting data files
+            self._sync_backtesting_data()
+            
             # Sync market data
             self._sync_market_data()
             
@@ -108,6 +111,41 @@ class WebServerSync:
             
         except Exception as e:
             logger.error(f"Error syncing data files: {e}")
+    
+    def _sync_backtesting_data(self) -> None:
+        """Sync backtesting dashboard data files"""
+        try:
+            # Sync backtesting dashboard data files
+            backtest_data_files = {
+                "data/dashboard/backtest_results/latest_backtest.json": "data/backtest_results/latest_backtest.json",
+                "data/dashboard/backtest_results/data_summary.json": "data/backtest_results/data_summary.json",
+                "data/dashboard/backtest_results/strategy_comparison.json": "data/backtest_results/strategy_comparison.json",
+                "data/dashboard/backtest_results/latest_optimization.json": "data/backtest_results/latest_optimization.json",
+                "data/dashboard/backtest_results/latest_walkforward.json": "data/backtest_results/latest_walkforward.json",
+                "data/dashboard/backtest_results/update_status.json": "data/backtest_results/update_status.json",
+                "data/dashboard/backtest_results/sync_metadata.json": "data/backtest_results/sync_metadata.json"
+            }
+            
+            for source_rel_path, dest_rel_path in backtest_data_files.items():
+                source_abs_path = os.path.abspath(source_rel_path)
+                dest_abs_path = os.path.join(self.web_path, dest_rel_path)
+                self._ensure_hard_link(source_abs_path, dest_abs_path)
+            
+            # Also sync latest reports from reports directory for fallback
+            reports_data_files = {
+                "reports/interval_optimization/latest_interval_optimization.json": "data/backtest_results/latest_interval_optimization.json",
+                "reports/parameter_monitoring/latest_parameter_monitoring.json": "data/backtest_results/latest_parameter_monitoring.json"
+            }
+            
+            for source_rel_path, dest_rel_path in reports_data_files.items():
+                source_abs_path = os.path.abspath(source_rel_path)
+                dest_abs_path = os.path.join(self.web_path, dest_rel_path)
+                self._ensure_hard_link(source_abs_path, dest_abs_path)
+            
+            logger.info("Backtesting data files synced")
+            
+        except Exception as e:
+            logger.error(f"Error syncing backtesting data files: {e}")
     
     def _sync_market_data(self) -> None:
         """Sync latest decision files and detailed analysis files"""
@@ -208,6 +246,7 @@ class WebServerSync:
             content = content.replace("/crypto-bot/data/config/config.json", "./data/config/config.json")
             content = content.replace("/crypto-bot/data/config/detailed_config.json", "./data/config/detailed_config.json")
             content = content.replace("/crypto-bot/data/cache/", "./data/cache/")
+            content = content.replace("/crypto-bot/data/backtest_results/", "./data/backtest_results/")
             content = content.replace("/crypto-bot/images/", "./images/")
             # Legacy path replacements for backward compatibility
             content = content.replace("../data/BTC_USD_latest.json", "./data/BTC_USD_latest.json")
@@ -216,6 +255,7 @@ class WebServerSync:
             content = content.replace("../data/portfolio/portfolio.json", "./data/portfolio/portfolio.json")
             content = content.replace("../data/trades/trade_history.json", "./data/trades/trade_history.json")
             content = content.replace("../data/cache/", "./data/cache/")
+            content = content.replace("../data/backtest_results/", "./data/backtest_results/")
             content = content.replace("../images/", "./images/")
             
             # Write the modified content

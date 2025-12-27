@@ -1298,10 +1298,14 @@ class TradingBot:
         # Note: schedule library doesn't support monthly directly, using daily check
         schedule.every().day.at("08:00").do(self._check_monthly_stability_task)
         
+        # Parameter monitoring - run every 4 hours for continuous monitoring
+        schedule.every(4).hours.do(self.run_parameter_monitoring_task)
+        
         logger.info("📅 Scheduled tasks configured:")
         logger.info("  - Daily health check: 6:00 AM daily")
         logger.info("  - Weekly validation: 7:00 AM Mondays")
         logger.info("  - Monthly stability: 8:00 AM 1st of month")
+        logger.info("  - Parameter monitoring: Every 4 hours")
 
         
         # Keep the script running
@@ -1503,6 +1507,8 @@ class TradingBot:
         from datetime import datetime
         if datetime.now().day == 1:
             self.run_monthly_stability_task()
+    
+    def run_monthly_stability_task(self):
         """Scheduled task wrapper for monthly stability analysis"""
         try:
             logger.info("🔬 Running scheduled monthly stability analysis...")
@@ -1534,6 +1540,83 @@ class TradingBot:
             return success
         except Exception as e:
             logger.error(f"Error in scheduled monthly stability analysis: {e}")
+            return False
+    
+    def run_parameter_monitoring_task(self):
+        """Scheduled task wrapper for parameter monitoring"""
+        try:
+            logger.info("🔍 Running scheduled parameter monitoring...")
+            
+            # Import and run parameter monitoring
+            from run_parameter_monitoring import ParameterMonitoringService
+            
+            # Initialize monitoring service with GCS sync
+            monitoring_service = ParameterMonitoringService(sync_to_gcs=True)
+            
+            # Run single monitoring cycle
+            results = monitoring_service.run_monitoring_cycle()
+            
+            if 'error' not in results:
+                logger.info("✅ Scheduled parameter monitoring completed successfully")
+                
+                # Check for critical alerts and send notifications
+                total_alerts = results.get('total_alerts', 0)
+                critical_alerts_24h = results.get('critical_alerts_24h', 0)
+                pause_recommendations = results.get('strategy_pause_recommendations', {})
+                
+                # Send notification based on alert level
+                try:
+                    if len(pause_recommendations) > 0:
+                        # Critical: Strategy pause recommendations
+                        alert_msg = f"🚨 CRITICAL: Parameter Monitoring Alert\n\n"
+                        alert_msg += f"Strategy pause recommendations: {len(pause_recommendations)}\n\n"
+                        for strategy_product, rec in pause_recommendations.items():
+                            alert_msg += f"• {strategy_product}: {', '.join(rec['reasons'])}\n"
+                        alert_msg += f"\nTotal alerts: {total_alerts}"
+                        
+                        self.notification_service.send_error_notification(
+                            "CRITICAL: Strategy Pause Recommended",
+                            alert_msg
+                        )
+                    elif critical_alerts_24h > 0:
+                        # Warning: Critical alerts in last 24h
+                        alert_msg = f"⚠️ Parameter Monitoring: {critical_alerts_24h} critical alerts in last 24h\n"
+                        alert_msg += f"Total alerts: {total_alerts}\n"
+                        alert_msg += f"Market regime: {results.get('regime_info', 'UNKNOWN')}"
+                        
+                        self.notification_service.send_status_notification(alert_msg)
+                    elif total_alerts > 10:
+                        # Info: High alert volume
+                        alert_msg = f"ℹ️ Parameter Monitoring: {total_alerts} alerts generated\n"
+                        alert_msg += f"Market regime: {results.get('regime_info', 'UNKNOWN')}"
+                        
+                        self.notification_service.send_status_notification(alert_msg)
+                    # Otherwise, no notification for normal operation
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to send parameter monitoring notification: {e}")
+            else:
+                logger.error(f"❌ Scheduled parameter monitoring failed: {results['error']}")
+                # Send error notification
+                try:
+                    self.notification_service.send_error_notification(
+                        "Parameter Monitoring Failed",
+                        f"The scheduled parameter monitoring encountered errors: {results['error']}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send parameter monitoring error notification: {e}")
+                    
+            return 'error' not in results
+        except Exception as e:
+            logger.error(f"Error in scheduled parameter monitoring: {e}")
+            # Send error notification
+            try:
+                self.notification_service.send_error_notification(
+                    "Parameter Monitoring Error",
+                    f"The parameter monitoring task crashed: {str(e)}"
+                )
+            except Exception as ne:
+                logger.warning(f"Failed to send parameter monitoring error notification: {ne}")
             return False
 
     def run_daily_cleanup(self):
