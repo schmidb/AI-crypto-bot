@@ -22,13 +22,14 @@ logger = logging.getLogger(__name__)
 
 class DashboardIntegration:
     """
-    Integration layer between backtesting engine and web dashboard
+    Integration layer between backtesting engine and web dashboard with GCS sync
     """
     
-    def __init__(self, dashboard_data_dir: str = "./dashboard/data"):
-        """Initialize dashboard integration"""
+    def __init__(self, dashboard_data_dir: str = "./dashboard/data", sync_to_gcs: bool = True):
+        """Initialize dashboard integration with optional GCS sync"""
         self.dashboard_data_dir = Path(dashboard_data_dir)
         self.dashboard_data_dir.mkdir(parents=True, exist_ok=True)
+        self.sync_to_gcs = sync_to_gcs
         
         # Create subdirectories
         (self.dashboard_data_dir / "backtest_results").mkdir(exist_ok=True)
@@ -39,7 +40,22 @@ class DashboardIntegration:
         self.data_collector = None  # Will be initialized when needed
         self.backtest_suite = ComprehensiveBacktestSuite()
         
-        logger.info(f"Dashboard integration initialized: {self.dashboard_data_dir}")
+        # Initialize GCS client if sync is enabled
+        self.gcs_client = None
+        if self.sync_to_gcs:
+            try:
+                from google.cloud import storage
+                self.gcs_client = storage.Client()
+                # Use the existing project ID from environment
+                import os
+                project_id = os.getenv('GOOGLE_CLOUD_PROJECT') or os.getenv('GCP_PROJECT_ID', 'ai-crypto-bot')
+                self.gcs_bucket_name = f"{project_id}-backtest-data"
+                logger.info(f"GCS sync enabled for bucket: {self.gcs_bucket_name}")
+            except Exception as e:
+                logger.warning(f"GCS sync disabled due to error: {e}")
+                self.sync_to_gcs = False
+        
+        logger.info(f"Dashboard integration initialized: {self.dashboard_data_dir} (GCS sync: {self.sync_to_gcs})")
     
     def generate_dashboard_data(self, product_id: str = "BTC-USD", days: int = 30) -> bool:
         """
@@ -290,30 +306,202 @@ class DashboardIntegration:
             with open(status_file, 'w') as f:
                 json.dump(status, f, indent=2, default=str)
             
+            # Sync to GCS if enabled
+            if success and self.sync_to_gcs:
+                self._sync_reports_to_gcs("daily")
+            
             return success
             
         except Exception as e:
             logger.error(f"Error updating dashboard data: {e}")
             return False
+    
+    def _sync_reports_to_gcs(self, report_type: str = "daily"):
+        """Sync dashboard reports to GCS"""
+        if not self.gcs_client:
+            logger.warning("GCS client not available for sync")
+            return False
+        
+        try:
+            logger.info(f"Syncing {report_type} reports to GCS...")
+            
+            # Get current date for organizing reports
+            current_date = datetime.now()
+            date_str = current_date.strftime("%Y-%m-%d")
+            
+            # Define GCS paths based on report type
+            if report_type == "daily":
+                gcs_base_path = f"reports/daily/{date_str}/"
+            elif report_type == "weekly":
+                week_str = current_date.strftime("%Y-W%U")
+                gcs_base_path = f"reports/weekly/{week_str}/"
+            elif report_type == "monthly":
+                month_str = current_date.strftime("%Y-%m")
+                gcs_base_path = f"reports/monthly/{month_str}/"
+            else:
+                gcs_base_path = f"reports/{report_type}/"
+            
+            # Files to sync
+            report_files = [
+                "latest_backtest.json",
+                "data_summary.json", 
+                "strategy_comparison.json",
+                "latest_optimization.json",
+                "update_status.json"
+            ]
+            
+            bucket = self.gcs_client.bucket(self.gcs_bucket_name)
+            synced_files = []
+            
+            for filename in report_files:
+                local_file = self.dashboard_data_dir / "backtest_results" / filename
+                if local_file.exists():
+                    try:
+                        # Upload to GCS
+                        gcs_path = gcs_base_path + filename
+                        blob = bucket.blob(gcs_path)
+                        blob.upload_from_filename(str(local_file))
+                        
+                        synced_files.append(gcs_path)
+                        logger.info(f"Synced {filename} to gs://{self.gcs_bucket_name}/{gcs_path}")
+                        
+                    except Exception as e:
+                        logger.error(f"Error syncing {filename}: {e}")
+                else:
+                    logger.warning(f"Report file not found: {filename}")
+            
+            # Create sync metadata
+            sync_metadata = {
+                'sync_timestamp': datetime.now().isoformat(),
+                'report_type': report_type,
+                'synced_files': synced_files,
+                'total_files': len(synced_files),
+                'gcs_bucket': self.gcs_bucket_name,
+                'gcs_base_path': gcs_base_path
+            }
+            
+            # Save sync metadata locally and to GCS
+            metadata_file = self.dashboard_data_dir / "backtest_results" / "sync_metadata.json"
+            with open(metadata_file, 'w') as f:
+                json.dump(sync_metadata, f, indent=2, default=str)
+            
+            # Upload metadata to GCS
+            metadata_blob = bucket.blob(gcs_base_path + "sync_metadata.json")
+            metadata_blob.upload_from_filename(str(metadata_file))
+            
+            logger.info(f"Successfully synced {len(synced_files)} files to GCS")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error syncing reports to GCS: {e}")
+            return False
+    
+    def download_reports_from_gcs(self, report_type: str = "daily", date_str: str = None):
+        """Download reports from GCS to local dashboard"""
+        if not self.gcs_client:
+            logger.warning("GCS client not available for download")
+            return False
+        
+        try:
+            if date_str is None:
+                date_str = datetime.now().strftime("%Y-%m-%d")
+            
+            logger.info(f"Downloading {report_type} reports from GCS for {date_str}...")
+            
+            # Define GCS path
+            if report_type == "daily":
+                gcs_base_path = f"reports/daily/{date_str}/"
+            elif report_type == "weekly":
+                gcs_base_path = f"reports/weekly/{date_str}/"
+            elif report_type == "monthly":
+                gcs_base_path = f"reports/monthly/{date_str}/"
+            else:
+                gcs_base_path = f"reports/{report_type}/"
+            
+            bucket = self.gcs_client.bucket(self.gcs_bucket_name)
+            downloaded_files = []
+            
+            # List all blobs with the prefix
+            blobs = bucket.list_blobs(prefix=gcs_base_path)
+            
+            for blob in blobs:
+                if blob.name.endswith('.json'):
+                    try:
+                        # Download to local dashboard directory
+                        filename = Path(blob.name).name
+                        local_file = self.dashboard_data_dir / "backtest_results" / filename
+                        
+                        blob.download_to_filename(str(local_file))
+                        downloaded_files.append(filename)
+                        logger.info(f"Downloaded {filename} from GCS")
+                        
+                    except Exception as e:
+                        logger.error(f"Error downloading {blob.name}: {e}")
+            
+            logger.info(f"Successfully downloaded {len(downloaded_files)} files from GCS")
+            return len(downloaded_files) > 0
+            
+        except Exception as e:
+            logger.error(f"Error downloading reports from GCS: {e}")
+            return False
+    
+    def generate_and_sync_reports(self, product_id: str = "BTC-USD", report_type: str = "daily", days: int = 30):
+        """Generate reports and sync to GCS in one operation"""
+        try:
+            logger.info(f"Generating and syncing {report_type} reports...")
+            
+            # Generate dashboard data
+            success = self.generate_dashboard_data(product_id, days)
+            
+            if success and self.sync_to_gcs:
+                # Sync to GCS
+                sync_success = self._sync_reports_to_gcs(report_type)
+                return sync_success
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Error in generate_and_sync_reports: {e}")
+            return False
 
 def main():
-    """Main function to generate dashboard data"""
+    """Main function to generate dashboard data with optional GCS sync"""
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     
+    import argparse
+    parser = argparse.ArgumentParser(description='Generate dashboard data with optional GCS sync')
+    parser.add_argument('--sync-gcs', action='store_true', help='Sync reports to Google Cloud Storage')
+    parser.add_argument('--report-type', default='daily', choices=['daily', 'weekly', 'monthly'], 
+                       help='Type of report to generate')
+    parser.add_argument('--product', default='BTC-USD', help='Product to analyze')
+    parser.add_argument('--days', type=int, default=30, help='Days of data to analyze')
+    
+    args = parser.parse_args()
+    
     try:
-        # Initialize dashboard integration
-        dashboard = DashboardIntegration()
+        # Initialize dashboard integration with GCS sync option
+        dashboard = DashboardIntegration(sync_to_gcs=args.sync_gcs)
         
-        # Generate data for BTC-USD
-        success = dashboard.generate_dashboard_data("BTC-USD", days=30)
-        
-        if success:
-            logger.info("✅ Dashboard data generation completed successfully")
-            print("Dashboard data has been generated successfully!")
-            print("You can now view the backtesting dashboard at: dashboard/static/backtesting.html")
+        # Generate and optionally sync data
+        if args.sync_gcs:
+            success = dashboard.generate_and_sync_reports(args.product, args.report_type, args.days)
+            if success:
+                logger.info("✅ Dashboard data generated and synced to GCS successfully")
+                print("Dashboard data has been generated and synced to GCS!")
+                print(f"Report type: {args.report_type}")
+                print(f"GCS bucket: gs://{dashboard.gcs_bucket_name}/reports/{args.report_type}/")
+            else:
+                logger.error("❌ Dashboard data generation or GCS sync failed")
+                print("Failed to generate or sync dashboard data. Check the logs for details.")
         else:
-            logger.error("❌ Dashboard data generation failed")
-            print("Failed to generate dashboard data. Check the logs for details.")
+            success = dashboard.generate_dashboard_data(args.product, args.days)
+            if success:
+                logger.info("✅ Dashboard data generation completed successfully")
+                print("Dashboard data has been generated successfully!")
+                print("You can now view the backtesting dashboard at: dashboard/static/backtesting.html")
+            else:
+                logger.error("❌ Dashboard data generation failed")
+                print("Failed to generate dashboard data. Check the logs for details.")
         
         return success
         

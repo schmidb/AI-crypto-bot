@@ -367,13 +367,7 @@ class DataCollector:
                     # Rate limiting: 10 requests per second
                     time.sleep(0.1)
                     
-                    chunk_data = self.get_historical_data(
-                        product_id=product_id,
-                        granularity=granularity,
-                        days_back=None  # We'll override with specific dates
-                    )
-                    
-                    # Override the method to use specific date range
+                    # Fetch data directly using the API for specific date range
                     candles = self.client.get_market_data(
                         product_id=product_id,
                         granularity=granularity,

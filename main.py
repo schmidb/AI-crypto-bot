@@ -1291,6 +1291,15 @@ class TradingBot:
         # Schedule daily cleanup at 2 AM
         schedule.every().day.at("02:00").do(self.run_daily_cleanup)
         
+        # Schedule integrated analysis tasks
+        schedule.every().day.at("06:00").do(self.run_daily_health_check_task)
+        schedule.every().monday.at("07:00").do(self.run_weekly_validation_task)
+        schedule.every().month.at("08:00").do(self.run_monthly_stability_task)
+        
+        logger.info("📅 Scheduled tasks configured:")
+        logger.info("  - Daily health check: 6:00 AM daily")
+        logger.info("  - Weekly validation: 7:00 AM Mondays")
+        logger.info("  - Monthly stability: 8:00 AM 1st of month")
 
         
         # Keep the script running
@@ -1419,6 +1428,108 @@ class TradingBot:
             logger.error(f"Error generating strategy performance report: {e}")
             return False
     
+    def run_daily_health_check_task(self):
+        """Scheduled task wrapper for daily health check"""
+        try:
+            logger.info("🏥 Running scheduled daily health check...")
+            
+            # Import and run the daily health check
+            from run_daily_health_check import run_daily_health_check
+            success = run_daily_health_check(sync_gcs=True)
+            
+            if success:
+                logger.info("✅ Scheduled daily health check completed successfully")
+                # Send notification
+                try:
+                    self.notification_service.send_status_notification(
+                        "🏥 Daily Health Check Complete\n\nAll systems analyzed and report generated successfully."
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send health check notification: {e}")
+            else:
+                logger.error("❌ Scheduled daily health check failed")
+                # Send error notification
+                try:
+                    self.notification_service.send_error_notification(
+                        "Daily Health Check Failed",
+                        "The scheduled daily health check encountered errors. Please review the logs."
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send health check error notification: {e}")
+                    
+            return success
+        except Exception as e:
+            logger.error(f"Error in scheduled daily health check: {e}")
+            return False
+    
+    def run_weekly_validation_task(self):
+        """Scheduled task wrapper for weekly validation"""
+        try:
+            logger.info("📊 Running scheduled weekly validation...")
+            
+            # Import and run the weekly validation
+            from run_weekly_validation import run_weekly_validation
+            success = run_weekly_validation(sync_gcs=True)
+            
+            if success:
+                logger.info("✅ Scheduled weekly validation completed successfully")
+                # Send notification
+                try:
+                    self.notification_service.send_status_notification(
+                        "📊 Weekly Validation Complete\n\nStrategy validation and backtesting completed successfully."
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send weekly validation notification: {e}")
+            else:
+                logger.error("❌ Scheduled weekly validation failed")
+                # Send error notification
+                try:
+                    self.notification_service.send_error_notification(
+                        "Weekly Validation Failed",
+                        "The scheduled weekly validation encountered errors. Please review the logs."
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send weekly validation error notification: {e}")
+                    
+            return success
+        except Exception as e:
+            logger.error(f"Error in scheduled weekly validation: {e}")
+            return False
+    
+    def run_monthly_stability_task(self):
+        """Scheduled task wrapper for monthly stability analysis"""
+        try:
+            logger.info("🔬 Running scheduled monthly stability analysis...")
+            
+            # Import and run the monthly stability analysis
+            from run_monthly_stability import run_monthly_stability
+            success = run_monthly_stability(sync_gcs=True)
+            
+            if success:
+                logger.info("✅ Scheduled monthly stability analysis completed successfully")
+                # Send notification
+                try:
+                    self.notification_service.send_status_notification(
+                        "🔬 Monthly Stability Analysis Complete\n\nParameter stability analysis completed successfully."
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send monthly stability notification: {e}")
+            else:
+                logger.error("❌ Scheduled monthly stability analysis failed")
+                # Send error notification
+                try:
+                    self.notification_service.send_error_notification(
+                        "Monthly Stability Analysis Failed",
+                        "The scheduled monthly stability analysis encountered errors. Please review the logs."
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send monthly stability error notification: {e}")
+                    
+            return success
+        except Exception as e:
+            logger.error(f"Error in scheduled monthly stability analysis: {e}")
+            return False
+
     def run_daily_cleanup(self):
         """Run daily cleanup of old logs and data files"""
         try:
