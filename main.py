@@ -22,6 +22,7 @@ from utils.backtest.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
 from utils.notification_service import NotificationService
 from utils.cleanup_manager import CleanupManager
+from daily_report import DailyReportGenerator
 
 # Import performance tracking
 try:
@@ -430,7 +431,10 @@ class TradingBot:
                 discrepancies_found = False
                 total_discrepancy_value = 0.0
                 
-                for asset in [config.BASE_CURRENCY, 'BTC', 'ETH', 'SOL']:
+                # Get all assets from trading pairs plus base currency
+                all_assets = [config.BASE_CURRENCY] + [pair.split('-')[0] for pair in config.TRADING_PAIRS]
+                
+                for asset in all_assets:
                     if asset in current_portfolio and asset in updated_portfolio:
                         if isinstance(current_portfolio[asset], dict) and isinstance(updated_portfolio[asset], dict):
                             old_amount = current_portfolio[asset].get('amount', 0)
@@ -1294,9 +1298,11 @@ class TradingBot:
         # Schedule integrated analysis tasks
         schedule.every().day.at("06:00").do(self.run_daily_health_check_task)
         schedule.every().monday.at("07:00").do(self.run_weekly_validation_task)
-        # Monthly stability task - run on 1st of each month at 08:00
+        # Daily email report at 8:00 AM
+        schedule.every().day.at("08:00").do(self.send_daily_email_report)
+        # Monthly stability task - run on 1st of each month at 09:00 (moved to avoid conflict)
         # Note: schedule library doesn't support monthly directly, using daily check
-        schedule.every().day.at("08:00").do(self._check_monthly_stability_task)
+        schedule.every().day.at("09:00").do(self._check_monthly_stability_task)
         
         # Parameter monitoring - run every 4 hours for continuous monitoring
         schedule.every(4).hours.do(self.run_parameter_monitoring_task)
@@ -1304,7 +1310,8 @@ class TradingBot:
         logger.info("📅 Scheduled tasks configured:")
         logger.info("  - Daily health check: 6:00 AM daily")
         logger.info("  - Weekly validation: 7:00 AM Mondays")
-        logger.info("  - Monthly stability: 8:00 AM 1st of month")
+        logger.info("  - Daily email report: 8:00 AM daily")
+        logger.info("  - Monthly stability: 9:00 AM 1st of month")
         logger.info("  - Parameter monitoring: Every 4 hours")
 
         
@@ -1643,6 +1650,32 @@ class TradingBot:
             return True
         except Exception as e:
             logger.error(f"Error during daily cleanup: {e}")
+            return False
+
+    def send_daily_email_report(self):
+        """Send daily email report at 8:00 AM"""
+        try:
+            logger.info("📧 Generating and sending daily email report...")
+            
+            # Initialize daily report generator
+            report_generator = DailyReportGenerator()
+            
+            # Generate and send the report
+            report_generator.generate_and_send_daily_report()
+            
+            logger.info("✅ Daily email report sent successfully")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error sending daily email report: {e}")
+            # Send error notification
+            try:
+                self.notification_service.send_error_notification(
+                    "Daily Email Report Failed",
+                    f"Failed to send daily email report: {str(e)}"
+                )
+            except Exception as ne:
+                logger.warning(f"Failed to send email report error notification: {ne}")
             return False
 
 if __name__ == "__main__":

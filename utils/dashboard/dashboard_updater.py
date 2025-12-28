@@ -4,6 +4,7 @@ import os
 import datetime
 from typing import Dict, List, Any
 import pandas as pd
+from config import config
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +258,8 @@ class DashboardUpdater:
         """Update latest trading decisions cache with multi-strategy data"""
         try:
             latest_decisions = []
-            assets = ["BTC", "ETH", "SOL"]
+            # Get assets from trading pairs
+            assets = [pair.split('-')[0] for pair in config.TRADING_PAIRS]
             
             # Get latest decision data for each asset
             for asset in assets:

@@ -100,33 +100,85 @@ class DailyReportGenerator:
             Keep it concise but informative for a daily executive briefing.
             """
             
-            # Use existing LLM analyzer
-            response = self.llm_analyzer.analyze_market({
-                'prompt': prompt,
-                'product_id': 'DAILY-REPORT',
-                'current_price': 1.0
-            })
+            # Use existing LLM analyzer with real market context
+            # Get current market data for context
+            try:
+                from coinbase_client import CoinbaseClient
+                coinbase_client = CoinbaseClient()
+                
+                # Get current prices for context
+                btc_price = coinbase_client.get_product_ticker('BTC-EUR')
+                eth_price = coinbase_client.get_product_ticker('ETH-EUR')
+                
+                market_context = f"""
+                Current Market Prices:
+                - BTC-EUR: €{btc_price.get('price', 'N/A')}
+                - ETH-EUR: €{eth_price.get('price', 'N/A')}
+                """
+            except Exception as e:
+                market_context = "Market data unavailable"
             
-            if isinstance(response, dict):
-                analysis = response.get('reasoning', response.get('analysis', str(response)))
-            else:
-                analysis = str(response)
+            # Create a comprehensive prompt without dummy market analysis
+            full_prompt = f"""
+            You are analyzing a crypto trading bot's daily performance. Generate a professional daily briefing.
+
+            PORTFOLIO DATA:
+            {json.dumps(portfolio, indent=2)}
+
+            LOG ANALYSIS:
+            - Total log entries: {log_data.get('total_log_entries', 0)}
+            - Trades executed: {len(log_data.get('trades_executed', []))}
+            - Errors encountered: {len(log_data.get('errors', []))}
+
+            {market_context}
+
+            RECENT TRADES:
+            {chr(10).join([f"- {trade.split('order executed:')[-1].strip()}" for trade in log_data.get('trades_executed', [])[-5:]]) if log_data.get('trades_executed') else "No recent trades"}
+
+            ERRORS (if any):
+            {chr(10).join(log_data.get('errors', [])[-2:]) if log_data.get('errors') else "No errors detected"}
+
+            Please provide a professional daily briefing with:
+            1. Overall bot health status (🟢 Healthy / 🟡 Warning / 🔴 Critical)
+            2. Key highlights from the last 24 hours
+            3. Portfolio performance assessment
+            4. Any issues or concerns that need attention
+            5. Brief trading activity summary
+
+            Keep it concise but informative for a daily executive briefing.
+            """
             
-            # Format analysis if it's a list or contains list-like structure
-            if isinstance(analysis, list):
-                formatted_analysis = "\n".join([f"• {item}" for item in analysis])
-            elif analysis.startswith('[') and analysis.endswith(']'):
-                # Handle string representation of list
-                try:
-                    import ast
-                    analysis_list = ast.literal_eval(analysis)
-                    formatted_analysis = "\n".join([f"• {item}" for item in analysis_list])
-                except:
-                    formatted_analysis = analysis
-            else:
-                formatted_analysis = analysis
+            # Use the LLM analyzer's client directly with proper prompt
+            import google.genai as genai
+            from google.genai import types
             
-            return f"=== AI MARKET ANALYSIS ===\n\n{formatted_analysis}"
+            try:
+                response = self.llm_analyzer.client.models.generate_content(
+                    model=self.llm_analyzer.model,
+                    contents=[full_prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.3,
+                        max_output_tokens=2000  # Increased token limit
+                    )
+                )
+                
+                # Extract text properly
+                analysis = None
+                if hasattr(response, 'candidates') and response.candidates:
+                    for candidate in response.candidates:
+                        if hasattr(candidate, 'content') and candidate.content:
+                            if hasattr(candidate.content, 'parts') and candidate.content.parts:
+                                analysis = candidate.content.parts[0].text
+                                break
+                
+                if not analysis:
+                    analysis = "AI analysis completed but no content returned"
+                    
+            except Exception as e:
+                logger.error(f"Direct LLM call failed: {e}")
+                analysis = f"AI analysis failed: {str(e)}"
+            
+            return f"=== AI MARKET ANALYSIS ===\n\n{analysis}"
             
         except Exception as e:
             logger.error(f"Error generating AI analysis: {e}")
@@ -168,7 +220,7 @@ class DailyReportGenerator:
             logger.error(f"Failed to send email: {e}")
             return False
     
-    def generate_and_send_daily_report(self):
+    def generate_and_send_daily_report(self, test_mode=False):
         """Main function to generate and send daily report"""
         try:
             logger.info("Generating daily bot report...")
@@ -196,7 +248,6 @@ Portfolio Status:
 - BTC: {portfolio.get('BTC', {}).get('amount', 0):.8f}
 - ETH: {portfolio.get('ETH', {}).get('amount', 0):.6f}
 - EUR: €{portfolio.get('EUR', {}).get('amount', 0):.2f}
-- SOL: {portfolio.get('SOL', {}).get('amount', 0):.6f} (legacy)
 
 24h Activity Summary:
 - Log entries processed: {log_data.get('total_log_entries', 0)}
@@ -213,13 +264,25 @@ This is an automated report from your AI Crypto Trading Bot.
 Dashboard: http://34.29.9.115/crypto-bot/
             """
             
-            # Send email
-            success = self.send_email_report(subject, body)
-            
-            if success:
-                logger.info("Daily report generated and sent successfully")
+            if test_mode:
+                # Print to console instead of sending email
+                print("=" * 80)
+                print(f"SUBJECT: {subject}")
+                print("=" * 80)
+                print(body)
+                print("=" * 80)
+                logger.info("Daily report generated and displayed in console")
+                return True
             else:
-                logger.error("Failed to send daily report")
+                # Send email
+                success = self.send_email_report(subject, body)
+                
+                if success:
+                    logger.info("Daily report generated and sent successfully")
+                else:
+                    logger.error("Failed to send daily report")
+                    
+                return success
                 
         except Exception as e:
             logger.error(f"Error generating daily report: {e}")

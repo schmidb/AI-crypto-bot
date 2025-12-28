@@ -16,10 +16,10 @@ import logging
 from typing import Dict, List, Any
 
 # Import our monitoring infrastructure
-from utils.parameter_monitor import ParameterStabilityMonitor, AlertLevel
+from utils.monitoring.parameter_monitor import ParameterStabilityMonitor, AlertLevel
 from data_collector import DataCollector
 from coinbase_client import CoinbaseClient
-from sync_to_gcs import GCSBacktestSync
+from backtesting.sync_to_gcs import GCSBacktestSync
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

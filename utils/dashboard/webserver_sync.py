@@ -157,7 +157,8 @@ class WebServerSync:
             os.makedirs(web_data_dir, exist_ok=True)
             
             # Update files for each trading pair - create direct links to latest files
-            assets = ['BTC', 'ETH', 'SOL']
+            # Get assets from trading pairs instead of hardcoded list
+            assets = [pair.split('-')[0] for pair in config.TRADING_PAIRS]
             
             for asset in assets:
                 # Find the latest decision file for this asset
