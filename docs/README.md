@@ -8,6 +8,7 @@ This documentation is designed for developers, contributors, and users who want 
 - **[Trading Strategies](TRADING_STRATEGIES.md)** - Detailed explanation of the three trading strategies
 - **[Risk Management](RISK_MANAGEMENT.md)** - Risk controls, position sizing, and safety mechanisms
 - **[Architecture](ARCHITECTURE.md)** - System design, components, and data flow
+- **[Data Storage](DATA_STORAGE.md)** - Data persistence, storage architecture, and recovery procedures
 
 ### Development & Analysis
 - **[Backtesting](BACKTESTING.md)** - Backtesting framework, results, and analysis
