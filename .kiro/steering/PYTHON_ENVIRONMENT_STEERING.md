@@ -39,16 +39,46 @@ pip install -r requirements.txt
 
 ### Production Deployment
 
-#### Supervisor Configuration
-- **Python Executable**: `./venv/Scripts/python.exe` (Windows)
+#### Supervisor Configuration (Linux Production)
+- **Python Executable**: `./venv/bin/python` (Linux) / `./venv/Scripts/python.exe` (Windows)
 - **Working Directory**: Current project directory
 - **User**: Current user
+- **Process Management**: Use supervisor for automatic restart and monitoring
+
+#### Linux Supervisor Setup
+```ini
+# /etc/supervisor/conf.d/crypto-bot.conf
+[program:crypto-bot]
+command=/home/markus/AI-crypto-bot/venv/bin/python /home/markus/AI-crypto-bot/main.py
+directory=/home/markus/AI-crypto-bot
+user=markus
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/home/markus/AI-crypto-bot/logs/supervisor.log
+environment=PATH="/home/markus/AI-crypto-bot/venv/bin"
+```
+
+#### Supervisor Commands
+```bash
+# Start/stop/restart the bot
+sudo supervisorctl start crypto-bot
+sudo supervisorctl stop crypto-bot
+sudo supervisorctl restart crypto-bot
+
+# Check status
+sudo supervisorctl status crypto-bot
+
+# View logs
+sudo supervisorctl tail crypto-bot
+```
 
 #### Key Points
-1. **Always use venv Python**: `./venv/Scripts/python.exe` for production (Windows)
+1. **Always use venv Python**: `./venv/bin/python` (Linux) / `./venv/Scripts/python.exe` (Windows)
 2. **Never use system Python**: Avoid global Python installation for the bot
 3. **Dependency isolation**: All packages installed in venv only
 4. **Consistent environment**: Same venv for development and production
+5. **Process Management**: Use supervisor to prevent duplicate instances and ensure automatic restart
 
 ### Development Workflow
 
@@ -175,6 +205,8 @@ venv\Scripts\pip.exe show coinbase-advanced-py
 6. **Separate dev dependencies**: Keep development tools in requirements-dev.txt
 7. **Version pinning**: Use `>=` for minimum versions, exact versions for critical packages
 8. **Regular updates**: Periodically update dependencies and test compatibility
+9. **Use supervisor in production**: Prevent duplicate processes and ensure automatic restart
+10. **Check for running processes**: Always verify no duplicate bots before manual starts
 
 ### AI Model Configuration (Following AI_MODEL_STEERING.md)
 

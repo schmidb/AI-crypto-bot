@@ -67,8 +67,8 @@ class TradingBot:
         logger.info(f"✅ LLM analyzer initialized: {self.llm_analyzer is not None}")
         
         # Initialize new multi-strategy framework with Phase 3 support
-        from utils.news_sentiment import NewsSentimentAnalyzer
-        from utils.volatility_analyzer import VolatilityAnalyzer
+        from utils.monitoring.news_sentiment import NewsSentimentAnalyzer
+        from utils.performance.volatility_analyzer import VolatilityAnalyzer
         
         # Initialize Phase 3 analyzers
         self.news_sentiment_analyzer = NewsSentimentAnalyzer()
@@ -90,7 +90,7 @@ class TradingBot:
         self.portfolio = Portfolio("data/portfolio.json")
         
         # Initialize trade logger (extracted from old TradingStrategy)
-        from utils.trade_logger import TradeLogger
+        from utils.trading.trade_logger import TradeLogger
         self.trade_logger = TradeLogger()
         
         # Initialize dashboard updater (local data only)

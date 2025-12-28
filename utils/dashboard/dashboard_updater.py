@@ -5,15 +5,15 @@ import datetime
 from typing import Dict, List, Any
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+
 # Import performance tracking components
 try:
-    from utils.performance_dashboard_updater import PerformanceDashboardUpdater
+    from utils.performance.performance_dashboard_updater import PerformanceDashboardUpdater
     PERFORMANCE_TRACKING_AVAILABLE = True
 except ImportError:
     PERFORMANCE_TRACKING_AVAILABLE = False
     logger.warning("Performance tracking not available - dashboard will not include performance data")
-
-logger = logging.getLogger(__name__)
 
 class DashboardUpdater:
     """Updates local dashboard data files - web server sync handled separately"""
