@@ -7,6 +7,7 @@ import signal
 import sys
 from datetime import datetime, timedelta
 import os
+import fcntl
 from typing import Dict, List, Any
 
 from coinbase_client import CoinbaseClient
@@ -37,6 +38,39 @@ from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENAB
 # Setup improved logging
 setup_logging(console_output=True, filter_noise=True)
 logger = get_logger('supervisor')
+
+def ensure_single_instance():
+    """Ensure only one bot instance runs"""
+    lock_file = '/tmp/crypto-bot.lock'
+    logger.info(f"🔒 Checking for existing bot instance (lock file: {lock_file})")
+    
+    try:
+        # Create lock file
+        lock_fd = os.open(lock_file, os.O_CREAT | os.O_TRUNC | os.O_RDWR)
+        
+        # Try to acquire exclusive lock (non-blocking)
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        
+        # Write PID to lock file
+        os.write(lock_fd, f"{os.getpid()}\n".encode())
+        os.fsync(lock_fd)
+        
+        logger.info(f"✅ Process lock acquired successfully (PID: {os.getpid()})")
+        return lock_fd
+        
+    except (OSError, IOError) as e:
+        logger.error(f"❌ Another bot instance is already running!")
+        logger.error(f"Lock file error: {e}")
+        
+        # Try to read existing PID
+        try:
+            with open(lock_file, 'r') as f:
+                existing_pid = f.read().strip()
+            logger.error(f"Existing bot PID: {existing_pid}")
+        except:
+            logger.error("Could not read existing PID from lock file")
+        
+        sys.exit(1)
 
 class TradingBot:
     """Main trading bot class that orchestrates the trading process"""
@@ -1681,6 +1715,9 @@ class TradingBot:
             return False
 
 if __name__ == "__main__":
+    # Ensure only one instance runs
+    lock_fd = ensure_single_instance()
+    
     bot = None
     try:
         bot = TradingBot()
@@ -1716,3 +1753,11 @@ if __name__ == "__main__":
         if bot:
             bot.record_shutdown_time()
         log_bot_shutdown(logger)
+        
+        # Release process lock
+        try:
+            os.close(lock_fd)
+            os.unlink('/tmp/crypto-bot.lock')
+            logger.info("🔓 Process lock released")
+        except:
+            pass  # Don't fail if lock cleanup fails
