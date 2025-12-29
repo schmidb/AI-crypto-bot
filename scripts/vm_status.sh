@@ -1,9 +1,9 @@
 #!/bin/bash
-"""
-Check Google VM Status and Costs
-
-This script shows your current VM configuration, status, and estimated costs.
-"""
+#
+# Check Google VM Status and Costs
+#
+# This script shows your current VM configuration, status, and estimated costs.
+#
 
 set -e  # Exit on any error
 
@@ -27,27 +27,44 @@ if ! gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT 
 fi
 
 # Get VM details
-VM_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="json")
+echo "📋 Getting VM information..."
 
-STATUS=$(echo "$VM_INFO" | jq -r '.status')
-MACHINE_TYPE=$(echo "$VM_INFO" | jq -r '.machineType' | sed 's|.*/||')
-ZONE_FULL=$(echo "$VM_INFO" | jq -r '.zone' | sed 's|.*/||')
-EXTERNAL_IP=$(echo "$VM_INFO" | jq -r '.networkInterfaces[0].accessConfigs[0].natIP // "None"')
-INTERNAL_IP=$(echo "$VM_INFO" | jq -r '.networkInterfaces[0].networkIP')
-
-# Get disk information
-DISKS=$(echo "$VM_INFO" | jq -r '.disks[] | "\(.deviceName): \(.diskSizeGb)GB (\(.type | split("/")[-1]))"')
+# Check if jq is available
+if ! command -v jq &> /dev/null; then
+    echo "⚠️ jq not found, using basic gcloud commands..."
+    
+    STATUS=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(status)")
+    MACHINE_TYPE=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(machineType)" | sed 's|.*/||')
+    EXTERNAL_IP=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
+    INTERNAL_IP=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(networkInterfaces[0].networkIP)")
+    
+    # Get disk information (simplified)
+    DISK_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(disks[0].diskSizeGb)")
+    DISKS="boot: ${DISK_INFO}GB"
+else
+    # Use jq for detailed parsing
+    VM_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="json")
+    
+    STATUS=$(echo "$VM_INFO" | jq -r '.status')
+    MACHINE_TYPE=$(echo "$VM_INFO" | jq -r '.machineType' | sed 's|.*/||')
+    ZONE_FULL=$(echo "$VM_INFO" | jq -r '.zone' | sed 's|.*/||')
+    EXTERNAL_IP=$(echo "$VM_INFO" | jq -r '.networkInterfaces[0].accessConfigs[0].natIP // "None"')
+    INTERNAL_IP=$(echo "$VM_INFO" | jq -r '.networkInterfaces[0].networkIP')
+    
+    # Get disk information
+    DISKS=$(echo "$VM_INFO" | jq -r '.disks[] | "\(.deviceName): \(.diskSizeGb)GB (\(.type | split("/")[-1]))"')
+fi
 
 echo "🖥️ VM Configuration:"
 echo "   Status: $STATUS"
 echo "   Machine Type: $MACHINE_TYPE"
-echo "   Zone: $ZONE_FULL"
-echo "   External IP: $EXTERNAL_IP"
-echo "   Internal IP: $INTERNAL_IP"
+echo "   Zone: $ZONE"
+echo "   External IP: ${EXTERNAL_IP:-None}"
+echo "   Internal IP: ${INTERNAL_IP:-Unknown}"
 echo ""
 
 echo "💾 Attached Disks:"
-echo "$DISKS" | sed 's/^/   /'
+echo "   $DISKS"
 echo ""
 
 # Estimate costs
