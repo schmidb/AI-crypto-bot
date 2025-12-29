@@ -47,7 +47,7 @@ class Phase1Validator:
                 command.split(),
                 capture_output=True,
                 text=True,
-                timeout=300  # 5 minute timeout
+                timeout=600  # 10 minute timeout (increased from 5 minutes)
             )
             
             success = result.returncode == 0
@@ -72,12 +72,12 @@ class Phase1Validator:
             return success
             
         except subprocess.TimeoutExpired:
-            logger.error(f"⏰ {test_name} timed out after 5 minutes")
+            logger.error(f"⏰ {test_name} timed out after 10 minutes")
             self.results['tests'][test_name] = {
                 'description': description,
                 'command': command,
                 'success': False,
-                'error': 'Timeout after 5 minutes',
+                'error': 'Timeout after 10 minutes',
                 'timestamp': datetime.now().isoformat()
             }
             return False

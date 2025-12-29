@@ -247,13 +247,29 @@ class HybridPerformanceTracker:
         try:
             data = {}
             for name, performance in self.strategy_performance.items():
-                data[name] = asdict(performance)
+                perf_dict = asdict(performance)
+                
+                # Ensure all values are JSON serializable
+                for key, value in perf_dict.items():
+                    if value is None:
+                        continue
+                    if not isinstance(value, (str, int, float, bool, list, dict)):
+                        perf_dict[key] = str(value)
+                
+                data[name] = perf_dict
             
             with open(self.performance_file, 'w') as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, default=str)
                 
         except Exception as e:
             self.logger.error(f"Error saving performance data: {e}")
+            # Try to save with minimal data to prevent complete failure
+            try:
+                minimal_data = {"error": "Failed to serialize performance data", "timestamp": datetime.now().isoformat()}
+                with open(self.performance_file, 'w') as f:
+                    json.dump(minimal_data, f, indent=2)
+            except:
+                pass  # If even minimal save fails, just log and continue
     
     def _save_decision_records(self):
         """Save decision records"""
@@ -261,13 +277,31 @@ class HybridPerformanceTracker:
         try:
             data = []
             for record in self.decision_records:
-                data.append(asdict(record))
+                # Convert dataclass to dict and ensure JSON serializable
+                record_dict = asdict(record)
+                
+                # Handle any non-serializable values
+                for key, value in record_dict.items():
+                    if value is None:
+                        continue
+                    # Convert any non-serializable objects to strings
+                    if not isinstance(value, (str, int, float, bool, list, dict)):
+                        record_dict[key] = str(value)
+                
+                data.append(record_dict)
             
             with open(self.decisions_file, 'w') as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, default=str)
                 
         except Exception as e:
             self.logger.error(f"Error saving decision records: {e}")
+            # Try to save with minimal data to prevent complete failure
+            try:
+                minimal_data = [{"error": "Failed to serialize decision records", "timestamp": datetime.now().isoformat()}]
+                with open(self.decisions_file, 'w') as f:
+                    json.dump(minimal_data, f, indent=2)
+            except:
+                pass  # If even minimal save fails, just log and continue
     
     def _update_strategy_performance(self, strategy_name: str, signal):
         """Update performance stats for a strategy"""

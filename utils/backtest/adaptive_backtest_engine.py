@@ -101,7 +101,21 @@ class AdaptiveBacktestEngine(BacktestEngine):
             
             # Mock other analyzers that aren't needed for backtesting
             mock_news_analyzer = Mock()
+            mock_news_analyzer.get_market_sentiment.return_value = {
+                "overall_sentiment": 0.0,
+                "sentiment_category": "neutral", 
+                "confidence": 0.3,
+                "article_count": 0
+            }
+            # Ensure the mock is subscriptable for any dict-like access
+            mock_news_analyzer.__getitem__ = Mock(return_value=0.0)
+            mock_news_analyzer.__contains__ = Mock(return_value=True)
+            
             mock_volatility_analyzer = Mock()
+            mock_volatility_analyzer.analyze_volatility.return_value = {
+                "volatility_level": "moderate",
+                "volatility_score": 0.5
+            }
             
             # Initialize with LLM simulator
             llm_analyzer_wrapper = LLMAnalyzerWrapper(self.llm_simulator)

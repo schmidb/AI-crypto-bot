@@ -3,6 +3,10 @@
 Test script for the backtest engine
 """
 
+import sys
+# Add project root to path
+sys.path.append('.')
+
 import pandas as pd
 import numpy as np
 import logging

@@ -3,6 +3,10 @@
 Test script for the indicator factory
 """
 
+import sys
+# Add project root to path
+sys.path.append('.')
+
 import pandas as pd
 import logging
 from pathlib import Path

@@ -6,6 +6,10 @@ Test script for backtesting infrastructure setup
 import os
 import sys
 from datetime import datetime, timedelta
+
+# Add project root to path
+sys.path.append('.')
+
 from data_collector import DataCollector
 from coinbase_client import CoinbaseClient
 import logging
