@@ -73,9 +73,6 @@ else
     DISK_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(disks[0].diskSizeGb)")
     DISKS="boot: ${DISK_INFO}GB"
 fi
-else
-    echo "⚠️ jq not found, using basic gcloud commands..."
-fi
 
 echo "🖥️ VM Configuration:"
 echo "   Status: $STATUS"
