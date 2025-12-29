@@ -316,7 +316,7 @@
                                 <span>Last updated: Never</span>
                             </div>
                             <div class="mt-3">
-                                <h6 class="text-muted mb-2">Log File Info</h6>
+                                <h6 class="text-muted mb-2">Log Sources</h6>
                                 <div id="logFileInfo">
                                     <small class="text-muted">Loading...</small>
                                 </div>
@@ -358,7 +358,8 @@
                         <div class="mt-3">
                             <small class="text-muted">
                                 <i class="fas fa-info-circle me-1"></i>
-                                Showing last 30 lines from <code>logs/supervisor.log</code>
+                                Showing recent logs from structured log files:
+                                <br>💰 <code>trading_decisions.log</code> 🔴 <code>errors.log</code> 📊 <code>trading_bot.log</code>
                             </small>
                         </div>
                     </div>
@@ -497,7 +498,7 @@
                         const stats = data.stats;
                         logFileInfo.innerHTML = `
                             <div class="small">
-                                <div><strong>File:</strong> logs/supervisor.log</div>
+                                <div><strong>Primary:</strong> logs/trading_bot.log</div>
                                 <div><strong>Size:</strong> ${formatFileSize(stats.size || 0)}</div>
                                 <div><strong>Lines:</strong> ${stats.lines || 0}</div>
                                 <div><strong>Status:</strong> ${stats.exists ? 'Available' : 'Not found'}</div>
@@ -523,7 +524,7 @@
                 logFileInfo.innerHTML = `
                     <div class="small text-danger">
                         <div><strong>Error:</strong> Unable to load logs</div>
-                        <div>Check if bot is running</div>
+                        <div>Check if bot is running and logs exist</div>
                     </div>
                 `;
                 

@@ -21,13 +21,21 @@ class LogReader:
         Initialize LogReader
         
         Args:
-            log_file_path: Path to the log file. If None, uses default supervisor log
+            log_file_path: Path to the log file. If None, uses new structured logs
         """
         if log_file_path:
             self.log_file_path = Path(log_file_path)
         else:
-            # Default to supervisor log file
-            self.log_file_path = Path("logs/supervisor.log")
+            # Use new structured log files - prioritize main trading bot log
+            self.log_file_path = Path("logs/trading_bot.log")
+            
+            # Fallback to supervisor.log if new logs don't exist
+            if not self.log_file_path.exists():
+                self.log_file_path = Path("logs/supervisor.log")
+        
+        # Store additional log files for comprehensive view
+        self.trading_decisions_log = Path("logs/trading_decisions.log")
+        self.errors_log = Path("logs/errors.log")
         
         # Ensure log file exists
         if not self.log_file_path.exists():
@@ -153,16 +161,25 @@ class LogReader:
     
     def get_formatted_logs(self, num_lines: int = 30) -> Dict[str, Any]:
         """
-        Get formatted logs for dashboard display
-        
-        Args:
-            num_lines: Number of recent lines to return
-            
-        Returns:
-            Dictionary with logs and metadata
+        Get formatted logs for dashboard display using new structured logs
         """
         try:
-            recent_logs = self.get_recent_logs(num_lines)
+            recent_logs = []
+            
+            # Get clean logs from main log file only (avoid mixing formats)
+            main_logs = self.get_recent_logs(num_lines)
+            
+            # Clean and format each log entry
+            for log in main_logs:
+                # Skip empty lines
+                if not log.strip():
+                    continue
+                    
+                # Clean up the log format for consistent display
+                cleaned_log = self._clean_log_entry(log)
+                if cleaned_log:
+                    recent_logs.append(cleaned_log)
+            
             log_stats = self.get_log_stats()
             
             # Parse each log line
@@ -172,8 +189,8 @@ class LogReader:
                 parsed_logs.append(parsed_log)
             
             return {
-                "logs": recent_logs,  # Raw log lines for simple display
-                "parsed_logs": parsed_logs,  # Parsed log objects
+                "logs": recent_logs,
+                "parsed_logs": parsed_logs,
                 "stats": log_stats,
                 "count": len(recent_logs),
                 "timestamp": datetime.utcnow().isoformat(),
@@ -191,6 +208,70 @@ class LogReader:
                 "status": "error",
                 "error": str(e)
             }
+    
+    def _clean_log_entry(self, log_entry: str) -> str:
+        """Clean and format a log entry for consistent display"""
+        try:
+            # Remove ANSI color codes
+            import re
+            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            cleaned = ansi_escape.sub('', log_entry)
+            
+            # Add appropriate emoji based on content
+            if any(word in cleaned.lower() for word in ['error', 'critical', 'failed', 'exception']):
+                return f"🔴 {cleaned}"
+            elif any(word in cleaned.lower() for word in ['trade', 'buy', 'sell', 'order', 'portfolio']):
+                return f"💰 {cleaned}"
+            elif any(word in cleaned.lower() for word in ['warning', 'warn']):
+                return f"⚠️ {cleaned}"
+            else:
+                return f"📊 {cleaned}"
+                
+        except Exception:
+            return log_entry
+    
+    def _get_recent_logs_from_file(self, file_path: Path, num_lines: int) -> List[str]:
+        """Get recent logs from a specific file, handling multi-line entries"""
+        try:
+            if not file_path.exists():
+                return []
+            
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+                content = file.read()
+            
+            # Split by timestamp pattern to handle multi-line entries
+            import re
+            
+            # Pattern for log entries starting with timestamp
+            timestamp_pattern = r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}'
+            
+            # Split content by timestamp pattern but keep the timestamps
+            entries = re.split(f'({timestamp_pattern})', content)
+            
+            # Reconstruct complete log entries
+            complete_entries = []
+            for i in range(1, len(entries), 2):  # Skip empty first element, take timestamp + content pairs
+                if i + 1 < len(entries):
+                    timestamp = entries[i]
+                    content_part = entries[i + 1]
+                    
+                    # Clean up the content (remove extra newlines, keep structure)
+                    content_part = content_part.strip()
+                    if content_part:
+                        # For multi-line entries, just take the first meaningful line
+                        first_line = content_part.split('\n')[0]
+                        if first_line.strip():
+                            complete_entry = timestamp + first_line
+                            complete_entries.append(complete_entry.strip())
+            
+            # Take the most recent entries
+            recent_entries = complete_entries[-num_lines:] if len(complete_entries) > num_lines else complete_entries
+            
+            return recent_entries
+                
+        except Exception as e:
+            logger.error(f"Error reading log file {file_path}: {e}")
+            return []
     
     def export_logs_json(self, output_path: str, num_lines: int = 30) -> bool:
         """
