@@ -12,7 +12,7 @@ This documentation is designed for developers, contributors, and users who want 
 
 ### Development & Analysis
 - **[Backtesting](BACKTESTING.md)** - Backtesting framework, results, and analysis
-- **[Comprehensive Testing Strategy](COMPREHENSIVE_TESTING_STRATEGY.md)** - Systematic testing approach for strategy optimization
+- **[Comprehensive Backtesting Strategy](COMPREHENSIVE_BACKTESTING_STRATEGY.md)** - Systematic testing approach for strategy optimization
 - **[Performance Analysis](PERFORMANCE_ANALYSIS.md)** - Performance metrics, tracking, and optimization
 - **[Configuration](CONFIGURATION.md)** - Comprehensive configuration guide
 
@@ -34,7 +34,7 @@ This documentation is designed for developers, contributors, and users who want 
 **For Strategy Analysis:**
 1. [Trading Strategies](TRADING_STRATEGIES.md) - How strategies work
 2. [Backtesting](BACKTESTING.md) - Historical performance analysis
-3. [Comprehensive Testing Strategy](COMPREHENSIVE_TESTING_STRATEGY.md) - Systematic testing approach
+3. [Comprehensive Backtesting Strategy](COMPREHENSIVE_BACKTESTING_STRATEGY.md) - Systematic testing approach
 4. [Risk Management](RISK_MANAGEMENT.md) - Safety mechanisms
 
 **For Deployment:**

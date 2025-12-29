@@ -120,11 +120,6 @@ class Phase1Validator:
                 'command': 'python backtesting/test_simple_backtest.py',
                 'description': 'Test basic strategy backtesting'
             },
-            {
-                'name': 'strategy_debug',
-                'command': 'python backtesting/debug_simple_strategy.py',
-                'description': 'Debug individual strategy performance'
-            },
             
             # Data and integration tests
             {

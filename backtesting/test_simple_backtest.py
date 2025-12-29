@@ -24,10 +24,10 @@ def test_simple_backtest():
         from utils.backtest.backtest_engine import BacktestEngine
         logger.info("✅ BacktestEngine imported successfully")
         
-        from utils.strategy_vectorizer import VectorizedStrategyAdapter
+        from utils.backtest.strategy_vectorizer import VectorizedStrategyAdapter
         logger.info("✅ VectorizedStrategyAdapter imported successfully")
         
-        from utils.indicator_factory import calculate_indicators
+        from utils.performance.indicator_factory import calculate_indicators
         logger.info("✅ calculate_indicators imported successfully")
         
         # Load historical data

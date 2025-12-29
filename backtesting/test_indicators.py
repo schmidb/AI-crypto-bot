@@ -6,7 +6,7 @@ Test script for the indicator factory
 import pandas as pd
 import logging
 from pathlib import Path
-from utils.indicator_factory import IndicatorFactory, calculate_indicators
+from utils.performance.indicator_factory import IndicatorFactory, calculate_indicators
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
