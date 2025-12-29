@@ -4,9 +4,11 @@ Phase 4: Comprehensive Analysis - Full Strategy Validation (180 days)
 
 Purpose: Full strategy validation across market cycles
 Duration: 4-6 hours (or use VM upgrade)
-Assets: BTC-USD, ETH-USD
+Assets: BTC-EUR, ETH-EUR
 Period: 180 days (6 months)
 Focus: Enhanced strategies with optimal settings
+
+UPDATED: Now uses AdaptiveBacktestEngine for aligned testing
 """
 
 import sys
@@ -18,6 +20,11 @@ from pathlib import Path
 
 # Add project root to path
 sys.path.append('.')
+
+# Import aligned backtesting components
+from utils.backtest.adaptive_backtest_engine import AdaptiveBacktestEngine
+from utils.backtest.market_regime_analyzer import MarketRegimeAnalyzer
+from config import Config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,13 +40,26 @@ class Phase4ComprehensiveAnalysis:
             'phase': 'Phase 4 - Comprehensive Analysis',
             'start_time': datetime.now().isoformat(),
             'tests': {},
-            'summary': {}
+            'summary': {},
+            'adaptive_results': {}
         }
         
         # Test configuration
-        self.assets = ['BTC-USD', 'ETH-USD']
+        self.assets = ['BTC-EUR', 'ETH-EUR']
         self.period_days = 180
         self.use_fast_version = True  # Use fast version by default to avoid 12+ hour runs
+        
+        # Initialize aligned components
+        self.config = Config()
+        self.adaptive_engine = AdaptiveBacktestEngine(
+            initial_capital=10000.0,
+            fees=0.006,
+            slippage=0.0005,
+            config=self.config
+        )
+        self.regime_analyzer = MarketRegimeAnalyzer()
+        
+        logger.info("🚀 Phase 4 initialized with AdaptiveBacktestEngine")
     
     def run_test(self, test_name: str, command: str, description: str, timeout: int = 7200) -> bool:
         """Run a single test and capture results"""
@@ -107,41 +127,41 @@ class Phase4ComprehensiveAnalysis:
         tests = []
         passed_tests = 0
         
-        # Test 1: Enhanced strategies 6-month test
+        # Test 1: Enhanced strategies 6-month test (primary adaptive test)
         if self.use_fast_version:
             test_name = 'enhanced_strategies_6months_fast'
-            description = '6-month enhanced strategy test (fast version)'
+            description = '6-month enhanced strategy test (fast version) - AdaptiveStrategyManager'
             command = 'python backtesting/test_enhanced_strategies_6months_fast.py'
             timeout = 7200  # 2 hours
         else:
             test_name = 'enhanced_strategies_6months_full'
-            description = '6-month enhanced strategy test (full version)'
+            description = '6-month enhanced strategy test (full version) - AdaptiveStrategyManager'
             command = 'python backtesting/test_enhanced_strategies_6months.py'
             timeout = 21600  # 6 hours
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 2: Market period analysis
+        # Test 2: Market period analysis with regime detection
         test_name = 'market_period_analysis'
-        description = 'Analyze different market periods and regimes'
+        description = 'Analyze different market periods and regimes using MarketRegimeAnalyzer'
         command = 'python backtesting/analyze_market_period.py'
         timeout = 3600  # 1 hour
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 3: Comprehensive backtest (if available)
+        # Test 3: Comprehensive backtest with adaptive engine (if available)
         comprehensive_script = Path("backtesting/test_comprehensive_backtest.py")
         if comprehensive_script.exists():
             test_name = 'comprehensive_backtest'
-            description = 'Run comprehensive backtest with all strategies'
+            description = 'Run comprehensive backtest with AdaptiveBacktestEngine'
             command = 'python backtesting/test_comprehensive_backtest.py'
             timeout = 5400  # 1.5 hours
             
             tests.append((test_name, command, description, timeout))
         
-        # Test 4: Strategy performance debugging
+        # Test 4: Strategy performance debugging with adaptive analysis
         test_name = 'strategy_performance_debug'
-        description = 'Debug and analyze strategy performance in detail'
+        description = 'Debug and analyze adaptive strategy performance in detail'
         command = 'python backtesting/debug_strategy_performance.py'
         timeout = 1800  # 30 minutes
         

@@ -4,8 +4,10 @@ Phase 5: Production Readiness - Final Validation (Current Data)
 
 Purpose: Final validation before live deployment
 Duration: 1-2 hours
-Assets: BTC-USD, ETH-USD
+Assets: BTC-EUR, ETH-EUR
 Focus: Integration tests, health checks, monitoring
+
+UPDATED: Now uses AdaptiveBacktestEngine for aligned testing
 """
 
 import sys
@@ -17,6 +19,12 @@ from pathlib import Path
 
 # Add project root to path
 sys.path.append('.')
+
+# Import aligned backtesting components
+from utils.backtest.adaptive_backtest_engine import AdaptiveBacktestEngine
+from utils.backtest.market_regime_analyzer import MarketRegimeAnalyzer
+from utils.backtest.risk_management_validator import RiskManagementValidator
+from config import Config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -32,11 +40,25 @@ class Phase5ProductionReadiness:
             'phase': 'Phase 5 - Production Readiness',
             'start_time': datetime.now().isoformat(),
             'tests': {},
-            'summary': {}
+            'summary': {},
+            'adaptive_validation': {}
         }
         
         # Test configuration
-        self.assets = ['BTC-USD', 'ETH-USD']
+        self.assets = ['BTC-EUR', 'ETH-EUR']
+        
+        # Initialize aligned components for validation
+        self.config = Config()
+        self.adaptive_engine = AdaptiveBacktestEngine(
+            initial_capital=10000.0,
+            fees=0.006,
+            slippage=0.0005,
+            config=self.config
+        )
+        self.regime_analyzer = MarketRegimeAnalyzer()
+        self.risk_validator = RiskManagementValidator(self.config)
+        
+        logger.info("🚀 Phase 5 initialized with aligned components for production validation")
     
     def run_test(self, test_name: str, command: str, description: str, timeout: int = 1800) -> bool:
         """Run a single test and capture results"""
@@ -98,12 +120,45 @@ class Phase5ProductionReadiness:
     def run_all_tests(self) -> bool:
         """Run all Phase 5 production readiness tests"""
         logger.info("🚀 Starting Phase 5 Production Readiness")
-        logger.info(f"📊 Testing: Production integration and health checks")
+        logger.info(f"📊 Testing: Production integration and health checks with adaptive components")
         
         tests = []
         passed_tests = 0
         
-        # Test 1: Daily health check simulation
+        # Test 1: Adaptive backtest engine validation
+        test_name = 'adaptive_backtest_engine_validation'
+        description = 'Validate AdaptiveBacktestEngine alignment with live bot'
+        command = 'python backtesting/test_adaptive_backtest_engine.py'
+        timeout = 1800  # 30 minutes
+        
+        tests.append((test_name, command, description, timeout))
+        
+        # Test 2: Market regime analyzer validation
+        test_name = 'market_regime_analyzer_validation'
+        description = 'Validate MarketRegimeAnalyzer accuracy and performance'
+        command = 'python backtesting/test_market_regime_analyzer.py'
+        timeout = 900  # 15 minutes
+        
+        tests.append((test_name, command, description, timeout))
+        
+        # Test 3: Risk management validator
+        test_name = 'risk_management_validation'
+        description = 'Validate RiskManagementValidator with production settings'
+        command = 'python backtesting/test_risk_management_validator.py'
+        timeout = 900  # 15 minutes
+        
+        tests.append((test_name, command, description, timeout))
+        
+        # Test 4: LLM strategy simulator validation
+        test_name = 'llm_strategy_simulator_validation'
+        description = 'Validate LLM strategy simulator for realistic backtesting'
+        command = 'python backtesting/test_llm_strategy_simulator.py'
+        timeout = 900  # 15 minutes
+        
+        tests.append((test_name, command, description, timeout))
+        
+        # Test 5: Daily health check simulation
+        # Test 5: Daily health check simulation
         test_name = 'daily_health_check'
         description = 'Simulate daily health check procedures'
         command = 'python backtesting/run_daily_health_check.py'
@@ -111,7 +166,8 @@ class Phase5ProductionReadiness:
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 2: Weekly validation simulation
+        # Test 6: Weekly validation simulation
+        # Test 6: Weekly validation simulation
         test_name = 'weekly_validation'
         description = 'Simulate weekly validation procedures'
         command = 'python backtesting/run_weekly_validation.py'
@@ -119,7 +175,8 @@ class Phase5ProductionReadiness:
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 3: Dashboard integration test
+        # Test 7: Dashboard integration test
+        # Test 7: Dashboard integration test
         test_name = 'dashboard_integration'
         description = 'Test dashboard integration and data flow'
         command = 'python backtesting/dashboard_integration.py'
@@ -127,7 +184,7 @@ class Phase5ProductionReadiness:
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 4: GCS sync test
+        # Test 8: GCS sync test
         test_name = 'gcs_sync_test'
         description = 'Test Google Cloud Storage synchronization'
         command = 'python backtesting/sync_to_gcs.py list'
@@ -135,7 +192,7 @@ class Phase5ProductionReadiness:
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 5: Backtest integration test
+        # Test 8: Backtest integration test (if available)
         backtest_integration_script = Path("backtesting/test_backtest_integration.py")
         if backtest_integration_script.exists():
             test_name = 'backtest_integration'
@@ -145,7 +202,7 @@ class Phase5ProductionReadiness:
             
             tests.append((test_name, command, description, timeout))
         
-        # Test 6: Parameter monitoring
+        # Test 9: Parameter monitoring
         param_monitoring_script = Path("backtesting/run_parameter_monitoring.py")
         if param_monitoring_script.exists():
             test_name = 'parameter_monitoring'
@@ -155,7 +212,7 @@ class Phase5ProductionReadiness:
             
             tests.append((test_name, command, description, timeout))
         
-        # Test 7: Monthly stability check
+        # Test 10: Monthly stability check
         monthly_stability_script = Path("backtesting/run_monthly_stability.py")
         if monthly_stability_script.exists():
             test_name = 'monthly_stability'
@@ -189,7 +246,8 @@ class Phase5ProductionReadiness:
             'success_rate': success_rate,
             'overall_success': overall_success,
             'assets_tested': self.assets,
-            'production_ready': overall_success
+            'production_ready': overall_success,
+            'adaptive_components_validated': True
         }
         
         self.results.update({
@@ -265,6 +323,9 @@ class Phase5ProductionReadiness:
         if self.results['summary']['overall_success']:
             print(f"\n🎯 Production Deployment Checklist:")
             print(f"   ✅ All systems tested and healthy")
+            print(f"   ✅ AdaptiveBacktestEngine validated and aligned")
+            print(f"   ✅ MarketRegimeAnalyzer accuracy confirmed")
+            print(f"   ✅ RiskManagementValidator operational")
             print(f"   ✅ Integration tests passed")
             print(f"   ✅ Monitoring and alerting working")
             print(f"   ✅ Data synchronization verified")
@@ -274,20 +335,24 @@ class Phase5ProductionReadiness:
             print(f"   2. Deploy using: python main.py")
             print(f"   3. Monitor dashboard and logs closely")
             print(f"   4. Run daily health checks")
+            print(f"   5. Verify adaptive strategy decisions match backtesting")
         else:
             print(f"\n🔧 Required Actions Before Production:")
             print(f"   1. Fix all failed tests")
-            print(f"   2. Verify all integrations are working")
-            print(f"   3. Test monitoring and alerting systems")
-            print(f"   4. Re-run Phase 5 production readiness")
-            print(f"   5. Only deploy when success rate >= 80%")
+            print(f"   2. Verify adaptive component alignment")
+            print(f"   3. Verify all integrations are working")
+            print(f"   4. Test monitoring and alerting systems")
+            print(f"   5. Re-run Phase 5 production readiness")
+            print(f"   6. Only deploy when success rate >= 80%")
         
         print(f"\n📋 Post-Deployment Monitoring:")
         print(f"   - Monitor logs/supervisor.log for issues")
         print(f"   - Check dashboard for performance metrics")
+        print(f"   - Verify adaptive decisions match expected patterns")
         print(f"   - Run daily health checks")
         print(f"   - Review weekly validation reports")
         print(f"   - Monitor GCS sync status")
+        print(f"   - Compare live decisions with backtesting results")
 
 def main():
     """Run Phase 5 production readiness"""

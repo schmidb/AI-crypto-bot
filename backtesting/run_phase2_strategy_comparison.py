@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Phase 2: Strategy Comparison - Enhanced vs Original (90 days)
+Phase 2: Adaptive Strategy Comparison - Enhanced vs Original (90 days)
 
-Purpose: Compare original vs enhanced strategies to validate improvements
+Purpose: Compare AdaptiveStrategyManager vs individual strategies to validate improvements
 Duration: 2-3 hours
-Assets: BTC-USD, ETH-USD
+Assets: BTC-EUR, ETH-EUR
 Period: 90 days
 Interval: 60 minutes
+
+UPDATED: Now uses AdaptiveBacktestEngine for aligned testing
 """
 
 import sys
@@ -19,27 +21,45 @@ from pathlib import Path
 # Add project root to path
 sys.path.append('.')
 
+# Import aligned backtesting components
+from utils.backtest.adaptive_backtest_engine import AdaptiveBacktestEngine
+from utils.backtest.market_regime_analyzer import MarketRegimeAnalyzer
+from config import Config
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class Phase2StrategyComparison:
-    """Phase 2 strategy comparison test runner"""
+class Phase2AdaptiveStrategyComparison:
+    """Phase 2 adaptive strategy comparison test runner"""
     
     def __init__(self):
-        self.results_dir = Path("backtesting/reports/phase2_strategy_comparison")
+        self.results_dir = Path("backtesting/reports/phase2_adaptive_strategy_comparison")
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.results = {
-            'phase': 'Phase 2 - Strategy Comparison',
+            'phase': 'Phase 2 - Adaptive Strategy Comparison',
             'start_time': datetime.now().isoformat(),
             'tests': {},
-            'summary': {}
+            'summary': {},
+            'adaptive_results': {}
         }
         
         # Test configuration
-        self.assets = ['BTC-USD', 'ETH-USD']
+        self.assets = ['BTC-EUR', 'ETH-EUR']
         self.period_days = 90
         self.interval_minutes = 60
+        
+        # Initialize aligned components
+        self.config = Config()
+        self.adaptive_engine = AdaptiveBacktestEngine(
+            initial_capital=10000.0,
+            fees=0.006,
+            slippage=0.0005,
+            config=self.config
+        )
+        self.regime_analyzer = MarketRegimeAnalyzer()
+        
+        logger.info("🚀 Phase 2 initialized with AdaptiveBacktestEngine")
     
     def run_test(self, test_name: str, command: str, description: str, timeout: int = 3600) -> bool:
         """Run a single test and capture results"""

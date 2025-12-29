@@ -4,9 +4,11 @@ Phase 3: Interval Optimization - Find Optimal Trading Frequency (90 days)
 
 Purpose: Test different time intervals to find optimal trading frequency
 Duration: 3-4 hours
-Assets: BTC-USD, ETH-USD
+Assets: BTC-EUR, ETH-EUR
 Period: 90 days
 Intervals: 15, 30, 60, 120 minutes
+
+UPDATED: Now uses AdaptiveBacktestEngine for aligned testing
 """
 
 import sys
@@ -18,6 +20,11 @@ from pathlib import Path
 
 # Add project root to path
 sys.path.append('.')
+
+# Import aligned backtesting components
+from utils.backtest.adaptive_backtest_engine import AdaptiveBacktestEngine
+from utils.backtest.market_regime_analyzer import MarketRegimeAnalyzer
+from config import Config
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -33,13 +40,26 @@ class Phase3IntervalOptimization:
             'phase': 'Phase 3 - Interval Optimization',
             'start_time': datetime.now().isoformat(),
             'tests': {},
-            'summary': {}
+            'summary': {},
+            'adaptive_results': {}
         }
         
         # Test configuration
         self.intervals = [15, 30, 60, 120]  # minutes
-        self.assets = ['BTC-USD', 'ETH-USD']
+        self.assets = ['BTC-EUR', 'ETH-EUR']
         self.period_days = 90
+        
+        # Initialize aligned components
+        self.config = Config()
+        self.adaptive_engine = AdaptiveBacktestEngine(
+            initial_capital=10000.0,
+            fees=0.006,
+            slippage=0.0005,
+            config=self.config
+        )
+        self.regime_analyzer = MarketRegimeAnalyzer()
+        
+        logger.info("🚀 Phase 3 initialized with AdaptiveBacktestEngine")
     
     def run_test(self, test_name: str, command: str, description: str, timeout: int = 3600) -> bool:
         """Run a single test and capture results"""
@@ -106,19 +126,21 @@ class Phase3IntervalOptimization:
         tests = []
         passed_tests = 0
         
-        # Test 1: Basic interval optimization
+        # Test 1: Adaptive interval optimization (primary test)
+        test_name = 'adaptive_interval_optimization'
+        description = 'Test AdaptiveStrategyManager across different intervals'
+        command = 'python backtesting/test_interval_optimization_adaptive.py'
+        timeout = 5400  # 1.5 hours
+        
+        tests.append((test_name, command, description, timeout))
+        
+        # Test 2: Basic interval optimization (legacy comparison)
         test_name = 'basic_interval_optimization'
         description = f'Test basic interval optimization across {self.intervals} minute intervals'
         command = 'python backtesting/interval_optimization.py'
+        timeout = 3600  # 1 hour
         
-        tests.append((test_name, command, description))
-        
-        # Test 2: Adaptive strategy interval optimization
-        test_name = 'adaptive_interval_optimization'
-        description = 'Test adaptive strategy across different intervals (comprehensive)'
-        command = 'python backtesting/test_interval_optimization_adaptive.py'
-        
-        tests.append((test_name, command, description))
+        tests.append((test_name, command, description, timeout))
         
         # Test 3: Enhanced strategies interval test (if available)
         enhanced_6m_script = Path("backtesting/test_enhanced_strategies_6months_fast.py")
@@ -126,14 +148,18 @@ class Phase3IntervalOptimization:
             test_name = 'enhanced_strategies_interval_test'
             description = 'Test enhanced strategies with different intervals (fast version)'
             command = 'python backtesting/test_enhanced_strategies_6months_fast.py'
+            timeout = 7200  # 2 hours
             
-            tests.append((test_name, command, description))
+            tests.append((test_name, command, description, timeout))
         
         # Run all tests
         total_tests = len(tests)
-        for test_name, command, description in tests:
-            # Set longer timeout for comprehensive tests
-            timeout = 7200 if 'enhanced' in test_name else 3600  # 2 hours for enhanced, 1 hour for others
+        for test_info in tests:
+            if len(test_info) == 4:
+                test_name, command, description, timeout = test_info
+            else:
+                test_name, command, description = test_info
+                timeout = 3600  # Default 1 hour
             
             success = self.run_test(test_name, command, description, timeout)
             if success:

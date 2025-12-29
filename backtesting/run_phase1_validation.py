@@ -4,9 +4,11 @@ Phase 1: Foundation Tests - Quick Validation (30 days)
 
 Purpose: Ensure all systems work correctly before comprehensive testing
 Duration: 1-2 hours
-Assets: BTC-USD
+Assets: BTC-EUR
 Period: 30 days
 Interval: 60 minutes
+
+UPDATED: Now tests aligned backtesting components (AdaptiveBacktestEngine, MarketRegimeAnalyzer)
 """
 
 import sys
@@ -93,32 +95,38 @@ class Phase1Validator:
     
     def run_all_tests(self) -> bool:
         """Run all Phase 1 validation tests"""
-        logger.info("🚀 Starting Phase 1 Foundation Tests")
-        logger.info("📊 Testing: 30 days, BTC-USD, 60min interval")
+        logger.info("🚀 Starting Phase 1 Foundation Tests (ALIGNED VERSION)")
+        logger.info("📊 Testing: 30 days, BTC-EUR, 60min interval")
+        logger.info("🎯 Now testing AdaptiveBacktestEngine and MarketRegimeAnalyzer alignment")
         
         tests = [
-            # System validation tests
+            # NEW: Aligned backtesting components
             {
-                'name': 'backtest_engine',
-                'command': 'python backtesting/test_backtest_engine.py',
-                'description': 'Test backtest engine functionality'
+                'name': 'adaptive_backtest_engine',
+                'command': 'python backtesting/test_adaptive_backtest_engine.py',
+                'description': 'Test AdaptiveBacktestEngine with live bot alignment'
             },
             {
-                'name': 'strategy_vectorization',
-                'command': 'python backtesting/test_strategy_vectorization_quick.py',
-                'description': 'Test strategy vectorization (quick version)'
+                'name': 'market_regime_analyzer',
+                'command': 'python backtesting/test_market_regime_analyzer.py',
+                'description': 'Test MarketRegimeAnalyzer regime detection'
+            },
+            {
+                'name': 'risk_management_validator',
+                'command': 'python backtesting/test_risk_management_validator.py',
+                'description': 'Test RiskManagementValidator integration'
+            },
+            
+            # Legacy system validation tests (for comparison)
+            {
+                'name': 'backtest_engine_legacy',
+                'command': 'python backtesting/test_backtest_engine.py',
+                'description': 'Test legacy backtest engine functionality'
             },
             {
                 'name': 'indicators',
                 'command': 'python backtesting/test_indicators.py',
                 'description': 'Test technical indicator calculations'
-            },
-            
-            # Basic strategy tests
-            {
-                'name': 'simple_backtest',
-                'command': 'python backtesting/test_simple_backtest.py',
-                'description': 'Test basic strategy backtesting'
             },
             
             # Data and integration tests
@@ -163,13 +171,13 @@ class Phase1Validator:
     def _get_recommendation(self, success_rate: float, passed: int, total: int) -> str:
         """Get recommendation based on test results"""
         if success_rate >= 0.9:
-            return "✅ All systems healthy. Proceed to Phase 2 (Strategy Comparison)."
+            return "✅ All aligned systems healthy. Proceed to Phase 2 (Adaptive Strategy Comparison)."
         elif success_rate >= 0.8:
-            return "⚠️ Most systems healthy. Review failed tests, then proceed to Phase 2."
+            return "⚠️ Most aligned systems healthy. Review failed tests, then proceed to Phase 2."
         elif success_rate >= 0.6:
-            return "🔧 Some issues detected. Fix failed tests before proceeding."
+            return "🔧 Some alignment issues detected. Fix failed tests before proceeding."
         else:
-            return "❌ Major issues detected. Fix all critical systems before proceeding."
+            return "❌ Major alignment issues detected. Fix all critical systems before proceeding."
     
     def save_results(self):
         """Save test results"""
