@@ -1,5 +1,5 @@
-import logging
 from config import config
+from utils.logging_config import setup_logging, get_logger, log_trading_decision, log_portfolio_update, log_system_health
 import time
 import json
 import schedule
@@ -34,7 +34,9 @@ except ImportError:
 from config import TRADING_PAIRS, DECISION_INTERVAL_MINUTES, WEBSERVER_SYNC_ENABLED, SIMULATION_MODE, RISK_LEVEL, TRADING_STYLE, TRADING_TIMEFRAME, EXPECTED_HOLDING_PERIOD, Config
 
 # Configure logging with daily rotation
-logger = get_supervisor_logger()
+# Setup improved logging
+setup_logging(console_output=True, filter_noise=True)
+logger = get_logger('supervisor')
 
 class TradingBot:
     """Main trading bot class that orchestrates the trading process"""
