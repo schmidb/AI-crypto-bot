@@ -26,31 +26,61 @@ class DailyReportGenerator:
         self.llm_analyzer = LLMAnalyzer(model="gemini-3-pro-preview")
         
     def analyze_logs_last_24h(self) -> Dict[str, Any]:
-        """Analyze bot logs from last 24 hours"""
+        """Analyze bot logs from last 24 hours using new structured logs"""
         try:
-            log_file = "/home/markus/AI-crypto-bot/logs/supervisor.log"
+            # Use new structured log files for better analysis
+            trading_log = "/home/markus/AI-crypto-bot/logs/trading_decisions.log"
+            error_log = "/home/markus/AI-crypto-bot/logs/errors.log"
+            main_log = "/home/markus/AI-crypto-bot/logs/trading_bot.log"
             
-            recent_logs = []
             trades_executed = []
             errors = []
+            recent_activity = []
             
-            with open(log_file, 'r') as f:
-                lines = f.readlines()
-                for line in lines[-2000:]:  # Last 2000 lines
-                    if '2025-12-27' in line or '2025-12-26' in line:
-                        recent_logs.append(line.strip())
-                        
-                        if 'order executed' in line:
-                            trades_executed.append(line.strip())
-                        
-                        if 'ERROR' in line:
+            # Get today's date for filtering
+            today = datetime.now().strftime('%Y-%m-%d')
+            yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+            
+            # Analyze trading decisions log
+            try:
+                with open(trading_log, 'r') as f:
+                    for line in f:
+                        if today in line or yesterday in line:
+                            if 'order executed' in line or 'Trade executed' in line:
+                                trades_executed.append(line.strip())
+            except FileNotFoundError:
+                logger.warning("Trading decisions log not found, using main log")
+            
+            # Analyze errors log
+            try:
+                with open(error_log, 'r') as f:
+                    for line in f:
+                        if today in line or yesterday in line:
                             errors.append(line.strip())
+            except FileNotFoundError:
+                logger.warning("Errors log not found")
+            
+            # Get recent activity from main log (last 100 lines)
+            try:
+                with open(main_log, 'r') as f:
+                    lines = f.readlines()
+                    for line in lines[-100:]:
+                        if today in line:
+                            recent_activity.append(line.strip())
+            except FileNotFoundError:
+                # Fallback to supervisor.log
+                supervisor_log = "/home/markus/AI-crypto-bot/logs/supervisor.log"
+                with open(supervisor_log, 'r') as f:
+                    lines = f.readlines()
+                    for line in lines[-100:]:
+                        if today in line or yesterday in line:
+                            recent_activity.append(line.strip())
             
             return {
-                'total_log_entries': len(recent_logs),
+                'total_log_entries': len(recent_activity),
                 'trades_executed': trades_executed,
                 'errors': errors,
-                'recent_logs': recent_logs[-50:]
+                'recent_logs': recent_activity[-20:]  # Last 20 entries
             }
         except Exception as e:
             logger.error(f"Error analyzing logs: {e}")
@@ -120,32 +150,32 @@ class DailyReportGenerator:
             
             # Create a comprehensive prompt without dummy market analysis
             full_prompt = f"""
-            You are analyzing a crypto trading bot's daily performance. Generate a professional daily briefing.
+Generate a concise daily briefing for a crypto trading bot. Keep it under 300 words, well-formatted with emojis.
 
-            PORTFOLIO DATA:
-            {json.dumps(portfolio, indent=2)}
+PORTFOLIO: €{portfolio.get('portfolio_value_eur', {}).get('amount', 0):.2f} total
+- BTC: {portfolio.get('BTC', {}).get('amount', 0):.8f}
+- ETH: {portfolio.get('ETH', {}).get('amount', 0):.6f}
+- EUR: €{portfolio.get('EUR', {}).get('amount', 0):.2f}
 
-            LOG ANALYSIS:
-            - Total log entries: {log_data.get('total_log_entries', 0)}
-            - Trades executed: {len(log_data.get('trades_executed', []))}
-            - Errors encountered: {len(log_data.get('errors', []))}
+ACTIVITY (24h):
+- Trades: {len(log_data.get('trades_executed', []))}
+- Errors: {len(log_data.get('errors', []))}
 
-            {market_context}
+{market_context}
 
-            RECENT TRADES:
-            {chr(10).join([f"- {trade.split('order executed:')[-1].strip()}" for trade in log_data.get('trades_executed', [])[-5:]]) if log_data.get('trades_executed') else "No recent trades"}
+RECENT TRADES:
+{chr(10).join([f"• {trade.split('order executed:')[-1].strip()}" for trade in log_data.get('trades_executed', [])[-3:]]) if log_data.get('trades_executed') else "• No recent trades"}
 
-            ERRORS (if any):
-            {chr(10).join(log_data.get('errors', [])[-2:]) if log_data.get('errors') else "No errors detected"}
+ERRORS:
+{chr(10).join([f"• {error}" for error in log_data.get('errors', [])[-2:]]) if log_data.get('errors') else "• No errors"}
 
-            Please provide a professional daily briefing with:
-            1. Overall bot health status (🟢 Healthy / 🟡 Warning / 🔴 Critical)
-            2. Key highlights from the last 24 hours
-            3. Portfolio performance assessment
-            4. Any issues or concerns that need attention
-            5. Brief trading activity summary
+Provide:
+1. 🟢/🟡/🔴 Health status with brief reason
+2. Key highlights (2-3 bullet points)
+3. Portfolio performance summary
+4. Any concerns that need attention
 
-            Keep it concise but informative for a daily executive briefing.
+Format with clear sections and emojis. Be concise and actionable.
             """
             
             # Use the LLM analyzer's client directly with proper prompt
@@ -235,33 +265,24 @@ class DailyReportGenerator:
             # Create email content
             subject = f"🤖 Crypto Bot Daily Report - {datetime.now().strftime('%Y-%m-%d')}"
             
-            body = f"""
-AI Crypto Trading Bot - Daily Report
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            # Extract key metrics for header
+            total_value = portfolio.get('portfolio_value_eur', {}).get('amount', 0)
+            trades_count = len(log_data.get('trades_executed', []))
+            errors_count = len(log_data.get('errors', []))
+            
+            body = f"""🤖 AI Crypto Trading Bot - Daily Report
+📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+💰 Portfolio: €{total_value:.2f} | 📊 Trades: {trades_count} | ⚠️ Errors: {errors_count}
 
 {ai_analysis}
 
-=== TECHNICAL DETAILS ===
+📋 Quick Stats:
+• BTC: {portfolio.get('BTC', {}).get('amount', 0):.8f}
+• ETH: {portfolio.get('ETH', {}).get('amount', 0):.6f} 
+• EUR: €{portfolio.get('EUR', {}).get('amount', 0):.2f}
 
-Portfolio Status:
-- Total Value: €{portfolio.get('portfolio_value_eur', {}).get('amount', 'N/A')}
-- BTC: {portfolio.get('BTC', {}).get('amount', 0):.8f}
-- ETH: {portfolio.get('ETH', {}).get('amount', 0):.6f}
-- EUR: €{portfolio.get('EUR', {}).get('amount', 0):.2f}
-
-24h Activity Summary:
-- Log entries processed: {log_data.get('total_log_entries', 0)}
-- Trades executed: {len(log_data.get('trades_executed', []))}
-- Errors encountered: {len(log_data.get('errors', []))}
-
-Recent Trades:
-{chr(10).join([f"- {trade.split('order executed:')[-1].strip()}" for trade in log_data.get('trades_executed', [])[-5:]]) if log_data.get('trades_executed') else "No recent trades"}
-
-Bot Status: {"🟢 Running" if log_data.get('total_log_entries', 0) > 0 else "🔴 Not Active"}
-
----
-This is an automated report from your AI Crypto Trading Bot.
-Dashboard: http://34.29.9.115/crypto-bot/
+🔗 Dashboard: http://34.29.9.115/crypto-bot/
             """
             
             if test_mode:
