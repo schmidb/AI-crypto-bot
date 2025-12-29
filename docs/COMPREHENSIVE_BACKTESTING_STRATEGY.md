@@ -5,20 +5,108 @@ Before optimizing the live trading bot, we need to systematically test all strat
 
 ## Testing Framework Status
 
+### 📊 **Data Synchronization Requirements**
+Before running phases on the server, ensure all data is synced from Google Cloud Storage:
+
+```bash
+# On server: Download historical data and reports from GCS
+python backtesting/sync_historical_data.py
+python backtesting/sync_to_gcs.py download
+
+# Verify data availability
+ls -la data/historical/
+ls -la backtesting/reports/
+```
+
 ### ✅ **Completed Scripts**
 - `backtesting/run_phase1_validation.py` - **Phase 1 Foundation Tests** (100% working)
-- `backtesting/test_enhanced_strategies_6months.py` - **6-month comprehensive test** (created)
-- `backtesting/test_enhanced_strategies_6months_fast.py` - **Fast 6-month test** (created)
-- `backtesting/interval_optimization.py` - **Interval optimization** (working)
-- `backtesting/test_interval_optimization_adaptive.py` - **Adaptive interval test** (working)
-- `backtesting/optimize_strategy_parameters.py` - **Parameter optimization** (working)
-- `backtesting/debug_strategy_performance.py` - **Strategy debugging** (working)
+- `backtesting/run_phase2_strategy_comparison.py` - **Phase 2 Strategy Comparison** (placeholder created)
+
+### 📋 **Available Component Scripts**
+**Phase 2 Components:**
+- ✅ `backtesting/optimize_strategy_parameters.py` - Parameter optimization
+- ✅ `backtesting/debug_strategy_performance.py` - Strategy debugging
+- 🔄 Need: Enhanced vs original strategy comparison script
+
+**Phase 3 Components:**
+- ✅ `backtesting/interval_optimization.py` - Basic interval testing
+- ✅ `backtesting/test_interval_optimization_adaptive.py` - Adaptive interval test
+- 🔄 Need: Comprehensive interval comparison script
+
+**Phase 4 Components:**
+- ✅ `backtesting/test_enhanced_strategies_6months.py` - 6-month comprehensive test
+- ✅ `backtesting/test_enhanced_strategies_6months_fast.py` - Fast 6-month test
+- ✅ `backtesting/analyze_market_period.py` - Market analysis
+- 🔄 Need: Comprehensive analysis orchestration script
+
+**Phase 5 Components:**
+- ✅ `backtesting/run_daily_health_check.py` - Daily health checks
+- ✅ `backtesting/run_weekly_validation.py` - Weekly validation
+- ✅ `backtesting/dashboard_integration.py` - Dashboard integration
+- ✅ `backtesting/sync_to_gcs.py` - GCS sync testing
+- 🔄 Need: Production readiness orchestration script
 
 ### 🔄 **Scripts to Create**
-- `backtesting/run_phase2_strategy_comparison.py` - **Phase 2 Strategy Comparison**
 - `backtesting/run_phase3_interval_optimization.py` - **Phase 3 Interval Optimization**
 - `backtesting/run_phase4_comprehensive_analysis.py` - **Phase 4 Comprehensive Analysis**
 - `backtesting/run_phase5_production_readiness.py` - **Phase 5 Production Readiness**
+
+## Server Setup and Data Sync
+
+### 🔄 **Before Running Phases on Server**
+
+#### 1. Pull Latest Code
+```bash
+cd ~/AI-crypto-bot
+git pull
+```
+
+#### 2. Activate Virtual Environment
+```bash
+source venv/bin/activate  # Linux
+# venv\Scripts\activate  # Windows
+```
+
+#### 3. Sync Historical Data from GCS
+```bash
+# Download historical market data
+python backtesting/sync_historical_data.py
+
+# Download existing backtest reports
+python backtesting/sync_to_gcs.py download
+
+# Verify data availability
+ls -la data/historical/
+ls -la backtesting/reports/
+```
+
+#### 4. Check VM Resources (Optional)
+```bash
+# Check current VM configuration
+./scripts/vm_status.sh
+
+# Scale up for faster testing (optional)
+./scripts/vm_scale_up.sh
+
+# Scale down after testing to save costs
+./scripts/vm_scale_down.sh
+```
+
+#### 5. Set Python Path and Run Tests
+```bash
+# Set environment for testing
+export PYTHONPATH=.
+
+# Run specific phase
+python backtesting/run_phase1_validation.py
+python backtesting/run_phase2_strategy_comparison.py  # When implemented
+```
+
+#### 6. Upload Results Back to GCS
+```bash
+# Upload new results to GCS for dashboard access
+python backtesting/sync_to_gcs.py upload --source server
+```
 
 ## Testing Framework
 
