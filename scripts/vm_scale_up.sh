@@ -12,7 +12,7 @@ set -e  # Exit on any error
 
 # Configuration - UPDATE THESE VALUES
 VM_NAME="${VM_NAME:-aicryptobot}"
-ZONE="${ZONE:-us-central1-a}"
+ZONE="${ZONE:-us-central1-c}"
 PROJECT="${PROJECT:-intense-base-456414-u5}"
 
 # High-performance machine types

@@ -5,7 +5,7 @@ setlocal enabledelayedexpansion
 
 REM Configuration - UPDATE THESE VALUES
 set VM_NAME=aicryptobot
-set ZONE=us-central1-a
+set ZONE=us-central1-c
 set PROJECT=intense-base-456414-u5
 
 echo 🚀 VM Scale-Up Script for Heavy Backtesting
