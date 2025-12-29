@@ -39,16 +39,28 @@ if command -v jq &> /dev/null || [ -f /usr/bin/jq ]; then
         JQ_CMD="jq"
     fi
     
-    VM_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="json")
+    # Get VM info and clean any control characters
+    VM_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="json" | tr -d '\000-\037')
     
-    STATUS=$(echo "$VM_INFO" | $JQ_CMD -r '.status')
-    MACHINE_TYPE=$(echo "$VM_INFO" | $JQ_CMD -r '.machineType' | sed 's|.*/||')
-    ZONE_FULL=$(echo "$VM_INFO" | $JQ_CMD -r '.zone' | sed 's|.*/||')
-    EXTERNAL_IP=$(echo "$VM_INFO" | $JQ_CMD -r '.networkInterfaces[0].accessConfigs[0].natIP // "None"')
-    INTERNAL_IP=$(echo "$VM_INFO" | $JQ_CMD -r '.networkInterfaces[0].networkIP')
-    
-    # Get disk information
-    DISKS=$(echo "$VM_INFO" | $JQ_CMD -r '.disks[] | "\(.deviceName): \(.diskSizeGb)GB (\(.type | split("/")[-1]))"')
+    # Test if JSON is valid before parsing
+    if ! echo "$VM_INFO" | $JQ_CMD . >/dev/null 2>&1; then
+        echo "⚠️ JSON parsing failed, falling back to basic commands..."
+        STATUS=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(status)")
+        MACHINE_TYPE=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(machineType)" | sed 's|.*/||')
+        EXTERNAL_IP=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(networkInterfaces[0].accessConfigs[0].natIP)")
+        INTERNAL_IP=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(networkInterfaces[0].networkIP)")
+        DISK_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(disks[0].diskSizeGb)")
+        DISKS="boot: ${DISK_INFO}GB"
+    else
+        STATUS=$(echo "$VM_INFO" | $JQ_CMD -r '.status')
+        MACHINE_TYPE=$(echo "$VM_INFO" | $JQ_CMD -r '.machineType' | sed 's|.*/||')
+        ZONE_FULL=$(echo "$VM_INFO" | $JQ_CMD -r '.zone' | sed 's|.*/||')
+        EXTERNAL_IP=$(echo "$VM_INFO" | $JQ_CMD -r '.networkInterfaces[0].accessConfigs[0].natIP // "None"')
+        INTERNAL_IP=$(echo "$VM_INFO" | $JQ_CMD -r '.networkInterfaces[0].networkIP')
+        
+        # Get disk information
+        DISKS=$(echo "$VM_INFO" | $JQ_CMD -r '.disks[] | "\(.deviceName): \(.diskSizeGb)GB (\(.type | split("/")[-1]))"')
+    fi
 else
     echo "⚠️ jq not found, using basic gcloud commands..."
     
