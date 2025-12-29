@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Phase 2: Strategy Comparison - Enhanced vs Original (90 days)
+Phase 3: Interval Optimization - Find Optimal Trading Frequency (90 days)
 
-Purpose: Compare original vs enhanced strategies to validate improvements
-Duration: 2-3 hours
+Purpose: Test different time intervals to find optimal trading frequency
+Duration: 3-4 hours
 Assets: BTC-USD, ETH-USD
 Period: 90 days
-Interval: 60 minutes
+Intervals: 15, 30, 60, 120 minutes
 """
 
 import sys
@@ -23,23 +23,23 @@ sys.path.append('.')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class Phase2StrategyComparison:
-    """Phase 2 strategy comparison test runner"""
+class Phase3IntervalOptimization:
+    """Phase 3 interval optimization test runner"""
     
     def __init__(self):
-        self.results_dir = Path("backtesting/reports/phase2_strategy_comparison")
+        self.results_dir = Path("backtesting/reports/phase3_interval_optimization")
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.results = {
-            'phase': 'Phase 2 - Strategy Comparison',
+            'phase': 'Phase 3 - Interval Optimization',
             'start_time': datetime.now().isoformat(),
             'tests': {},
             'summary': {}
         }
         
         # Test configuration
+        self.intervals = [15, 30, 60, 120]  # minutes
         self.assets = ['BTC-USD', 'ETH-USD']
         self.period_days = 90
-        self.interval_minutes = 60
     
     def run_test(self, test_name: str, command: str, description: str, timeout: int = 3600) -> bool:
         """Run a single test and capture results"""
@@ -99,65 +99,41 @@ class Phase2StrategyComparison:
             return False
     
     def run_all_tests(self) -> bool:
-        """Run all Phase 2 strategy comparison tests"""
-        logger.info("🚀 Starting Phase 2 Strategy Comparison")
-        logger.info(f"📊 Testing: {self.period_days} days, {', '.join(self.assets)}, Enhanced vs Original")
+        """Run all Phase 3 interval optimization tests"""
+        logger.info("🚀 Starting Phase 3 Interval Optimization")
+        logger.info(f"📊 Testing: {self.period_days} days, {', '.join(self.assets)}, intervals: {self.intervals} minutes")
         
         tests = []
         passed_tests = 0
         
-        # Test 1: Parameter optimization (baseline for enhanced strategies)
-        test_name = 'parameter_optimization'
-        description = 'Optimize strategy parameters for enhanced performance'
-        command = 'python backtesting/optimize_strategy_parameters.py'
-        timeout = 3600  # 1 hour
+        # Test 1: Basic interval optimization
+        test_name = 'basic_interval_optimization'
+        description = f'Test basic interval optimization across {self.intervals} minute intervals'
+        command = 'python backtesting/interval_optimization.py'
         
-        tests.append((test_name, command, description, timeout))
+        tests.append((test_name, command, description))
         
-        # Test 2: Strategy performance debugging
-        test_name = 'strategy_performance_debug'
-        description = 'Debug and analyze individual strategy performance'
-        command = 'python backtesting/debug_strategy_performance.py'
-        timeout = 2400  # 40 minutes
+        # Test 2: Adaptive strategy interval optimization
+        test_name = 'adaptive_interval_optimization'
+        description = 'Test adaptive strategy across different intervals (comprehensive)'
+        command = 'python backtesting/test_interval_optimization_adaptive.py'
         
-        tests.append((test_name, command, description, timeout))
+        tests.append((test_name, command, description))
         
-        # Test 3: Enhanced strategies test (if available)
-        enhanced_script = Path("backtesting/test_enhanced_strategies_6months_fast.py")
-        if enhanced_script.exists():
-            test_name = 'enhanced_strategies_test'
-            description = 'Test enhanced strategies with optimized parameters'
+        # Test 3: Enhanced strategies interval test (if available)
+        enhanced_6m_script = Path("backtesting/test_enhanced_strategies_6months_fast.py")
+        if enhanced_6m_script.exists():
+            test_name = 'enhanced_strategies_interval_test'
+            description = 'Test enhanced strategies with different intervals (fast version)'
             command = 'python backtesting/test_enhanced_strategies_6months_fast.py'
-            timeout = 5400  # 1.5 hours
             
-            tests.append((test_name, command, description, timeout))
-        
-        # Test 4: Comprehensive backtest comparison
-        comprehensive_script = Path("backtesting/test_comprehensive_backtest.py")
-        if comprehensive_script.exists():
-            test_name = 'comprehensive_backtest_comparison'
-            description = 'Compare comprehensive backtest results'
-            command = 'python backtesting/test_comprehensive_backtest.py'
-            timeout = 3600  # 1 hour
-            
-            tests.append((test_name, command, description, timeout))
-        
-        # Test 5: Simple backtest for baseline
-        test_name = 'simple_backtest_baseline'
-        description = 'Run simple backtest for baseline comparison'
-        command = 'python backtesting/test_simple_backtest.py'
-        timeout = 1800  # 30 minutes
-        
-        tests.append((test_name, command, description, timeout))
+            tests.append((test_name, command, description))
         
         # Run all tests
         total_tests = len(tests)
-        for test_info in tests:
-            if len(test_info) == 4:
-                test_name, command, description, timeout = test_info
-            else:
-                test_name, command, description = test_info
-                timeout = 3600  # Default 1 hour
+        for test_name, command, description in tests:
+            # Set longer timeout for comprehensive tests
+            timeout = 7200 if 'enhanced' in test_name else 3600  # 2 hours for enhanced, 1 hour for others
             
             success = self.run_test(test_name, command, description, timeout)
             if success:
@@ -173,9 +149,9 @@ class Phase2StrategyComparison:
             'passed_tests': passed_tests,
             'success_rate': success_rate,
             'overall_success': overall_success,
+            'intervals_tested': self.intervals,
             'assets_tested': self.assets,
-            'period_days': self.period_days,
-            'interval_minutes': self.interval_minutes
+            'period_days': self.period_days
         }
         
         self.results.update({
@@ -192,26 +168,26 @@ class Phase2StrategyComparison:
     def _get_recommendation(self, success_rate: float, passed: int, total: int) -> str:
         """Get recommendation based on test results"""
         if success_rate >= 0.9:
-            return "✅ Strategy comparison completed successfully. Enhanced strategies validated. Proceed to Phase 3 (Interval Optimization)."
+            return "✅ Interval optimization completed successfully. Proceed to Phase 4 (Comprehensive Analysis)."
         elif success_rate >= 0.7:
-            return "⚠️ Most strategy comparisons completed. Review failed tests, then proceed to Phase 3."
+            return "⚠️ Most interval tests completed. Review failed tests, then proceed to Phase 4."
         elif success_rate >= 0.5:
-            return "🔧 Some strategy comparison issues detected. Fix failed tests before proceeding."
+            return "🔧 Some interval optimization issues detected. Fix failed tests before proceeding."
         else:
-            return "❌ Major strategy comparison issues detected. Fix all critical tests before proceeding."
+            return "❌ Major interval optimization issues detected. Fix all critical tests before proceeding."
     
     def save_results(self):
         """Save test results"""
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"phase2_strategy_comparison_{timestamp}.json"
+            filename = f"phase3_interval_optimization_{timestamp}.json"
             filepath = self.results_dir / filename
             
             with open(filepath, 'w') as f:
                 json.dump(self.results, f, indent=2, default=str)
             
             # Also save as latest
-            latest_filepath = self.results_dir / "latest_phase2_strategy_comparison.json"
+            latest_filepath = self.results_dir / "latest_phase3_interval_optimization.json"
             with open(latest_filepath, 'w') as f:
                 json.dump(self.results, f, indent=2, default=str)
             
@@ -223,7 +199,7 @@ class Phase2StrategyComparison:
     def display_results(self):
         """Display test results summary"""
         print(f"\n{'='*80}")
-        print(f"PHASE 2 STRATEGY COMPARISON RESULTS")
+        print(f"PHASE 3 INTERVAL OPTIMIZATION RESULTS")
         print(f"{'='*80}")
         
         print(f"📊 Test Summary:")
@@ -233,15 +209,14 @@ class Phase2StrategyComparison:
         print(f"   Overall: {'✅ PASS' if self.results['summary']['overall_success'] else '❌ FAIL'}")
         
         print(f"\n🎯 Test Configuration:")
+        print(f"   Intervals: {', '.join(map(str, self.results['summary']['intervals_tested']))} minutes")
         print(f"   Assets: {', '.join(self.results['summary']['assets_tested'])}")
         print(f"   Period: {self.results['summary']['period_days']} days")
-        print(f"   Interval: {self.results['summary']['interval_minutes']} minutes")
         
         print(f"\n🧪 Individual Test Results:")
         for test_name, test_result in self.results['tests'].items():
             status = "✅ PASS" if test_result['success'] else "❌ FAIL"
-            timeout_info = f" ({test_result.get('timeout', 3600)}s timeout)" if 'timeout' in test_result else ""
-            print(f"   {test_name:<30} {status}{timeout_info}")
+            print(f"   {test_name:<30} {status}")
             if not test_result['success'] and 'error' in test_result:
                 print(f"      Error: {test_result['error']}")
         
@@ -250,41 +225,34 @@ class Phase2StrategyComparison:
         
         if self.results['summary']['overall_success']:
             print(f"\n🎯 Next Steps:")
-            print(f"   1. Review strategy comparison results")
-            print(f"   2. Identify best performing enhanced strategies")
-            print(f"   3. Update configuration with optimal parameters")
-            print(f"   4. Run Phase 3: python backtesting/run_phase3_interval_optimization.py")
-            print(f"   5. Continue with comprehensive testing strategy")
+            print(f"   1. Review interval optimization results")
+            print(f"   2. Update DECISION_INTERVAL_MINUTES in configuration if needed")
+            print(f"   3. Run Phase 4: python backtesting/run_phase4_comprehensive_analysis.py")
+            print(f"   4. Continue with comprehensive testing strategy")
         else:
             print(f"\n🔧 Required Actions:")
             print(f"   1. Fix all failed tests")
-            print(f"   2. Re-run Phase 2 strategy comparison")
+            print(f"   2. Re-run Phase 3 interval optimization")
             print(f"   3. Only proceed when success rate >= 70%")
-        
-        print(f"\n📈 Strategy Analysis:")
-        print(f"   - Compare enhanced vs original strategy performance")
-        print(f"   - Look for consistent improvements across assets")
-        print(f"   - Validate parameter optimization effectiveness")
-        print(f"   - Check market filter impact on performance")
 
 def main():
-    """Run Phase 2 strategy comparison"""
+    """Run Phase 3 interval optimization"""
     try:
-        comparison = Phase2StrategyComparison()
-        success = comparison.run_all_tests()
+        optimizer = Phase3IntervalOptimization()
+        success = optimizer.run_all_tests()
         
         if success:
-            print(f"\n✅ Phase 2 strategy comparison completed successfully!")
-            print(f"🚀 Ready to proceed to Phase 3 (Interval Optimization)")
+            print(f"\n✅ Phase 3 interval optimization completed successfully!")
+            print(f"🚀 Ready to proceed to Phase 4 (Comprehensive Analysis)")
             return True
         else:
-            print(f"\n❌ Phase 2 strategy comparison failed!")
+            print(f"\n❌ Phase 3 interval optimization failed!")
             print(f"🔧 Please fix issues before proceeding")
             return False
             
     except Exception as e:
-        logger.error(f"Phase 2 strategy comparison crashed: {e}")
-        print(f"\n💥 Phase 2 strategy comparison crashed: {e}")
+        logger.error(f"Phase 3 interval optimization crashed: {e}")
+        print(f"\n💥 Phase 3 interval optimization crashed: {e}")
         return False
 
 if __name__ == "__main__":

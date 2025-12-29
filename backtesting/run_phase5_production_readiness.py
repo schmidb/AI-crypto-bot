@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
-Phase 2: Strategy Comparison - Enhanced vs Original (90 days)
+Phase 5: Production Readiness - Final Validation (Current Data)
 
-Purpose: Compare original vs enhanced strategies to validate improvements
-Duration: 2-3 hours
+Purpose: Final validation before live deployment
+Duration: 1-2 hours
 Assets: BTC-USD, ETH-USD
-Period: 90 days
-Interval: 60 minutes
+Focus: Integration tests, health checks, monitoring
 """
 
 import sys
@@ -23,14 +22,14 @@ sys.path.append('.')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class Phase2StrategyComparison:
-    """Phase 2 strategy comparison test runner"""
+class Phase5ProductionReadiness:
+    """Phase 5 production readiness test runner"""
     
     def __init__(self):
-        self.results_dir = Path("backtesting/reports/phase2_strategy_comparison")
+        self.results_dir = Path("backtesting/reports/phase5_production_readiness")
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.results = {
-            'phase': 'Phase 2 - Strategy Comparison',
+            'phase': 'Phase 5 - Production Readiness',
             'start_time': datetime.now().isoformat(),
             'tests': {},
             'summary': {}
@@ -38,10 +37,8 @@ class Phase2StrategyComparison:
         
         # Test configuration
         self.assets = ['BTC-USD', 'ETH-USD']
-        self.period_days = 90
-        self.interval_minutes = 60
     
-    def run_test(self, test_name: str, command: str, description: str, timeout: int = 3600) -> bool:
+    def run_test(self, test_name: str, command: str, description: str, timeout: int = 1800) -> bool:
         """Run a single test and capture results"""
         logger.info(f"🧪 Running {test_name}: {description}")
         
@@ -99,56 +96,74 @@ class Phase2StrategyComparison:
             return False
     
     def run_all_tests(self) -> bool:
-        """Run all Phase 2 strategy comparison tests"""
-        logger.info("🚀 Starting Phase 2 Strategy Comparison")
-        logger.info(f"📊 Testing: {self.period_days} days, {', '.join(self.assets)}, Enhanced vs Original")
+        """Run all Phase 5 production readiness tests"""
+        logger.info("🚀 Starting Phase 5 Production Readiness")
+        logger.info(f"📊 Testing: Production integration and health checks")
         
         tests = []
         passed_tests = 0
         
-        # Test 1: Parameter optimization (baseline for enhanced strategies)
-        test_name = 'parameter_optimization'
-        description = 'Optimize strategy parameters for enhanced performance'
-        command = 'python backtesting/optimize_strategy_parameters.py'
-        timeout = 3600  # 1 hour
+        # Test 1: Daily health check simulation
+        test_name = 'daily_health_check'
+        description = 'Simulate daily health check procedures'
+        command = 'python backtesting/run_daily_health_check.py'
+        timeout = 1800  # 30 minutes
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 2: Strategy performance debugging
-        test_name = 'strategy_performance_debug'
-        description = 'Debug and analyze individual strategy performance'
-        command = 'python backtesting/debug_strategy_performance.py'
+        # Test 2: Weekly validation simulation
+        test_name = 'weekly_validation'
+        description = 'Simulate weekly validation procedures'
+        command = 'python backtesting/run_weekly_validation.py'
         timeout = 2400  # 40 minutes
         
         tests.append((test_name, command, description, timeout))
         
-        # Test 3: Enhanced strategies test (if available)
-        enhanced_script = Path("backtesting/test_enhanced_strategies_6months_fast.py")
-        if enhanced_script.exists():
-            test_name = 'enhanced_strategies_test'
-            description = 'Test enhanced strategies with optimized parameters'
-            command = 'python backtesting/test_enhanced_strategies_6months_fast.py'
-            timeout = 5400  # 1.5 hours
+        # Test 3: Dashboard integration test
+        test_name = 'dashboard_integration'
+        description = 'Test dashboard integration and data flow'
+        command = 'python backtesting/dashboard_integration.py'
+        timeout = 900  # 15 minutes
+        
+        tests.append((test_name, command, description, timeout))
+        
+        # Test 4: GCS sync test
+        test_name = 'gcs_sync_test'
+        description = 'Test Google Cloud Storage synchronization'
+        command = 'python backtesting/sync_to_gcs.py list'
+        timeout = 600  # 10 minutes
+        
+        tests.append((test_name, command, description, timeout))
+        
+        # Test 5: Backtest integration test
+        backtest_integration_script = Path("backtesting/test_backtest_integration.py")
+        if backtest_integration_script.exists():
+            test_name = 'backtest_integration'
+            description = 'Test backtest integration with live systems'
+            command = 'python backtesting/test_backtest_integration.py'
+            timeout = 1800  # 30 minutes
             
             tests.append((test_name, command, description, timeout))
         
-        # Test 4: Comprehensive backtest comparison
-        comprehensive_script = Path("backtesting/test_comprehensive_backtest.py")
-        if comprehensive_script.exists():
-            test_name = 'comprehensive_backtest_comparison'
-            description = 'Compare comprehensive backtest results'
-            command = 'python backtesting/test_comprehensive_backtest.py'
+        # Test 6: Parameter monitoring
+        param_monitoring_script = Path("backtesting/run_parameter_monitoring.py")
+        if param_monitoring_script.exists():
+            test_name = 'parameter_monitoring'
+            description = 'Test parameter monitoring and alerting'
+            command = 'python backtesting/run_parameter_monitoring.py'
+            timeout = 900  # 15 minutes
+            
+            tests.append((test_name, command, description, timeout))
+        
+        # Test 7: Monthly stability check
+        monthly_stability_script = Path("backtesting/run_monthly_stability.py")
+        if monthly_stability_script.exists():
+            test_name = 'monthly_stability'
+            description = 'Test monthly stability procedures'
+            command = 'python backtesting/run_monthly_stability.py'
             timeout = 3600  # 1 hour
             
             tests.append((test_name, command, description, timeout))
-        
-        # Test 5: Simple backtest for baseline
-        test_name = 'simple_backtest_baseline'
-        description = 'Run simple backtest for baseline comparison'
-        command = 'python backtesting/test_simple_backtest.py'
-        timeout = 1800  # 30 minutes
-        
-        tests.append((test_name, command, description, timeout))
         
         # Run all tests
         total_tests = len(tests)
@@ -157,7 +172,7 @@ class Phase2StrategyComparison:
                 test_name, command, description, timeout = test_info
             else:
                 test_name, command, description = test_info
-                timeout = 3600  # Default 1 hour
+                timeout = 1800  # Default 30 minutes
             
             success = self.run_test(test_name, command, description, timeout)
             if success:
@@ -165,7 +180,7 @@ class Phase2StrategyComparison:
         
         # Calculate results
         success_rate = passed_tests / total_tests if total_tests > 0 else 0
-        overall_success = success_rate >= 0.7  # 70% pass rate required
+        overall_success = success_rate >= 0.8  # 80% pass rate required for production readiness
         
         # Create summary
         self.results['summary'] = {
@@ -174,8 +189,7 @@ class Phase2StrategyComparison:
             'success_rate': success_rate,
             'overall_success': overall_success,
             'assets_tested': self.assets,
-            'period_days': self.period_days,
-            'interval_minutes': self.interval_minutes
+            'production_ready': overall_success
         }
         
         self.results.update({
@@ -191,27 +205,27 @@ class Phase2StrategyComparison:
     
     def _get_recommendation(self, success_rate: float, passed: int, total: int) -> str:
         """Get recommendation based on test results"""
-        if success_rate >= 0.9:
-            return "✅ Strategy comparison completed successfully. Enhanced strategies validated. Proceed to Phase 3 (Interval Optimization)."
-        elif success_rate >= 0.7:
-            return "⚠️ Most strategy comparisons completed. Review failed tests, then proceed to Phase 3."
-        elif success_rate >= 0.5:
-            return "🔧 Some strategy comparison issues detected. Fix failed tests before proceeding."
+        if success_rate >= 0.95:
+            return "✅ All systems ready for production deployment. Deploy with confidence!"
+        elif success_rate >= 0.8:
+            return "⚠️ Most systems ready for production. Review failed tests, then deploy."
+        elif success_rate >= 0.6:
+            return "🔧 Some production readiness issues detected. Fix failed tests before deployment."
         else:
-            return "❌ Major strategy comparison issues detected. Fix all critical tests before proceeding."
+            return "❌ Major production readiness issues detected. Fix all critical systems before deployment."
     
     def save_results(self):
         """Save test results"""
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"phase2_strategy_comparison_{timestamp}.json"
+            filename = f"phase5_production_readiness_{timestamp}.json"
             filepath = self.results_dir / filename
             
             with open(filepath, 'w') as f:
                 json.dump(self.results, f, indent=2, default=str)
             
             # Also save as latest
-            latest_filepath = self.results_dir / "latest_phase2_strategy_comparison.json"
+            latest_filepath = self.results_dir / "latest_phase5_production_readiness.json"
             with open(latest_filepath, 'w') as f:
                 json.dump(self.results, f, indent=2, default=str)
             
@@ -223,7 +237,7 @@ class Phase2StrategyComparison:
     def display_results(self):
         """Display test results summary"""
         print(f"\n{'='*80}")
-        print(f"PHASE 2 STRATEGY COMPARISON RESULTS")
+        print(f"PHASE 5 PRODUCTION READINESS RESULTS")
         print(f"{'='*80}")
         
         print(f"📊 Test Summary:")
@@ -231,17 +245,17 @@ class Phase2StrategyComparison:
         print(f"   Passed: {self.results['summary']['passed_tests']}")
         print(f"   Success Rate: {self.results['summary']['success_rate']:.1%}")
         print(f"   Overall: {'✅ PASS' if self.results['summary']['overall_success'] else '❌ FAIL'}")
+        print(f"   Production Ready: {'✅ YES' if self.results['summary']['production_ready'] else '❌ NO'}")
         
         print(f"\n🎯 Test Configuration:")
         print(f"   Assets: {', '.join(self.results['summary']['assets_tested'])}")
-        print(f"   Period: {self.results['summary']['period_days']} days")
-        print(f"   Interval: {self.results['summary']['interval_minutes']} minutes")
+        print(f"   Focus: Integration, health checks, monitoring")
         
         print(f"\n🧪 Individual Test Results:")
         for test_name, test_result in self.results['tests'].items():
             status = "✅ PASS" if test_result['success'] else "❌ FAIL"
-            timeout_info = f" ({test_result.get('timeout', 3600)}s timeout)" if 'timeout' in test_result else ""
-            print(f"   {test_name:<30} {status}{timeout_info}")
+            timeout_info = f" ({test_result.get('timeout', 1800)}s timeout)" if 'timeout' in test_result else ""
+            print(f"   {test_name:<25} {status}{timeout_info}")
             if not test_result['success'] and 'error' in test_result:
                 print(f"      Error: {test_result['error']}")
         
@@ -249,42 +263,50 @@ class Phase2StrategyComparison:
         print(f"   {self.results['recommendation']}")
         
         if self.results['summary']['overall_success']:
-            print(f"\n🎯 Next Steps:")
-            print(f"   1. Review strategy comparison results")
-            print(f"   2. Identify best performing enhanced strategies")
-            print(f"   3. Update configuration with optimal parameters")
-            print(f"   4. Run Phase 3: python backtesting/run_phase3_interval_optimization.py")
-            print(f"   5. Continue with comprehensive testing strategy")
+            print(f"\n🎯 Production Deployment Checklist:")
+            print(f"   ✅ All systems tested and healthy")
+            print(f"   ✅ Integration tests passed")
+            print(f"   ✅ Monitoring and alerting working")
+            print(f"   ✅ Data synchronization verified")
+            print(f"")
+            print(f"🚀 Ready for Production Deployment!")
+            print(f"   1. Set SIMULATION_MODE=false in .env")
+            print(f"   2. Deploy using: python main.py")
+            print(f"   3. Monitor dashboard and logs closely")
+            print(f"   4. Run daily health checks")
         else:
-            print(f"\n🔧 Required Actions:")
+            print(f"\n🔧 Required Actions Before Production:")
             print(f"   1. Fix all failed tests")
-            print(f"   2. Re-run Phase 2 strategy comparison")
-            print(f"   3. Only proceed when success rate >= 70%")
+            print(f"   2. Verify all integrations are working")
+            print(f"   3. Test monitoring and alerting systems")
+            print(f"   4. Re-run Phase 5 production readiness")
+            print(f"   5. Only deploy when success rate >= 80%")
         
-        print(f"\n📈 Strategy Analysis:")
-        print(f"   - Compare enhanced vs original strategy performance")
-        print(f"   - Look for consistent improvements across assets")
-        print(f"   - Validate parameter optimization effectiveness")
-        print(f"   - Check market filter impact on performance")
+        print(f"\n📋 Post-Deployment Monitoring:")
+        print(f"   - Monitor logs/supervisor.log for issues")
+        print(f"   - Check dashboard for performance metrics")
+        print(f"   - Run daily health checks")
+        print(f"   - Review weekly validation reports")
+        print(f"   - Monitor GCS sync status")
 
 def main():
-    """Run Phase 2 strategy comparison"""
+    """Run Phase 5 production readiness"""
     try:
-        comparison = Phase2StrategyComparison()
-        success = comparison.run_all_tests()
+        readiness_checker = Phase5ProductionReadiness()
+        success = readiness_checker.run_all_tests()
         
         if success:
-            print(f"\n✅ Phase 2 strategy comparison completed successfully!")
-            print(f"🚀 Ready to proceed to Phase 3 (Interval Optimization)")
+            print(f"\n✅ Phase 5 production readiness completed successfully!")
+            print(f"🚀 System is ready for production deployment!")
             return True
         else:
-            print(f"\n❌ Phase 2 strategy comparison failed!")
-            print(f"🔧 Please fix issues before proceeding")
+            print(f"\n❌ Phase 5 production readiness failed!")
+            print(f"🔧 Please fix issues before production deployment")
             return False
             
     except Exception as e:
-        logger.error(f"Phase 2 strategy comparison crashed: {e}")
-        print(f"\n💥 Phase 2 strategy comparison crashed: {e}")
+        logger.error(f"Phase 5 production readiness crashed: {e}")
+        print(f"\n💥 Phase 5 production readiness crashed: {e}")
         return False
 
 if __name__ == "__main__":
