@@ -63,6 +63,7 @@ For detailed information, see the [Developer Documentation](docs/):
 
 - **[Trading Strategies](docs/TRADING_STRATEGIES.md)** - How the bot makes decisions
 - **[Configuration Guide](docs/CONFIGURATION.md)** - Complete setup instructions
+- **[Testing Strategy](docs/COMPREHENSIVE_TESTING_STRATEGY.md)** - Systematic backtesting approach
 - **[Deployment Guides](docs/deployment/)** - Cloud and local deployment
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
