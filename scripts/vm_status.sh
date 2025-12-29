@@ -30,7 +30,26 @@ fi
 echo "📋 Getting VM information..."
 
 # Check if jq is available
-if ! command -v jq &> /dev/null; then
+if command -v jq &> /dev/null || [ -f /usr/bin/jq ]; then
+    # Use jq for detailed parsing
+    # Set jq path if not in PATH
+    if ! command -v jq &> /dev/null && [ -f /usr/bin/jq ]; then
+        JQ_CMD="/usr/bin/jq"
+    else
+        JQ_CMD="jq"
+    fi
+    
+    VM_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="json")
+    
+    STATUS=$(echo "$VM_INFO" | $JQ_CMD -r '.status')
+    MACHINE_TYPE=$(echo "$VM_INFO" | $JQ_CMD -r '.machineType' | sed 's|.*/||')
+    ZONE_FULL=$(echo "$VM_INFO" | $JQ_CMD -r '.zone' | sed 's|.*/||')
+    EXTERNAL_IP=$(echo "$VM_INFO" | $JQ_CMD -r '.networkInterfaces[0].accessConfigs[0].natIP // "None"')
+    INTERNAL_IP=$(echo "$VM_INFO" | $JQ_CMD -r '.networkInterfaces[0].networkIP')
+    
+    # Get disk information
+    DISKS=$(echo "$VM_INFO" | $JQ_CMD -r '.disks[] | "\(.deviceName): \(.diskSizeGb)GB (\(.type | split("/")[-1]))"')
+else
     echo "⚠️ jq not found, using basic gcloud commands..."
     
     STATUS=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(status)")
@@ -41,18 +60,9 @@ if ! command -v jq &> /dev/null; then
     # Get disk information (simplified)
     DISK_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="value(disks[0].diskSizeGb)")
     DISKS="boot: ${DISK_INFO}GB"
+fi
 else
-    # Use jq for detailed parsing
-    VM_INFO=$(gcloud compute instances describe $VM_NAME --zone=$ZONE --project=$PROJECT --format="json")
-    
-    STATUS=$(echo "$VM_INFO" | jq -r '.status')
-    MACHINE_TYPE=$(echo "$VM_INFO" | jq -r '.machineType' | sed 's|.*/||')
-    ZONE_FULL=$(echo "$VM_INFO" | jq -r '.zone' | sed 's|.*/||')
-    EXTERNAL_IP=$(echo "$VM_INFO" | jq -r '.networkInterfaces[0].accessConfigs[0].natIP // "None"')
-    INTERNAL_IP=$(echo "$VM_INFO" | jq -r '.networkInterfaces[0].networkIP')
-    
-    # Get disk information
-    DISKS=$(echo "$VM_INFO" | jq -r '.disks[] | "\(.deviceName): \(.diskSizeGb)GB (\(.type | split("/")[-1]))"')
+    echo "⚠️ jq not found, using basic gcloud commands..."
 fi
 
 echo "🖥️ VM Configuration:"
