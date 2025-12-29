@@ -77,13 +77,8 @@ class VectorizedStrategyAdapter:
             
             strategy = self.live_strategies[strategy_name]
             
-            # CRITICAL FIX: Remove duplicate columns to avoid pandas Series issues
-            # Keep only the first occurrence of each column name
-            data_clean = data_with_indicators.loc[:, ~data_with_indicators.columns.duplicated()]
-            logger.info(f"Cleaned data: {len(data_clean.columns)} columns (removed duplicates)")
-            
             # Create signals DataFrame
-            signals_df = pd.DataFrame(index=data_clean.index)
+            signals_df = pd.DataFrame(index=data_with_indicators.index)
             signals_df['buy'] = False
             signals_df['sell'] = False
             signals_df['confidence'] = 50.0
@@ -91,10 +86,10 @@ class VectorizedStrategyAdapter:
             signals_df['position_size_multiplier'] = 1.0
             
             # Process each row (vectorized where possible)
-            for i, (timestamp, row) in enumerate(data_clean.iterrows()):
+            for i, (timestamp, row) in enumerate(data_with_indicators.iterrows()):
                 try:
                     # FIXED: Prepare market data for this timestamp
-                    market_data = self._prepare_market_data(row, product_id, i, data_clean)
+                    market_data = self._prepare_market_data(row, product_id, i, data_with_indicators)
                     
                     # FIXED: Prepare technical indicators for this timestamp
                     technical_indicators = self._prepare_technical_indicators(row)
@@ -150,12 +145,8 @@ class VectorizedStrategyAdapter:
             # Initialize adaptive strategy manager (read-only)
             adaptive_manager = AdaptiveStrategyManager(self.config)
             
-            # CRITICAL FIX: Remove duplicate columns to avoid pandas Series issues
-            data_clean = data_with_indicators.loc[:, ~data_with_indicators.columns.duplicated()]
-            logger.info(f"Cleaned data: {len(data_clean.columns)} columns (removed duplicates)")
-            
             # Create signals DataFrame
-            signals_df = pd.DataFrame(index=data_clean.index)
+            signals_df = pd.DataFrame(index=data_with_indicators.index)
             signals_df['buy'] = False
             signals_df['sell'] = False
             signals_df['confidence'] = 50.0
@@ -165,10 +156,10 @@ class VectorizedStrategyAdapter:
             signals_df['primary_strategy'] = ""
             
             # Process each row
-            for i, (timestamp, row) in enumerate(data_clean.iterrows()):
+            for i, (timestamp, row) in enumerate(data_with_indicators.iterrows()):
                 try:
                     # Prepare data for adaptive manager
-                    market_data = self._prepare_market_data(row, product_id, i, data_clean)
+                    market_data = self._prepare_market_data(row, product_id, i, data_with_indicators)
                     technical_indicators = self._prepare_technical_indicators(row)
                     
                     # Get combined signal from adaptive manager
@@ -224,40 +215,23 @@ class VectorizedStrategyAdapter:
             try:
                 if pd.isna(value):
                     return default
-                # CRITICAL FIX: Handle pandas Series (from duplicate columns)
-                if isinstance(value, pd.Series):
-                    if len(value) > 0:
-                        return float(value.iloc[0])  # Take first value
-                    else:
-                        return default
                 if hasattr(value, 'item'):  # pandas scalar
                     return float(value.item())
                 return float(value)
             except (ValueError, TypeError, AttributeError):
                 return default
         
-        # CRITICAL FIX: Get current price from the row data directly
+        # Calculate price changes if we have enough history
+        price_changes = {}
         current_price = safe_float(row.get('close', 0))
         
-        # If current_price is still 0, try other price columns
-        if current_price == 0:
-            for price_col in ['close', 'open', 'high', 'low']:
-                if price_col in row:
-                    current_price = safe_float(row[price_col], 0)
-                    if current_price > 0:
-                        break
-        
-        # Calculate price changes if we have enough history AND valid current price
-        price_changes = {}
-        
         if current_price > 0:  # Only calculate if we have valid price
-            if index >= 1:  # At least 1 hour of history
+            if index >= 24:  # 24 hours of hourly data
                 price_1h_ago = safe_float(full_data.iloc[index-1]['close'], current_price)
+                price_24h_ago = safe_float(full_data.iloc[index-24]['close'], current_price)
+                
                 if price_1h_ago > 0:
                     price_changes['1h'] = ((current_price - price_1h_ago) / price_1h_ago * 100)
-            
-            if index >= 24:  # 24 hours of hourly data
-                price_24h_ago = safe_float(full_data.iloc[index-24]['close'], current_price)
                 if price_24h_ago > 0:
                     price_changes['24h'] = ((current_price - price_24h_ago) / price_24h_ago * 100)
             
@@ -298,12 +272,6 @@ class VectorizedStrategyAdapter:
             try:
                 if pd.isna(value):
                     return default
-                # CRITICAL FIX: Handle pandas Series (from duplicate columns)
-                if isinstance(value, pd.Series):
-                    if len(value) > 0:
-                        return float(value.iloc[0])  # Take first value
-                    else:
-                        return default
                 if hasattr(value, 'item'):  # pandas scalar
                     return float(value.item())
                 return float(value)
@@ -312,30 +280,24 @@ class VectorizedStrategyAdapter:
         
         indicators = {}
         
-        # CRITICAL FIX: Get current price from the row data directly
-        current_price = safe_float(row.get('close', 0))
-        
-        # If current_price is still 0, try other price columns
-        if current_price == 0:
-            for price_col in ['close', 'open', 'high', 'low']:
-                if price_col in row:
-                    current_price = safe_float(row[price_col], 0)
-                    if current_price > 0:
-                        break
-        
-        indicators['current_price'] = current_price
+        # Basic OHLCV - FIXED with safe conversion
+        indicators['current_price'] = safe_float(row.get('close', 0))
         
         # RSI - FIXED with safe conversion
         if 'rsi_14' in row:
             indicators['rsi'] = safe_float(row['rsi_14'], 50.0)
         
         # MACD - FIXED with safe conversion and proper dict structure
+        macd_dict = {}
         if 'macd' in row:
-            indicators['macd'] = safe_float(row['macd'], 0.0)
+            macd_dict['macd'] = safe_float(row['macd'], 0.0)
         if 'macd_signal' in row:
-            indicators['macd_signal'] = safe_float(row['macd_signal'], 0.0)
+            macd_dict['signal'] = safe_float(row['macd_signal'], 0.0)
         if 'macd_histogram' in row:
-            indicators['macd_histogram'] = safe_float(row['macd_histogram'], 0.0)
+            macd_dict['histogram'] = safe_float(row['macd_histogram'], 0.0)
+        
+        if macd_dict:  # Only add if we have at least one MACD value
+            indicators['macd'] = macd_dict
         
         # Bollinger Bands - FIXED with safe conversion
         if all(col in row for col in ['bb_upper_20', 'bb_lower_20', 'bb_middle_20']):
