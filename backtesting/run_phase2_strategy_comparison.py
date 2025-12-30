@@ -290,7 +290,7 @@ class Phase2AdaptiveStrategyComparison:
 def main():
     """Run Phase 2 strategy comparison"""
     try:
-        comparison = Phase2StrategyComparison()
+        comparison = Phase2AdaptiveStrategyComparison()
         success = comparison.run_all_tests()
         
         if success:

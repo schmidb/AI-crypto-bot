@@ -18,12 +18,18 @@ except ImportError:
 def run_strategy_backtest(strategy_name: str, data: dict, **kwargs):
     """Run a single strategy backtest"""
     suite = ComprehensiveBacktestSuite(**kwargs)
-    return suite.run_single_strategy(strategy_name, data)
+    # Use the first asset's data for backtesting
+    asset_name = list(data.keys())[0]
+    data_df = data[asset_name]
+    return suite.run_single_strategy(data_df, strategy_name, asset_name)
 
 def compare_all_strategies(data: dict, **kwargs):
     """Compare all available strategies"""
     suite = ComprehensiveBacktestSuite(**kwargs)
-    return suite.compare_strategies(data)
+    # Use the first asset's data for comparison
+    asset_name = list(data.keys())[0]
+    data_df = data[asset_name]
+    return suite.run_all_strategies(data_df, asset_name)
 
 # Export main classes and functions
 __all__ = [

@@ -21,33 +21,37 @@ class AdaptiveStrategyManager(StrategyManager):
         self.regime_strategy_priority = {
             "trending": ["trend_following", "momentum", "llm_strategy", "mean_reversion"],
             "ranging": ["mean_reversion", "llm_strategy", "momentum", "trend_following"], 
-            "volatile": ["llm_strategy", "mean_reversion", "trend_following", "momentum"]
+            "volatile": ["llm_strategy", "mean_reversion", "trend_following", "momentum"],
+            "bear_ranging": ["llm_strategy"]  # OPTIMIZATION 4: Only LLM in bear + low volatility
         }
         
-        # Adaptive confidence thresholds based on market regime and strategy
+        # OPTIMIZED: Lower confidence thresholds based on backtesting results
         self.adaptive_thresholds = {
             "trending": {
-                "trend_following": {"buy": 55, "sell": 50},  # Lower for trending markets
-                "momentum": {"buy": 60, "sell": 55},
-                "llm_strategy": {"buy": 65, "sell": 60},
-                "mean_reversion": {"buy": 75, "sell": 75}   # Higher (discouraged)
+                "trend_following": {"buy": 30, "sell": 30},  # Optimized from backtesting
+                "momentum": {"buy": 30, "sell": 30},
+                "llm_strategy": {"buy": 35, "sell": 35},
+                "mean_reversion": {"buy": 45, "sell": 45}   # Higher (discouraged)
             },
             "ranging": {
-                "mean_reversion": {"buy": 60, "sell": 60},   # Lower for ranging markets
-                "llm_strategy": {"buy": 65, "sell": 65},
-                "momentum": {"buy": 70, "sell": 70},
-                "trend_following": {"buy": 75, "sell": 75}  # Higher (discouraged)
+                "mean_reversion": {"buy": 30, "sell": 30},   # Optimized from backtesting
+                "llm_strategy": {"buy": 35, "sell": 35},
+                "momentum": {"buy": 40, "sell": 40},
+                "trend_following": {"buy": 45, "sell": 45}  # Higher (discouraged)
             },
             "volatile": {
-                "llm_strategy": {"buy": 70, "sell": 70},     # LLM best for volatile
-                "mean_reversion": {"buy": 75, "sell": 75},
-                "trend_following": {"buy": 80, "sell": 80},  # Higher (more conservative)
-                "momentum": {"buy": 80, "sell": 80}
+                "llm_strategy": {"buy": 35, "sell": 35},     # LLM best for volatile
+                "mean_reversion": {"buy": 40, "sell": 40},
+                "trend_following": {"buy": 45, "sell": 45},  # Higher (more conservative)
+                "momentum": {"buy": 45, "sell": 45}
+            },
+            "bear_ranging": {
+                "llm_strategy": {"buy": 60, "sell": 40}      # OPTIMIZATION 4: Conservative in bear markets
             }
         }
         
-        # Default fallback thresholds
-        self.default_thresholds = {"buy": 70, "sell": 70}
+        # OPTIMIZED: Lower default fallback thresholds
+        self.default_thresholds = {"buy": 30, "sell": 30}
         
         self.logger.info("🚀 Adaptive Strategy Manager initialized")
         self.logger.info(f"📊 Market regime priorities: {self.regime_strategy_priority}")
@@ -62,6 +66,7 @@ class AdaptiveStrategyManager(StrategyManager):
             price_changes = market_data.get('price_changes', {})
             change_24h = abs(float(price_changes.get('24h', 0)))
             change_5d = abs(float(price_changes.get('5d', 0)))
+            change_7d = float(price_changes.get('7d', 0))  # For bear market detection
             
             # Get Bollinger Band width for volatility
             bb_upper = float(technical_indicators.get('bb_upper', 0))
@@ -73,18 +78,27 @@ class AdaptiveStrategyManager(StrategyManager):
             else:
                 bb_width_pct = 2.0  # Default moderate volatility
             
-            # Regime detection logic
-            if change_24h > 4 or change_5d > 8:
-                if bb_width_pct > 4:
-                    regime = "volatile"  # High movement + high volatility
+            # OPTIMIZATION 4: Bear market filter - avoid trading in declining periods
+            if change_7d < -5:  # 7-day decline > 5%
+                self.logger.info(f"🐻 Bear market detected (7d: {change_7d:.1f}%) - reducing activity")
+                # In bear markets, be more conservative
+                if change_24h < 1.5 and bb_width_pct < 3:
+                    regime = "bear_ranging"  # Special regime for bear + low volatility
                 else:
-                    regime = "trending"  # High movement + low volatility = trend
-            elif change_24h < 1.5 and bb_width_pct < 2:
-                regime = "ranging"   # Low movement + low volatility = range
-            elif bb_width_pct > 5:
-                regime = "volatile"  # High volatility regardless of movement
+                    regime = "volatile"  # Treat as volatile to be more conservative
             else:
-                regime = "ranging"   # Default to ranging
+                # Normal regime detection logic
+                if change_24h > 4 or change_5d > 8:
+                    if bb_width_pct > 4:
+                        regime = "volatile"  # High movement + high volatility
+                    else:
+                        regime = "trending"  # High movement + low volatility = trend
+                elif change_24h < 1.5 and bb_width_pct < 2:
+                    regime = "ranging"   # Low movement + low volatility = range
+                elif bb_width_pct > 5:
+                    regime = "volatile"  # High volatility regardless of movement
+                else:
+                    regime = "ranging"   # Default to ranging
             
             self.logger.info(f"📊 Market regime: {regime} (24h: {change_24h:.1f}%, BB width: {bb_width_pct:.1f}%)")
             return regime

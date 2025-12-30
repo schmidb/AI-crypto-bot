@@ -23,7 +23,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data_collector import DataCollector
 from coinbase_client import CoinbaseClient
-from .sync_to_gcs import GCSBacktestSync
+from backtesting.sync_to_gcs import GCSBacktestSync
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 from typing import Dict, Any, Optional
 
-from utils.indicator_factory import calculate_indicators
+from utils.performance.indicator_factory import calculate_indicators
 from utils.backtest_suite import ComprehensiveBacktestSuite
 from data_collector import DataCollector
 

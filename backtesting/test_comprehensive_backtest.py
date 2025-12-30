@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 import logging
 from pathlib import Path
-from utils.indicator_factory import calculate_indicators
+from utils.performance.indicator_factory import calculate_indicators
 from utils.backtest_suite import ComprehensiveBacktestSuite, run_strategy_backtest, compare_all_strategies
 
 # Set up logging
@@ -51,7 +51,9 @@ def test_comprehensive_backtest():
             logger.info(f"\nTesting {strategy_name} strategy...")
             
             result = run_strategy_backtest(
-                btc_with_indicators, strategy_name, "BTC-USD", 10000.0
+                strategy_name, 
+                {"BTC-USD": btc_with_indicators},
+                initial_capital=10000.0
             )
             
             if 'error' in result:
@@ -69,7 +71,10 @@ def test_comprehensive_backtest():
         # Test 2: Multi-Strategy Comparison
         logger.info("\n=== Test 2: Multi-Strategy Comparison ===")
         
-        comparison_results = compare_all_strategies(btc_with_indicators, "BTC-USD", 10000.0)
+        comparison_results = compare_all_strategies(
+            {"BTC-USD": btc_with_indicators},
+            initial_capital=10000.0
+        )
         
         if 'error' in comparison_results:
             logger.error(f"Comparison error: {comparison_results['error']}")

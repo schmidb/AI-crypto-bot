@@ -27,10 +27,10 @@ class Config:
         self.LLM_FALLBACK_MODEL = os.getenv("LLM_FALLBACK_MODEL", "gemini-3-pro-preview")  # Alternative model
         self.LLM_LOCATION = os.getenv("LLM_LOCATION", "global")  # Required for preview models
 
-        # Trading settings
+        # Trading settings - OPTIMIZATION 3: Switch to 120-minute intervals
         self.TRADING_PAIRS = os.getenv("TRADING_PAIRS", "BTC-USD,ETH-USD").split(",")
         self.BASE_CURRENCY = os.getenv("BASE_CURRENCY", "USD")  # Base currency for trading pairs
-        self.DECISION_INTERVAL_MINUTES = int(os.getenv("DECISION_INTERVAL_MINUTES", "60"))
+        self.DECISION_INTERVAL_MINUTES = int(os.getenv("DECISION_INTERVAL_MINUTES", "120"))  # Optimized from backtesting
         self.RISK_LEVEL = os.getenv("RISK_LEVEL", "medium")
         self.SIMULATION_MODE = os.getenv("SIMULATION_MODE", "false").lower() == "true"
 
@@ -75,9 +75,9 @@ class Config:
         self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
         self.LOG_FILE = os.getenv("LOG_FILE", "logs/crypto_bot.log")
         
-        # Enhanced Trading Strategy Settings
-        self.CONFIDENCE_THRESHOLD_BUY = float(os.getenv("CONFIDENCE_THRESHOLD_BUY", "60"))
-        self.CONFIDENCE_THRESHOLD_SELL = float(os.getenv("CONFIDENCE_THRESHOLD_SELL", "60"))
+        # Enhanced Trading Strategy Settings - OPTIMIZATION 2: Lower confidence thresholds
+        self.CONFIDENCE_THRESHOLD_BUY = float(os.getenv("CONFIDENCE_THRESHOLD_BUY", "30"))  # Optimized from backtesting
+        self.CONFIDENCE_THRESHOLD_SELL = float(os.getenv("CONFIDENCE_THRESHOLD_SELL", "30"))  # Optimized from backtesting
         self.CONFIDENCE_BOOST_TREND_ALIGNED = float(os.getenv("CONFIDENCE_BOOST_TREND_ALIGNED", "10"))
         self.CONFIDENCE_PENALTY_COUNTER_TREND = float(os.getenv("CONFIDENCE_PENALTY_COUNTER_TREND", "5"))
         
