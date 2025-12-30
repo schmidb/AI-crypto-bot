@@ -20,7 +20,7 @@ from utils.backtest_suite import ComprehensiveBacktestSuite
 from utils.indicator_factory import IndicatorFactory
 from data_collector import DataCollector
 from coinbase_client import CoinbaseClient
-from sync_to_gcs import GCSBacktestSync
+from .sync_to_gcs import GCSBacktestSync
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

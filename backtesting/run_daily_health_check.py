@@ -18,9 +18,12 @@ import logging
 # Import our backtesting infrastructure
 from utils.backtest_suite import ComprehensiveBacktestSuite
 from utils.indicator_factory import IndicatorFactory
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data_collector import DataCollector
 from coinbase_client import CoinbaseClient
-from sync_to_gcs import GCSBacktestSync
+from .sync_to_gcs import GCSBacktestSync
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -344,6 +347,41 @@ class DailyHealthChecker:
         except Exception as e:
             logger.error(f"Failed to save results: {e}")
             return ""
+
+def run_daily_health_check(sync_gcs: bool = True) -> bool:
+    """
+    Run daily health check programmatically
+    
+    Args:
+        sync_gcs: Whether to sync results to Google Cloud Storage
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Initialize health checker
+        health_checker = DailyHealthChecker(sync_to_gcs=sync_gcs)
+        
+        # Run health check
+        logger.info("🚀 Starting daily health check...")
+        results = health_checker.run_comprehensive_health_check()
+        
+        if 'error' in results:
+            logger.error(f"Health check failed: {results['error']}")
+            return False
+        
+        # Save results
+        filepath = health_checker.save_results(results)
+        logger.info(f"💾 Health check results saved to: {filepath}")
+        
+        if sync_gcs:
+            logger.info("☁️  Results synced to GCS")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Daily health check failed: {e}")
+        return False
 
 def main():
     """Main function with command-line interface"""
