@@ -366,12 +366,17 @@ Format with clear sections and emojis. Be concise and actionable.
                 return False
             
             # Create message
-            msg = MIMEMultipart()
+            msg = MIMEMultipart('alternative')
             msg['From'] = sender_email
             msg['To'] = to_email
             msg['Subject'] = subject
             
-            msg.attach(MIMEText(body, 'plain'))
+            # Create both plain text and HTML versions
+            text_part = MIMEText(self._convert_html_to_text(body), 'plain')
+            html_part = MIMEText(body, 'html')
+            
+            msg.attach(text_part)
+            msg.attach(html_part)
             
             # Send email
             server = smtplib.SMTP(smtp_server, smtp_port)
@@ -410,49 +415,11 @@ Format with clear sections and emojis. Be concise and actionable.
             trades_count = len(log_data.get('trades_executed', []))
             errors_count = len(log_data.get('errors', []))
             
-            # Create improved HTML-like formatted email
-            body = f"""🤖 AI Crypto Trading Bot - Daily Report
-📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💰 PORTFOLIO OVERVIEW
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Current Value: €{total_value:.2f}
-Initial Value: €{value_changes['initial_value']:.2f}
-{value_changes['change_emoji']} Total Change: €{value_changes['total_change']:+.2f} ({value_changes['total_change_pct']:+.1f}%)
-Status: {value_changes['change_status']}
-
-📊 Activity: {trades_count} trades executed | ⚠️ {errors_count} errors detected
-
-{self._format_trading_performance(value_changes['trading_performance'])}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💎 ASSET BREAKDOWN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💶 EUR Cash: €{portfolio.get('EUR', {}).get('amount', 0):.2f}
-🔶 BTC: {portfolio.get('BTC', {}).get('amount', 0):.8f} (~€{portfolio.get('BTC', {}).get('amount', 0) * portfolio.get('BTC', {}).get('last_price_eur', 0):.2f})
-💎 ETH: {portfolio.get('ETH', {}).get('amount', 0):.6f} (~€{portfolio.get('ETH', {}).get('amount', 0) * portfolio.get('ETH', {}).get('last_price_eur', 0):.2f})
-🟣 SOL: {portfolio.get('SOL', {}).get('amount', 0):.6f} (~€{portfolio.get('SOL', {}).get('amount', 0) * portfolio.get('SOL', {}).get('last_price_eur', 0):.2f})
-
-{ai_analysis}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🔗 QUICK ACCESS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📊 Dashboard: http://{server_ip}/crypto-bot/
-📈 Performance: http://{server_ip}/crypto-bot/performance.html
-📋 Logs: http://{server_ip}/crypto-bot/logs.html
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
-            """
+            # Create professional HTML email
+            body = self._create_html_email(
+                total_value, trades_count, errors_count, 
+                portfolio, value_changes, ai_analysis, server_ip
+            )
             
             if test_mode:
                 # Print to console instead of sending email
@@ -487,6 +454,174 @@ Generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
 Hold Value: €{trading_perf['hold_value']:.2f} | Active Value: €{trading_perf['current_value']:.2f}
 {trading_perf['performance_emoji']} Trading Alpha: €{trading_perf['trading_alpha']:+.2f} ({trading_perf['trading_alpha_pct']:+.1f}%)
 Strategy: {trading_perf['performance_status']}"""
+
+    def _create_html_email(self, total_value, trades_count, errors_count, portfolio, value_changes, ai_analysis, server_ip):
+        """Create professional HTML email"""
+        # Get asset values
+        eur_amount = portfolio.get('EUR', {}).get('amount', 0)
+        btc_amount = portfolio.get('BTC', {}).get('amount', 0)
+        btc_price = portfolio.get('BTC', {}).get('last_price_eur', 0)
+        btc_value = btc_amount * btc_price
+        eth_amount = portfolio.get('ETH', {}).get('amount', 0)
+        eth_price = portfolio.get('ETH', {}).get('last_price_eur', 0)
+        eth_value = eth_amount * eth_price
+        sol_amount = portfolio.get('SOL', {}).get('amount', 0)
+        sol_price = portfolio.get('SOL', {}).get('last_price_eur', 0)
+        sol_value = sol_amount * sol_price
+        
+        # Status colors
+        status_color = "#28a745" if value_changes['total_change'] >= 0 else "#dc3545"
+        error_color = "#ffc107" if errors_count > 0 else "#28a745"
+        
+        return f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Bot Daily Report</title>
+</head>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 24px;">🤖 AI Crypto Trading Bot</h1>
+        <p style="margin: 5px 0 0 0; opacity: 0.9;">Daily Report - {datetime.now().strftime('%B %d, %Y')}</p>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 150px; background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size: 24px; font-weight: bold; color: {status_color};">€{total_value:.2f}</div>
+            <div style="font-size: 12px; color: #666;">Portfolio Value</div>
+        </div>
+        <div style="flex: 1; min-width: 150px; background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size: 24px; font-weight: bold; color: #007bff;">{trades_count}</div>
+            <div style="font-size: 12px; color: #666;">Trades (24h)</div>
+        </div>
+        <div style="flex: 1; min-width: 150px; background: white; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="font-size: 24px; font-weight: bold; color: {error_color};">{errors_count}</div>
+            <div style="font-size: 12px; color: #666;">Errors</div>
+        </div>
+    </div>
+    
+    <!-- Performance Overview -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin: 0 0 15px 0; color: #333; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 10px;">📊 Performance Overview</h2>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span>Initial Value:</span>
+            <span style="font-weight: bold;">€{value_changes['initial_value']:.2f}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span>Current Value:</span>
+            <span style="font-weight: bold;">€{total_value:.2f}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+            <span>Total Change:</span>
+            <span style="font-weight: bold; color: {status_color};">€{value_changes['total_change']:+.2f} ({value_changes['total_change_pct']:+.1f}%)</span>
+        </div>
+        <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-top: 15px;">
+            {self._format_trading_performance_html(value_changes['trading_performance'])}
+        </div>
+    </div>
+    
+    <!-- Asset Breakdown -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin: 0 0 15px 0; color: #333; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 10px;">💎 Asset Breakdown</h2>
+        
+        <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold;">💶 EUR Cash</span>
+                <span style="font-size: 18px; font-weight: bold;">€{eur_amount:.2f}</span>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px; padding: 10px; background: #fff3cd; border-radius: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold;">🔶 Bitcoin</span>
+                <span style="font-size: 18px; font-weight: bold;">€{btc_value:.2f}</span>
+            </div>
+            <div style="font-size: 12px; color: #666;">
+                {btc_amount:.8f} BTC @ €{btc_price:,.0f}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 15px; padding: 10px; background: #d1ecf1; border-radius: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold;">💎 Ethereum</span>
+                <span style="font-size: 18px; font-weight: bold;">€{eth_value:.2f}</span>
+            </div>
+            <div style="font-size: 12px; color: #666;">
+                {eth_amount:.6f} ETH @ €{eth_price:,.0f}
+            </div>
+        </div>
+        
+        {f'''<div style="margin-bottom: 15px; padding: 10px; background: #e2e3ff; border-radius: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <span style="font-weight: bold;">🟣 Solana</span>
+                <span style="font-size: 18px; font-weight: bold;">€{sol_value:.2f}</span>
+            </div>
+            <div style="font-size: 12px; color: #666;">
+                {sol_amount:.6f} SOL @ €{sol_price:,.0f}
+            </div>
+        </div>''' if sol_amount > 0 else ''}
+    </div>
+    
+    <!-- AI Analysis -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin: 0 0 15px 0; color: #333; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 10px;">🤖 AI Market Analysis</h2>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; white-space: pre-line; font-family: monospace; font-size: 14px;">
+{ai_analysis}
+        </div>
+    </div>
+    
+    <!-- Quick Links -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin: 0 0 15px 0; color: #333; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 10px;">🔗 Quick Access</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="http://{server_ip}/crypto-bot/" style="flex: 1; min-width: 150px; background: #007bff; color: white; padding: 12px; text-decoration: none; border-radius: 5px; text-align: center; font-weight: bold;">📊 Dashboard</a>
+            <a href="http://{server_ip}/crypto-bot/performance.html" style="flex: 1; min-width: 150px; background: #28a745; color: white; padding: 12px; text-decoration: none; border-radius: 5px; text-align: center; font-weight: bold;">📈 Performance</a>
+            <a href="http://{server_ip}/crypto-bot/logs.html" style="flex: 1; min-width: 150px; background: #6c757d; color: white; padding: 12px; text-decoration: none; border-radius: 5px; text-align: center; font-weight: bold;">📋 Logs</a>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div style="text-align: center; color: #666; font-size: 12px; margin-top: 30px;">
+        Generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
+    </div>
+    
+</body>
+</html>
+        """
+
+    def _format_trading_performance_html(self, trading_perf: Dict) -> str:
+        """Format trading performance for HTML email"""
+        if trading_perf.get('status') != 'success':
+            return "<em>Trading performance data unavailable</em>"
+        
+        alpha_color = "#28a745" if trading_perf['trading_alpha'] >= 0 else "#dc3545"
+        
+        return f"""
+        <strong>🎯 Trading Performance vs Buy & Hold:</strong><br>
+        Hold Value: €{trading_perf['hold_value']:.2f} | Active Value: €{trading_perf['current_value']:.2f}<br>
+        <span style="color: {alpha_color}; font-weight: bold;">
+            Trading Alpha: €{trading_perf['trading_alpha']:+.2f} ({trading_perf['trading_alpha_pct']:+.1f}%)
+        </span><br>
+        Strategy: {trading_perf['performance_status']}
+        """
+
+    def _convert_html_to_text(self, html_content: str) -> str:
+        """Convert HTML email to plain text fallback"""
+        import re
+        
+        # Remove HTML tags
+        text = re.sub(r'<[^>]+>', '', html_content)
+        
+        # Clean up extra whitespace
+        text = re.sub(r'\n\s*\n', '\n\n', text)
+        text = re.sub(r'[ \t]+', ' ', text)
+        
+        return text.strip()
 
 def main():
     """Main entry point"""
