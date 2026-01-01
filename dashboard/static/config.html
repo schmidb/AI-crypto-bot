@@ -284,12 +284,12 @@
                     description: 'AI provider for trading decisions (vertex, palm, gemini)'
                 },
                 'LLM_MODEL': {
-                    default: 'gemini-1.5-flash',
+                    default: 'gemini-3-flash-preview',
                     description: 'Specific AI model to use for analysis'
                 },
                 'LLM_LOCATION': {
-                    default: 'us-central1',
-                    description: 'Google Cloud region for AI services'
+                    default: 'global',
+                    description: 'Google Cloud region for AI services (must be global for preview models)'
                 }
             },
             'Trading Parameters': {
