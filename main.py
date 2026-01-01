@@ -7,8 +7,17 @@ import signal
 import sys
 from datetime import datetime, timedelta
 import os
-import fcntl
+import sys
 from typing import Dict, List, Any
+
+# Windows-compatible file locking
+try:
+    import fcntl
+    WINDOWS_SYSTEM = False
+except ImportError:
+    # Windows doesn't have fcntl, use alternative approach
+    import msvcrt
+    WINDOWS_SYSTEM = True
 
 from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer
@@ -16,6 +25,7 @@ from data_collector import DataCollector
 from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
 from utils.trading.portfolio import Portfolio
 from utils.trading.capital_manager import CapitalManager
+from utils.trading.opportunity_manager import OpportunityManager
 from utils.dashboard.dashboard_updater import DashboardUpdater
 from utils.dashboard.webserver_sync import WebServerSync
 from utils.trading.tax_report import TaxReportGenerator
@@ -40,23 +50,68 @@ setup_logging(console_output=True, filter_noise=True)
 logger = get_logger('supervisor')
 
 def ensure_single_instance():
-    """Ensure only one bot instance runs"""
-    lock_file = '/tmp/crypto-bot.lock'
+    """Ensure only one bot instance runs (Windows-compatible)"""
+    lock_file = '/tmp/crypto-bot.lock' if not WINDOWS_SYSTEM else 'crypto-bot.lock'
     logger.info(f"🔒 Checking for existing bot instance (lock file: {lock_file})")
     
     try:
-        # Create lock file
-        lock_fd = os.open(lock_file, os.O_CREAT | os.O_TRUNC | os.O_RDWR)
-        
-        # Try to acquire exclusive lock (non-blocking)
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        
-        # Write PID to lock file
-        os.write(lock_fd, f"{os.getpid()}\n".encode())
-        os.fsync(lock_fd)
-        
-        logger.info(f"✅ Process lock acquired successfully (PID: {os.getpid()})")
-        return lock_fd
+        if WINDOWS_SYSTEM:
+            # Windows approach using file creation
+            try:
+                # Try to create lock file exclusively
+                lock_fd = os.open(lock_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+                
+                # Write PID to lock file
+                os.write(lock_fd, f"{os.getpid()}\n".encode())
+                os.fsync(lock_fd)
+                
+                logger.info(f"✅ Process lock acquired successfully (PID: {os.getpid()})")
+                return lock_fd
+                
+            except OSError:
+                # File already exists, check if process is still running
+                if os.path.exists(lock_file):
+                    try:
+                        with open(lock_file, 'r') as f:
+                            existing_pid = int(f.read().strip())
+                        
+                        # Check if process is still running on Windows
+                        import subprocess
+                        result = subprocess.run(['tasklist', '/FI', f'PID eq {existing_pid}'], 
+                                              capture_output=True, text=True)
+                        
+                        if str(existing_pid) in result.stdout:
+                            logger.error(f"❌ Another bot instance is already running (PID: {existing_pid})!")
+                            sys.exit(1)
+                        else:
+                            # Stale lock file, remove it and try again
+                            logger.warning(f"Removing stale lock file (PID {existing_pid} not running)")
+                            os.remove(lock_file)
+                            return ensure_single_instance()  # Retry
+                            
+                    except (ValueError, FileNotFoundError):
+                        # Invalid or missing lock file, remove and retry
+                        try:
+                            os.remove(lock_file)
+                        except:
+                            pass
+                        return ensure_single_instance()  # Retry
+                else:
+                    raise
+        else:
+            # Unix approach using fcntl
+            # Create lock file
+            lock_fd = os.open(lock_file, os.O_CREAT | os.O_TRUNC | os.O_RDWR)
+            
+            # Try to acquire exclusive lock (non-blocking)
+            fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            
+            # Write PID to lock file
+            os.write(lock_fd, f"{os.getpid()}\n".encode())
+            os.fsync(lock_fd)
+            
+            logger.info(f"✅ Process lock acquired successfully (PID: {os.getpid()})")
+            return lock_fd
         
     except (OSError, IOError) as e:
         logger.error(f"❌ Another bot instance is already running!")
@@ -122,6 +177,9 @@ class TradingBot:
         
         # Initialize capital manager for sustainable trading
         self.capital_manager = CapitalManager(self.config)
+        
+        # Initialize opportunity manager for intelligent prioritization
+        self.opportunity_manager = OpportunityManager(self.config)
         
         logger.info("✅ Strategy manager initialized successfully")
         self.portfolio = Portfolio("data/portfolio.json")
@@ -920,6 +978,282 @@ class TradingBot:
                 'execution_price': 0
             }
     
+    def _execute_prioritized_trade(self, product_id: str, decision_result: Dict[str, Any], 
+                                 allocated_amount: float) -> Dict[str, Any]:
+        """
+        Execute trade with pre-allocated capital from opportunity manager
+        
+        Args:
+            product_id: Trading pair (e.g., 'BTC-EUR')
+            decision_result: Result from trading strategy
+            allocated_amount: Pre-allocated capital amount in EUR
+            
+        Returns:
+            Dict with execution results
+        """
+        try:
+            action = decision_result.get('action', 'HOLD')
+            confidence = decision_result.get('confidence', 0)
+            
+            # Initialize execution result
+            execution_result = {
+                'execution_status': 'not_executed',
+                'execution_message': 'No execution needed',
+                'trade_executed': False,
+                'crypto_amount': 0,
+                'trade_amount_base': 0,
+                'execution_price': 0,
+                'allocated_amount': allocated_amount
+            }
+            
+            # Skip execution for HOLD decisions
+            if action == 'HOLD':
+                execution_result.update({
+                    'execution_status': 'skipped_hold',
+                    'execution_message': 'HOLD decision - no trade executed'
+                })
+                return execution_result
+            
+            # Get current portfolio state
+            portfolio = self.portfolio.to_dict()
+            asset = product_id.split('-')[0]  # Extract asset (BTC, ETH, SOL)
+            
+            # Get current market price
+            try:
+                current_price = self.data_collector.get_current_price(product_id)
+                execution_result['execution_price'] = current_price
+            except Exception as e:
+                logger.error(f"Failed to get current price for {product_id}: {e}")
+                execution_result.update({
+                    'execution_status': 'failed',
+                    'execution_message': f'Failed to get current price: {e}'
+                })
+                return execution_result
+            
+            # Execute trade with pre-allocated capital
+            if action == 'BUY':
+                return self._execute_prioritized_buy_order(
+                    product_id, asset, current_price, confidence, portfolio, 
+                    execution_result, allocated_amount
+                )
+            elif action == 'SELL':
+                return self._execute_prioritized_sell_order(
+                    product_id, asset, current_price, confidence, portfolio, 
+                    execution_result, allocated_amount
+                )
+            else:
+                execution_result.update({
+                    'execution_status': 'unknown_action',
+                    'execution_message': f'Unknown action: {action}'
+                })
+                return execution_result
+                
+        except Exception as e:
+            logger.error(f"Error executing prioritized trade for {product_id}: {e}")
+            return {
+                'execution_status': 'error',
+                'execution_message': f'Prioritized execution error: {e}',
+                'trade_executed': False,
+                'crypto_amount': 0,
+                'trade_amount_base': 0,
+                'execution_price': 0,
+                'allocated_amount': allocated_amount
+            }
+    
+    def _execute_prioritized_buy_order(self, product_id: str, asset: str, current_price: float, 
+                                     confidence: int, portfolio: Dict, execution_result: Dict, 
+                                     allocated_amount: float) -> Dict[str, Any]:
+        """Execute BUY order with pre-allocated capital"""
+        try:
+            # Use the pre-allocated amount directly
+            trade_amount_base = allocated_amount
+            crypto_amount = trade_amount_base / current_price
+            
+            # Check minimum trade amount
+            if trade_amount_base < self.config.MIN_TRADE_AMOUNT:
+                execution_result.update({
+                    'execution_status': 'insufficient_size',
+                    'execution_message': f'Allocated amount (€{trade_amount_base:.2f}) below minimum (€{self.config.MIN_TRADE_AMOUNT})',
+                    'allocated_amount': allocated_amount
+                })
+                logger.warning(f"BUY order skipped for {product_id}: Allocated amount too small")
+                return execution_result
+            
+            # Check EUR balance (should be available since capital was pre-allocated)
+            eur_balance = portfolio.get('EUR', {}).get('amount', 0)
+            if eur_balance < trade_amount_base:
+                execution_result.update({
+                    'execution_status': 'insufficient_balance',
+                    'execution_message': f'Insufficient EUR balance (€{eur_balance:.2f}) for allocated trade (€{trade_amount_base:.2f})',
+                    'allocated_amount': allocated_amount
+                })
+                logger.warning(f"BUY order failed for {product_id}: Insufficient balance despite allocation")
+                return execution_result
+            
+            logger.info(f"💰 Executing prioritized BUY for {product_id}: "
+                       f"€{trade_amount_base:.2f} -> {crypto_amount:.8f} {asset}")
+            
+            if SIMULATION_MODE:
+                # Simulate the trade
+                execution_result.update({
+                    'execution_status': 'simulated',
+                    'execution_message': f'SIMULATED BUY: {crypto_amount:.8f} {asset} for €{trade_amount_base:.2f}',
+                    'trade_executed': True,
+                    'crypto_amount': crypto_amount,
+                    'trade_amount_base': trade_amount_base
+                })
+                logger.info(f"SIMULATED PRIORITIZED BUY: {crypto_amount:.8f} {asset} for €{trade_amount_base:.2f}")
+            else:
+                # Execute real trade
+                try:
+                    order_result = self.coinbase_client.place_market_order(
+                        product_id=product_id,
+                        side='BUY',
+                        size=trade_amount_base,
+                        confidence=confidence
+                    )
+                    
+                    if order_result.get('success'):
+                        execution_result.update({
+                            'execution_status': 'executed',
+                            'execution_message': f'PRIORITIZED BUY executed: {crypto_amount:.8f} {asset} for €{trade_amount_base:.2f}',
+                            'trade_executed': True,
+                            'crypto_amount': crypto_amount,
+                            'trade_amount_base': trade_amount_base,
+                            'order_id': order_result.get('order_id'),
+                            'total_fees': order_result.get('fees', 0),
+                            'fee_percentage': order_result.get('fee_percentage', 0),
+                            'filled_size': order_result.get('filled_size', crypto_amount),
+                            'average_filled_price': order_result.get('average_filled_price', 0),
+                            'actual_eur_spent': order_result.get('actual_eur_spent', trade_amount_base)
+                        })
+                        logger.info(f"PRIORITIZED BUY executed: {crypto_amount:.8f} {asset} for €{trade_amount_base:.2f}")
+                        
+                        # Update portfolio
+                        self.portfolio.update_asset_amount('EUR', -trade_amount_base)
+                        self.portfolio.update_asset_amount(asset, crypto_amount)
+                        self.portfolio.update_asset_price(asset, current_price, current_price)
+                        self.portfolio.save()
+                        
+                    else:
+                        execution_result.update({
+                            'execution_status': 'failed',
+                            'execution_message': f'PRIORITIZED BUY failed: {order_result.get("message", "Unknown error")}'
+                        })
+                        logger.error(f"PRIORITIZED BUY failed for {product_id}: {order_result.get('message')}")
+                        
+                except Exception as e:
+                    execution_result.update({
+                        'execution_status': 'failed',
+                        'execution_message': f'PRIORITIZED BUY execution error: {e}'
+                    })
+                    logger.error(f"PRIORITIZED BUY execution error for {product_id}: {e}")
+            
+            return execution_result
+            
+        except Exception as e:
+            logger.error(f"Error in prioritized BUY order for {product_id}: {e}")
+            execution_result.update({
+                'execution_status': 'error',
+                'execution_message': f'Prioritized BUY error: {e}'
+            })
+            return execution_result
+    
+    def _execute_prioritized_sell_order(self, product_id: str, asset: str, current_price: float, 
+                                      confidence: int, portfolio: Dict, execution_result: Dict, 
+                                      allocated_amount: float) -> Dict[str, Any]:
+        """Execute SELL order with pre-allocated target amount"""
+        try:
+            # For SELL orders, allocated_amount represents the EUR value we want to get
+            target_eur_value = allocated_amount
+            crypto_amount = target_eur_value / current_price
+            
+            # Check asset balance
+            asset_available = portfolio.get(asset, {}).get('amount', 0)
+            
+            if asset_available < crypto_amount:
+                # Adjust to available amount
+                crypto_amount = asset_available * 0.95  # Keep 5% buffer
+                target_eur_value = crypto_amount * current_price
+                
+                if target_eur_value < self.config.MIN_TRADE_AMOUNT:
+                    execution_result.update({
+                        'execution_status': 'insufficient_crypto',
+                        'execution_message': f'Insufficient {asset} balance ({asset_available:.8f}) for target trade value (€{allocated_amount:.2f})',
+                        'available_crypto': asset_available,
+                        'allocated_amount': allocated_amount
+                    })
+                    logger.warning(f"SELL order skipped for {product_id}: Insufficient crypto balance")
+                    return execution_result
+            
+            logger.info(f"💰 Executing prioritized SELL for {product_id}: "
+                       f"{crypto_amount:.8f} {asset} -> €{target_eur_value:.2f}")
+            
+            if SIMULATION_MODE:
+                # Simulate the trade
+                execution_result.update({
+                    'execution_status': 'simulated',
+                    'execution_message': f'SIMULATED SELL: {crypto_amount:.8f} {asset} for €{target_eur_value:.2f}',
+                    'trade_executed': True,
+                    'crypto_amount': crypto_amount,
+                    'trade_amount_base': target_eur_value
+                })
+                logger.info(f"SIMULATED PRIORITIZED SELL: {crypto_amount:.8f} {asset} for €{target_eur_value:.2f}")
+            else:
+                # Execute real trade
+                try:
+                    order_result = self.coinbase_client.place_market_order(
+                        product_id=product_id,
+                        side='SELL',
+                        size=crypto_amount,
+                        confidence=confidence
+                    )
+                    
+                    if order_result.get('success'):
+                        execution_result.update({
+                            'execution_status': 'executed',
+                            'execution_message': f'PRIORITIZED SELL executed: {crypto_amount:.8f} {asset} for €{target_eur_value:.2f}',
+                            'trade_executed': True,
+                            'crypto_amount': crypto_amount,
+                            'trade_amount_base': target_eur_value,
+                            'order_id': order_result.get('order_id'),
+                            'total_fees': order_result.get('fees', 0),
+                            'fee_percentage': order_result.get('fee_percentage', 0),
+                            'filled_size': order_result.get('filled_size', crypto_amount),
+                            'average_filled_price': order_result.get('average_filled_price', 0),
+                            'actual_eur_received': order_result.get('actual_eur_received', target_eur_value)
+                        })
+                        logger.info(f"PRIORITIZED SELL executed: {crypto_amount:.8f} {asset} for €{target_eur_value:.2f}")
+                        
+                        # Update portfolio
+                        self.portfolio.update_asset_amount(asset, -crypto_amount)
+                        self.portfolio.update_asset_amount('EUR', target_eur_value)
+                        self.portfolio.save()
+                        
+                    else:
+                        execution_result.update({
+                            'execution_status': 'failed',
+                            'execution_message': f'PRIORITIZED SELL failed: {order_result.get("message", "Unknown error")}'
+                        })
+                        logger.error(f"PRIORITIZED SELL failed for {product_id}: {order_result.get('message')}")
+                        
+                except Exception as e:
+                    execution_result.update({
+                        'execution_status': 'failed',
+                        'execution_message': f'PRIORITIZED SELL execution error: {e}'
+                    })
+                    logger.error(f"PRIORITIZED SELL execution error for {product_id}: {e}")
+            
+            return execution_result
+            
+        except Exception as e:
+            logger.error(f"Error in prioritized SELL order for {product_id}: {e}")
+            execution_result.update({
+                'execution_status': 'error',
+                'execution_message': f'Prioritized SELL error: {e}'
+            })
+            return execution_result
+    
     def _execute_buy_order(self, product_id: str, asset: str, current_price: float, confidence: int, portfolio: Dict, execution_result: Dict, strategy_details: Dict = None) -> Dict[str, Any]:
         f"""Execute BUY order with capital management and {config.BASE_CURRENCY} balance validation"""
         try:
@@ -1259,34 +1593,125 @@ class TradingBot:
         return changes
     
     def run_trading_cycle(self):
-        """Execute one complete trading cycle for all trading pairs"""
+        """Execute one complete trading cycle with opportunity prioritization (Phase 1)"""
         try:
-            logger.info("🔄 Starting trading cycle")
+            logger.info("🔄 Starting opportunity-based trading cycle")
             
             # Sync portfolio with Coinbase before trading
             if not self._sync_portfolio_with_coinbase():
                 logger.warning("Portfolio sync failed, continuing with cached data")
             
-            # Execute trading analysis for each pair
+            # Phase 1: Analyze all trading pairs first (no execution yet)
+            logger.info("🔍 Phase 1: Analyzing all trading opportunities...")
+            trading_analyses = {}
+            
             for product_id in self.config.TRADING_PAIRS:
                 try:
-                    logger.info(f"📊 Analyzing {product_id}")
+                    logger.info(f"📊 Analyzing {product_id}...")
                     
-                    # Execute multi-strategy analysis
-                    decision_result = self._execute_multi_strategy_analysis(product_id)
+                    # Execute multi-strategy analysis (no trading yet)
+                    analysis_result = self._execute_multi_strategy_analysis(product_id)
+                    trading_analyses[product_id] = analysis_result
                     
-                    # Execute trade based on decision
-                    trade_result = self._execute_trade(product_id, decision_result)
+                    action = analysis_result.get('action', 'UNKNOWN')
+                    confidence = analysis_result.get('confidence', 0)
+                    logger.info(f"Analysis for {product_id}: {action} (confidence: {confidence:.1f}%)")
                     
-                    # Log the decision and trade result
-                    self._log_trade_decision(product_id, decision_result, trade_result)
-                    
-                    # Save results for dashboard
-                    self._save_result(product_id, {**decision_result, **trade_result})
+                    # Add delay between API calls to avoid rate limiting
+                    time.sleep(1)
                     
                 except Exception as e:
-                    logger.error(f"Error processing {product_id}: {e}")
+                    logger.error(f"Error analyzing {product_id}: {e}")
+                    trading_analyses[product_id] = {
+                        "action": "HOLD",
+                        "confidence": 0,
+                        "reasoning": f"Analysis error: {str(e)}",
+                        "product_id": product_id,
+                        "timestamp": datetime.now().isoformat(),
+                        "execution_status": "error",
+                        "trade_executed": False
+                    }
+            
+            # Phase 2: Rank opportunities and allocate capital
+            logger.info("🎯 Phase 2: Ranking opportunities and allocating capital...")
+            
+            try:
+                # Rank all opportunities by strength
+                ranked_opportunities = self.opportunity_manager.rank_trading_opportunities(trading_analyses)
+                
+                # Get current EUR balance for capital allocation
+                portfolio = self.portfolio.to_dict()
+                available_eur = portfolio.get('EUR', {}).get('amount', 0)
+                
+                # Allocate capital based on opportunity strength
+                capital_allocations = self.opportunity_manager.allocate_trading_capital(
+                    ranked_opportunities, available_eur
+                )
+                
+                # Get opportunity summary for logging
+                opportunity_summary = self.opportunity_manager.get_opportunity_summary(ranked_opportunities)
+                logger.info(f"📊 Opportunity Summary: {opportunity_summary['actionable_opportunities']} actionable "
+                           f"({opportunity_summary['buy_opportunities']} BUY, {opportunity_summary['sell_opportunities']} SELL)")
+                
+            except Exception as e:
+                logger.error(f"Error in opportunity ranking/allocation: {e}")
+                # Fallback to original sequential processing
+                return self._run_legacy_trading_cycle()
+            
+            # Phase 3: Execute trades based on prioritization and allocation
+            logger.info("⚡ Phase 3: Executing prioritized trades...")
+            
+            executed_trades = 0
+            total_allocated = 0
+            
+            for opportunity in ranked_opportunities:
+                product_id = opportunity['product_id']
+                analysis_result = opportunity['analysis']
+                
+                try:
+                    # Check if this opportunity got capital allocation
+                    allocated_amount = capital_allocations.get(product_id, 0)
+                    
+                    if allocated_amount > 0:
+                        logger.info(f"💰 Executing {product_id} with allocated capital: €{allocated_amount:.2f}")
+                        
+                        # Execute trade with allocated capital
+                        trade_result = self._execute_prioritized_trade(
+                            product_id, analysis_result, allocated_amount
+                        )
+                        
+                        if trade_result.get('trade_executed'):
+                            executed_trades += 1
+                            total_allocated += allocated_amount
+                        
+                    else:
+                        logger.info(f"⏭️  Skipping {product_id} - no capital allocated")
+                        trade_result = {
+                            'execution_status': 'no_capital_allocated',
+                            'execution_message': 'No capital allocated by opportunity manager',
+                            'trade_executed': False,
+                            'crypto_amount': 0,
+                            'trade_amount_base': 0,
+                            'execution_price': 0
+                        }
+                    
+                    # Log trading decision
+                    self._log_trade_decision(product_id, analysis_result, trade_result)
+                    
+                    # Save results for dashboard
+                    self._save_result(product_id, {**analysis_result, **trade_result})
+                    
+                    # Add delay between trades
+                    if allocated_amount > 0:
+                        time.sleep(2)
+                    
+                except Exception as e:
+                    logger.error(f"Error executing trade for {product_id}: {e}")
                     continue
+            
+            # Log execution summary
+            logger.info(f"📈 Execution Summary: {executed_trades} trades executed, "
+                       f"€{total_allocated:.2f} capital deployed")
             
             # Update dashboard after all trades
             self.update_local_dashboard()
@@ -1294,7 +1719,7 @@ class TradingBot:
             # Update next decision time
             self.update_next_decision_time()
             
-            logger.info("✅ Trading cycle completed")
+            logger.info("✅ Opportunity-based trading cycle completed")
             
         except Exception as e:
             logger.error(f"Error in trading cycle: {e}")
@@ -1303,6 +1728,33 @@ class TradingBot:
                 self.update_local_dashboard()
             except Exception as dashboard_error:
                 logger.error(f"Failed to update dashboard after error: {dashboard_error}")
+    
+    def _run_legacy_trading_cycle(self):
+        """Fallback to original sequential trading cycle if opportunity manager fails"""
+        logger.warning("🔄 Falling back to legacy sequential trading cycle")
+        
+        for product_id in self.config.TRADING_PAIRS:
+            try:
+                logger.info(f"📊 Processing {product_id}")
+                
+                # Execute multi-strategy analysis
+                decision_result = self._execute_multi_strategy_analysis(product_id)
+                
+                # Execute trade based on decision
+                trade_result = self._execute_trade(product_id, decision_result)
+                
+                # Log the decision and trade result
+                self._log_trade_decision(product_id, decision_result, trade_result)
+                
+                # Save results for dashboard
+                self._save_result(product_id, {**decision_result, **trade_result})
+                
+                # Add delay between API calls to avoid rate limiting
+                time.sleep(2)
+                
+            except Exception as e:
+                logger.error(f"Error processing {product_id}: {e}")
+                continue
 
     def start_scheduled_trading(self):
         """Start scheduled trading at regular intervals"""

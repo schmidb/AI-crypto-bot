@@ -1,1 +1,1 @@
-# Trading and portfolio management utilities
+# Trading utilities package
