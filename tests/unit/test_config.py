@@ -22,7 +22,7 @@ class TestConfigInitialization:
             # Test default values
             assert config.BASE_CURRENCY == "USD"
             assert config.TRADING_PAIRS == ["BTC-USD", "ETH-USD"]
-            assert config.DECISION_INTERVAL_MINUTES == 60
+            assert config.DECISION_INTERVAL_MINUTES == 120
             assert config.RISK_LEVEL == "medium"
             assert config.SIMULATION_MODE is False
             assert config.LLM_PROVIDER == "google_ai"  # Default value from config.py
