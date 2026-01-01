@@ -72,13 +72,22 @@ GMAIL_APP_PASSWORD=your-app-password
 
 #### Recommended Instance Types
 
-| Use Case | Machine Type | vCPUs | Memory | Cost/Month* |
-|----------|--------------|-------|---------|-------------|
-| Development | e2-micro | 2 | 1 GB | ~$6 |
-| Production | e2-medium | 1 | 4 GB | ~$25 |
-| High Volume | e2-standard-2 | 2 | 8 GB | ~$50 |
+| Use Case | Machine Type | vCPUs | Memory | Cost/Month* | Status |
+|----------|--------------|-------|---------|-------------|---------|
+| Development | e2-micro | 2 shared | 1 GB | ~$6 | ❌ **NOT for production** |
+| **Current Production** | **e2-medium** | **1 dedicated** | **4 GB** | **~$25** | ✅ **Testing now** |
+| High Volume/Backtesting | e2-standard-2 | 2 dedicated | 8 GB | ~$50 | 🎯 **Future upgrade** |
 
 *Approximate costs for us-central1 region
+
+**⚠️ Important**: e2-micro experiences severe performance issues and network outages. Not suitable for production trading.
+
+**Current Status (Jan 1, 2026)**: Upgraded from e2-micro to e2-medium due to:
+- Super slow processing on e2-micro
+- Frequent network outages affecting trading
+- Insufficient memory (1GB) for market data processing
+
+See [Instance Sizing Guide](../INSTANCE_SIZING_GUIDE.md) for detailed analysis.
 
 #### Firewall Rules
 

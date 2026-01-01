@@ -92,12 +92,12 @@ class TestLLMAnalyzerInitialization:
         
         analyzer = LLMAnalyzer(
             provider="vertex_ai",
-            model="gemini-2.5-pro",
+            model="gemini-3-flash-preview",
             location="europe-west1"
         )
         
         assert analyzer.provider == "vertex_ai"
-        assert analyzer.model == "gemini-2.5-pro"
+        assert analyzer.model == "gemini-3-flash-preview"
         assert analyzer.location == "europe-west1"
 
 
@@ -675,10 +675,10 @@ class TestConfigurationValidation:
         mock_client_instance = MagicMock()
         mock_genai_client.return_value = mock_client_instance
         
-        analyzer = LLMAnalyzer(model="gemini-1.5-pro")
+        analyzer = LLMAnalyzer(model="gemini-3-flash-preview")
         
         # Should handle model configuration
-        assert analyzer.model == "gemini-1.5-pro"
+        assert analyzer.model == "gemini-3-flash-preview"
         mock_genai_client.assert_called_once_with(
             vertexai=True,
             project='test-project',

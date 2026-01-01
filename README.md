@@ -30,25 +30,58 @@ An intelligent cryptocurrency trading bot that combines technical analysis with 
    # Edit .env with your API keys and preferences
    ```
 
-4. **Run in simulation mode**
+4. **Test the new Phase 1 features**
+   ```bash
+   # Test the opportunity manager
+   python test_opportunity_manager.py
+   
+   # Run the bot (automatically uses new prioritization)
+   python main.py
+   ```
+
+5. **Run in simulation mode**
    ```bash
    python main.py
    ```
 
 ## 🎯 Key Features
 
+### 🚀 **NEW: Phase 1 - Intelligent Multi-Coin Prioritization**
+- **Opportunity Scoring**: Analyzes all coins and ranks by trading opportunity strength
+- **Dynamic Capital Allocation**: Allocates more capital to stronger signals (up to 60% max)
+- **Three-Phase Trading Cycle**: Analyze → Rank → Execute for maximum efficiency
+- **Scalable Architecture**: Automatically handles any number of trading pairs
+
+### 🧠 **Core Trading Intelligence**
 - **Multi-Strategy Trading**: Combines trend following, mean reversion, and momentum strategies
 - **AI-Powered Analysis**: Uses Google Gemini for market analysis and decision making
+- **Adaptive Strategy Manager**: Adjusts strategy weights based on market conditions
 - **Risk Management**: Comprehensive position sizing and safety mechanisms
+
+### 📊 **Monitoring & Analytics**
 - **Real-time Dashboard**: Web-based monitoring and performance tracking
+- **Enhanced Logging**: Detailed opportunity scoring and allocation insights
 - **Automated Reports**: Daily email summaries with AI-generated insights
+- **Performance Tracking**: Historical analysis and strategy optimization
+
+### ☁️ **Deployment Ready**
 - **Cloud Deployment**: Ready-to-deploy on Google Cloud Platform and AWS
+- **Windows Compatible**: Cross-platform file locking and process management
 
 ## 📊 Supported Assets
+
+The bot now intelligently prioritizes trading opportunities across multiple assets:
 
 - **BTC-EUR**: Bitcoin to Euro
 - **ETH-EUR**: Ethereum to Euro  
 - **SOL-EUR**: Solana to Euro
+- **Easily Expandable**: Add more pairs in configuration - the system automatically handles prioritization
+
+### 🎯 **How Multi-Coin Prioritization Works**
+1. **Analyze All Pairs**: Simultaneously analyzes all configured trading pairs
+2. **Opportunity Scoring**: Ranks opportunities using confidence, momentum, consensus, and market regime
+3. **Smart Capital Allocation**: Distributes capital based on signal strength (stronger signals get more)
+4. **Priority Execution**: Executes best opportunities first, ensuring optimal capital utilization
 
 ## 🛡️ Safety First
 
@@ -61,6 +94,11 @@ An intelligent cryptocurrency trading bot that combines technical analysis with 
 
 For detailed information, see the [Developer Documentation](docs/):
 
+### 🆕 **Phase 1 Documentation**
+- **[Phase 1 Implementation](docs/PHASE_1_OPPORTUNITY_PRIORITIZATION.md)** - Complete Phase 1 technical details
+- **[Opportunity Manager](utils/trading/opportunity_manager.py)** - Core prioritization logic
+
+### 📖 **Core Documentation**
 - **[Trading Strategies](docs/TRADING_STRATEGIES.md)** - How the bot makes decisions
 - **[Configuration Guide](docs/CONFIGURATION.md)** - Complete setup instructions
 - **[Backtesting Strategy](docs/COMPREHENSIVE_BACKTESTING_STRATEGY.md)** - Systematic backtesting approach

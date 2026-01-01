@@ -40,7 +40,7 @@ class TestConfigInitialization:
             'COINBASE_API_KEY': 'test-api-key',
             'COINBASE_API_SECRET': 'test-api-secret',
             'GOOGLE_CLOUD_PROJECT': 'test-project',
-            'LLM_MODEL': 'gemini-2.5-pro'
+            'LLM_MODEL': 'gemini-3-flash-preview'
         }
         
         with patch.dict(os.environ, test_env, clear=True):
@@ -55,7 +55,7 @@ class TestConfigInitialization:
             assert config.COINBASE_API_KEY == "test-api-key"
             assert config.COINBASE_API_SECRET == "test-api-secret"
             assert config.GOOGLE_CLOUD_PROJECT == "test-project"
-            assert config.LLM_MODEL == "gemini-2.5-pro"
+            assert config.LLM_MODEL == "gemini-3-flash-preview"
     
     def test_config_boolean_parsing(self):
         """Test proper parsing of boolean environment variables."""
@@ -552,7 +552,7 @@ class TestConfigIntegration:
             
             # LLM Settings
             'LLM_PROVIDER': 'vertex',
-            'LLM_MODEL': 'gemini-2.5-pro',
+            'LLM_MODEL': 'gemini-3-flash-preview',
             'LLM_LOCATION': 'global',
             
             # Trading Settings
