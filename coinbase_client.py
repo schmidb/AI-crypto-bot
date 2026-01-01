@@ -398,7 +398,7 @@ class CoinbaseClient:
                 # This is a fallback calculation
                 estimated_fee_rate = 0.006  # 0.6%
                 total_fees = total_value * estimated_fee_rate
-                logger.warning(f"No fee information in API response, using estimated fee: €{total_fees:.4f} ({estimated_fee_rate*100:.1f}%)")
+                logger.info(f"No fee information in API response, using estimated fee: €{total_fees:.4f} ({estimated_fee_rate*100:.1f}%)")
                 
                 # Adjust actual amounts based on estimated fees
                 if side.upper() == "BUY":

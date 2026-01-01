@@ -97,6 +97,137 @@ class DailyReportGenerator:
             logger.error(f"Error reading portfolio: {e}")
             return {'error': str(e)}
     
+    def get_server_ip(self) -> str:
+        """Get the current server's public IP address"""
+        try:
+            import subprocess
+            result = subprocess.run(['curl', '-s', 'ifconfig.me'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception as e:
+            logger.warning(f"Could not get public IP: {e}")
+        
+        # Fallback to hardcoded IP
+        return "34.29.9.115"
+    
+    def calculate_value_changes(self, portfolio: Dict) -> Dict[str, Any]:
+        """Calculate portfolio value changes and performance metrics"""
+        try:
+            current_value = portfolio.get('portfolio_value_eur', {}).get('amount', 0)
+            initial_value = portfolio.get('initial_value_eur', {}).get('amount', 0)
+            trades_executed = portfolio.get('trades_executed', 0)
+            
+            # Calculate trading performance vs buy-and-hold
+            trading_performance = self.calculate_trading_vs_holding(portfolio)
+            
+            if initial_value > 0:
+                total_change = current_value - initial_value
+                total_change_pct = (total_change / initial_value) * 100
+                
+                # Determine change type
+                if total_change > 0:
+                    change_emoji = "📈"
+                    change_status = "GAIN"
+                elif total_change < 0:
+                    change_emoji = "📉"
+                    change_status = "LOSS"
+                else:
+                    change_emoji = "➡️"
+                    change_status = "NEUTRAL"
+                
+                return {
+                    'current_value': current_value,
+                    'initial_value': initial_value,
+                    'total_change': total_change,
+                    'total_change_pct': total_change_pct,
+                    'change_emoji': change_emoji,
+                    'change_status': change_status,
+                    'trades_executed': trades_executed,
+                    'trading_performance': trading_performance
+                }
+            else:
+                return {
+                    'current_value': current_value,
+                    'initial_value': 0,
+                    'total_change': 0,
+                    'total_change_pct': 0,
+                    'change_emoji': "➡️",
+                    'change_status': "NEUTRAL",
+                    'trades_executed': trades_executed,
+                    'trading_performance': trading_performance
+                }
+        except Exception as e:
+            logger.error(f"Error calculating value changes: {e}")
+            return {
+                'current_value': 0,
+                'initial_value': 0,
+                'total_change': 0,
+                'total_change_pct': 0,
+                'change_emoji': "❓",
+                'change_status': "UNKNOWN",
+                'trades_executed': 0,
+                'trading_performance': {'status': 'error'}
+            }
+    
+    def calculate_trading_vs_holding(self, portfolio: Dict) -> Dict[str, Any]:
+        """Calculate if trading outperformed buy-and-hold strategy"""
+        try:
+            from coinbase_client import CoinbaseClient
+            coinbase_client = CoinbaseClient()
+            
+            # Get current prices
+            btc_price = float(coinbase_client.get_product_ticker('BTC-EUR').get('price', 0))
+            eth_price = float(coinbase_client.get_product_ticker('ETH-EUR').get('price', 0))
+            sol_price = float(coinbase_client.get_product_ticker('SOL-EUR').get('price', 0))
+            
+            # Get initial holdings
+            initial_btc = portfolio.get('BTC', {}).get('initial_amount', 0)
+            initial_eth = portfolio.get('ETH', {}).get('initial_amount', 0)
+            initial_sol = portfolio.get('SOL', {}).get('initial_amount', 0)
+            initial_eur = portfolio.get('EUR', {}).get('initial_amount', 0)
+            
+            # Calculate what the portfolio would be worth if we just held (no trading)
+            hold_value = (initial_btc * btc_price + 
+                         initial_eth * eth_price + 
+                         initial_sol * sol_price + 
+                         initial_eur)
+            
+            # Current actual value
+            current_value = portfolio.get('portfolio_value_eur', {}).get('amount', 0)
+            
+            # Trading performance vs holding
+            trading_alpha = current_value - hold_value
+            trading_alpha_pct = (trading_alpha / hold_value * 100) if hold_value > 0 else 0
+            
+            # Determine performance
+            if trading_alpha > 0:
+                performance_emoji = "🎯"
+                performance_status = "OUTPERFORMING"
+            elif trading_alpha < 0:
+                performance_emoji = "📉"
+                performance_status = "UNDERPERFORMING"
+            else:
+                performance_emoji = "➡️"
+                performance_status = "NEUTRAL"
+            
+            return {
+                'hold_value': hold_value,
+                'current_value': current_value,
+                'trading_alpha': trading_alpha,
+                'trading_alpha_pct': trading_alpha_pct,
+                'performance_emoji': performance_emoji,
+                'performance_status': performance_status,
+                'status': 'success'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error calculating trading performance: {e}")
+            return {
+                'status': 'error',
+                'error': str(e)
+            }
+    
     def generate_ai_analysis(self, log_data: Dict, portfolio: Dict) -> str:
         """Generate AI analysis using existing Vertex AI setup"""
         try:
@@ -208,7 +339,14 @@ Format with clear sections and emojis. Be concise and actionable.
                 logger.error(f"Direct LLM call failed: {e}")
                 analysis = f"AI analysis failed: {str(e)}"
             
-            return f"=== AI MARKET ANALYSIS ===\n\n{analysis}"
+            # Format the AI analysis to match the clean email style
+            formatted_analysis = f"""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🤖 AI MARKET ANALYSIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{analysis}"""
+            return formatted_analysis
             
         except Exception as e:
             logger.error(f"Error generating AI analysis: {e}")
@@ -258,6 +396,8 @@ Format with clear sections and emojis. Be concise and actionable.
             # Collect data
             log_data = self.analyze_logs_last_24h()
             portfolio = self.get_portfolio_status()
+            value_changes = self.calculate_value_changes(portfolio)
+            server_ip = self.get_server_ip()
             
             # Generate AI analysis using existing Vertex AI
             ai_analysis = self.generate_ai_analysis(log_data, portfolio)
@@ -266,23 +406,52 @@ Format with clear sections and emojis. Be concise and actionable.
             subject = f"🤖 Crypto Bot Daily Report - {datetime.now().strftime('%Y-%m-%d')}"
             
             # Extract key metrics for header
-            total_value = portfolio.get('portfolio_value_eur', {}).get('amount', 0)
+            total_value = value_changes['current_value']
             trades_count = len(log_data.get('trades_executed', []))
             errors_count = len(log_data.get('errors', []))
             
+            # Create improved HTML-like formatted email
             body = f"""🤖 AI Crypto Trading Bot - Daily Report
 📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-💰 Portfolio: €{total_value:.2f} | 📊 Trades: {trades_count} | ⚠️ Errors: {errors_count}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💰 PORTFOLIO OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Current Value: €{total_value:.2f}
+Initial Value: €{value_changes['initial_value']:.2f}
+{value_changes['change_emoji']} Total Change: €{value_changes['total_change']:+.2f} ({value_changes['total_change_pct']:+.1f}%)
+Status: {value_changes['change_status']}
+
+📊 Activity: {trades_count} trades executed | ⚠️ {errors_count} errors detected
+
+{self._format_trading_performance(value_changes['trading_performance'])}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💎 ASSET BREAKDOWN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💶 EUR Cash: €{portfolio.get('EUR', {}).get('amount', 0):.2f}
+🔶 BTC: {portfolio.get('BTC', {}).get('amount', 0):.8f} (~€{portfolio.get('BTC', {}).get('amount', 0) * portfolio.get('BTC', {}).get('last_price_eur', 0):.2f})
+💎 ETH: {portfolio.get('ETH', {}).get('amount', 0):.6f} (~€{portfolio.get('ETH', {}).get('amount', 0) * portfolio.get('ETH', {}).get('last_price_eur', 0):.2f})
+🟣 SOL: {portfolio.get('SOL', {}).get('amount', 0):.6f} (~€{portfolio.get('SOL', {}).get('amount', 0) * portfolio.get('SOL', {}).get('last_price_eur', 0):.2f})
 
 {ai_analysis}
 
-📋 Quick Stats:
-• BTC: {portfolio.get('BTC', {}).get('amount', 0):.8f}
-• ETH: {portfolio.get('ETH', {}).get('amount', 0):.6f} 
-• EUR: €{portfolio.get('EUR', {}).get('amount', 0):.2f}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🔗 Dashboard: http://34.29.9.115/crypto-bot/
+🔗 QUICK ACCESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 Dashboard: http://{server_ip}/crypto-bot/
+📈 Performance: http://{server_ip}/crypto-bot/performance.html
+📋 Logs: http://{server_ip}/crypto-bot/logs.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Generated at {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}
             """
             
             if test_mode:
@@ -307,6 +476,17 @@ Format with clear sections and emojis. Be concise and actionable.
                 
         except Exception as e:
             logger.error(f"Error generating daily report: {e}")
+    
+    def _format_trading_performance(self, trading_perf: Dict) -> str:
+        """Format trading performance vs buy-and-hold comparison"""
+        if trading_perf.get('status') != 'success':
+            return ""
+        
+        return f"""
+🎯 Trading Performance vs Buy & Hold:
+Hold Value: €{trading_perf['hold_value']:.2f} | Active Value: €{trading_perf['current_value']:.2f}
+{trading_perf['performance_emoji']} Trading Alpha: €{trading_perf['trading_alpha']:+.2f} ({trading_perf['trading_alpha_pct']:+.1f}%)
+Strategy: {trading_perf['performance_status']}"""
 
 def main():
     """Main entry point"""
