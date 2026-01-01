@@ -1777,11 +1777,11 @@ class TradingBot:
         # schedule.every(180).minutes.do(self.portfolio.check_and_rebalance)
         logger.info("Portfolio rebalancing scheduled (currently disabled)")
         
-        # Schedule web server sync every 30 minutes (only sync point)
-        schedule.every(30).minutes.do(self.sync_to_webserver)
+        # Schedule web server sync every 5 minutes (consolidates dashboard updates)
+        schedule.every(5).minutes.do(self.sync_to_webserver)
         
-        # Schedule daily cleanup at 2 AM
-        schedule.every().day.at("02:00").do(self.run_daily_cleanup)
+        # Schedule weekly cleanup on Sunday at 2 AM (consolidates daily/weekly cleanup)
+        schedule.every().sunday.at("02:00").do(self.run_daily_cleanup)
         
         # Schedule integrated analysis tasks
         schedule.every().day.at("06:00").do(self.run_daily_health_check_task)
@@ -1796,6 +1796,9 @@ class TradingBot:
         schedule.every(4).hours.do(self.run_parameter_monitoring_task)
         
         logger.info("📅 Scheduled tasks configured:")
+        logger.info("  - Trading cycle: Every 60 minutes")
+        logger.info("  - Web server sync: Every 5 minutes")
+        logger.info("  - Weekly cleanup: Sunday 2:00 AM")
         logger.info("  - Daily health check: 6:00 AM daily")
         logger.info("  - Weekly validation: 7:00 AM Mondays")
         logger.info("  - Daily email report: 8:00 AM daily")
