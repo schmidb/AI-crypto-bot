@@ -242,19 +242,20 @@ class OpportunityManager:
             return 0
     
     def allocate_trading_capital(self, ranked_opportunities: List[Dict], 
-                               available_eur: float) -> Dict[str, float]:
+                               available_eur: float, portfolio: Dict = None) -> Dict[str, float]:
         """
         Dynamically allocate capital based on opportunity strength
         
         Args:
             ranked_opportunities: List of opportunities ranked by strength
             available_eur: Total EUR available for trading
+            portfolio: Current portfolio holdings (needed for SELL allocations)
             
         Returns:
             Dict of {product_id: allocated_amount}
         """
-        if available_eur <= 0:
-            self.logger.warning("No EUR available for trading")
+        if available_eur <= 0 and not portfolio:
+            self.logger.warning("No EUR available and no portfolio provided for trading")
             return {}
         
         # Filter for actionable opportunities
@@ -267,27 +268,96 @@ class OpportunityManager:
             self.logger.info("🎯 No actionable opportunities found")
             return {}
         
+        # Separate BUY and SELL opportunities
+        buy_opportunities = [opp for opp in actionable if opp['action'] == 'BUY']
+        sell_opportunities = [opp for opp in actionable if opp['action'] == 'SELL']
+        
+        allocations = {}
+        
+        # Handle BUY allocations (need EUR capital)
+        if buy_opportunities and available_eur > 0:
+            buy_allocations = self._allocate_buy_capital(buy_opportunities, available_eur)
+            allocations.update(buy_allocations)
+        
+        # Handle SELL allocations (based on crypto holdings)
+        if sell_opportunities and portfolio:
+            sell_allocations = self._allocate_sell_capital(sell_opportunities, portfolio)
+            allocations.update(sell_allocations)
+        
+        # Log allocation results
+        total_eur_allocated = sum(amount for product_id, amount in allocations.items() 
+                                 if any(opp['product_id'] == product_id and opp['action'] == 'BUY' 
+                                       for opp in actionable))
+        
+        self.logger.info(f"💰 Capital Allocation Results:")
+        for product_id, amount in allocations.items():
+            opp = next((o for o in actionable if o['product_id'] == product_id), None)
+            action = opp['action'] if opp else 'UNKNOWN'
+            if action == 'BUY':
+                percentage = (amount / available_eur) * 100 if available_eur > 0 else 0
+                self.logger.info(f"  {product_id}: €{amount:.2f} ({percentage:.1f}% of EUR) - {action}")
+            else:
+                self.logger.info(f"  {product_id}: €{amount:.2f} (crypto value) - {action}")
+        
+        if total_eur_allocated > 0:
+            self.logger.info(f"  Total EUR allocated: €{total_eur_allocated:.2f} "
+                            f"({(total_eur_allocated/available_eur)*100:.1f}% of available)")
+        
+        return allocations
+    
+    def _allocate_buy_capital(self, buy_opportunities: List[Dict], available_eur: float) -> Dict[str, float]:
+        """Allocate EUR capital for BUY opportunities"""
         # Calculate available capital (keeping reserve)
         trading_capital = available_eur * (1 - self.capital_reserve_ratio)
         
-        self.logger.info(f"💰 Capital Allocation:")
+        self.logger.info(f"💰 BUY Capital Allocation:")
         self.logger.info(f"  Available EUR: €{available_eur:.2f}")
         self.logger.info(f"  Trading capital: €{trading_capital:.2f} "
                         f"(reserve: €{available_eur * self.capital_reserve_ratio:.2f})")
-        self.logger.info(f"  Actionable opportunities: {len(actionable)}")
+        self.logger.info(f"  BUY opportunities: {len(buy_opportunities)}")
         
         # Calculate allocation weights based on opportunity scores
-        allocations = self._calculate_weighted_allocations(actionable, trading_capital)
+        return self._calculate_weighted_allocations(buy_opportunities, trading_capital)
+    
+    def _allocate_sell_capital(self, sell_opportunities: List[Dict], portfolio: Dict) -> Dict[str, float]:
+        """Allocate crypto holdings for SELL opportunities"""
+        self.logger.info(f"💰 SELL Capital Allocation:")
+        self.logger.info(f"  SELL opportunities: {len(sell_opportunities)}")
         
-        # Log allocation results
-        total_allocated = sum(allocations.values())
-        self.logger.info(f"💰 Capital Allocation Results:")
-        for product_id, amount in allocations.items():
-            percentage = (amount / available_eur) * 100
-            self.logger.info(f"  {product_id}: €{amount:.2f} ({percentage:.1f}% of total)")
+        allocations = {}
         
-        self.logger.info(f"  Total allocated: €{total_allocated:.2f} "
-                        f"({(total_allocated/available_eur)*100:.1f}% of available)")
+        for opp in sell_opportunities:
+            product_id = opp['product_id']
+            
+            # Extract asset from product_id (e.g., BTC-EUR -> BTC)
+            asset = product_id.split('-')[0]
+            
+            # Get current holdings and price
+            asset_data = portfolio.get(asset, {})
+            crypto_amount = asset_data.get('amount', 0)
+            current_price = opp['analysis'].get('market_data', {}).get('current_price', 0)
+            
+            if crypto_amount > 0 and current_price > 0:
+                # Calculate EUR value of holdings
+                total_value = crypto_amount * current_price
+                
+                # Use a percentage based on opportunity score (higher score = more to sell)
+                # Scale opportunity score to 20-80% range for selling
+                sell_percentage = 0.2 + (opp['opportunity_score'] / 100) * 0.6
+                sell_percentage = min(0.8, max(0.2, sell_percentage))  # Clamp to 20-80%
+                
+                allocated_value = total_value * sell_percentage
+                
+                # Ensure minimum trade amount
+                if allocated_value >= self.min_trade_allocation:
+                    allocations[product_id] = allocated_value
+                    self.logger.info(f"  {product_id}: €{allocated_value:.2f} "
+                                   f"({sell_percentage*100:.1f}% of {crypto_amount:.6f} {asset})")
+                else:
+                    self.logger.info(f"  {product_id}: Skipped - value too small "
+                                   f"(€{allocated_value:.2f} < €{self.min_trade_allocation})")
+            else:
+                self.logger.info(f"  {product_id}: Skipped - no {asset} holdings or price")
         
         return allocations
     

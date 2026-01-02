@@ -488,6 +488,35 @@ class MonthlyStabilityAnalyzer:
             logger.error(f"Failed to save results: {e}")
             return ""
 
+def run_monthly_stability(sync_gcs: bool = False) -> bool:
+    """Run monthly stability analysis (called from main.py scheduler)"""
+    try:
+        # Initialize analyzer
+        analyzer = MonthlyStabilityAnalyzer(sync_to_gcs=sync_gcs)
+        
+        # Run stability analysis
+        logger.info("🚀 Starting monthly stability analysis...")
+        results = analyzer.run_comprehensive_stability_analysis()
+        
+        if 'error' in results:
+            logger.error(f"Stability analysis failed: {results['error']}")
+            return False
+        
+        # Save results
+        filepath = analyzer.save_results(results)
+        
+        # Log summary
+        summary = results.get('summary', {})
+        logger.info(f"Monthly stability analysis complete: {summary.get('overall_stability_grade', 'UNKNOWN')}")
+        logger.info(f"Average stability score: {summary.get('average_stability_score', 0):.1f}/100")
+        logger.info(f"Results saved to: {filepath}")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Monthly stability analysis failed: {e}")
+        return False
+
 def main():
     """Main function with command-line interface"""
     parser = argparse.ArgumentParser(description='Monthly Parameter Stability Analysis')

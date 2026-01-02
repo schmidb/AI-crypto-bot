@@ -1645,7 +1645,7 @@ class TradingBot:
                 
                 # Allocate capital based on opportunity strength
                 capital_allocations = self.opportunity_manager.allocate_trading_capital(
-                    ranked_opportunities, available_eur
+                    ranked_opportunities, available_eur, portfolio
                 )
                 
                 # Get opportunity summary for logging
