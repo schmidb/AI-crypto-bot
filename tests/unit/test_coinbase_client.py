@@ -329,71 +329,90 @@ class TestMarketDataOperations:
 class TestOrderOperations:
     """Test order creation and execution"""
     
-    def test_create_market_order_simulation_mode(self, test_env_vars, mock_rest_client):
-        """Test market order creation in simulation mode"""
-        client = CoinbaseClient()
-        
-        # Mock simulation mode
-        with patch('coinbase_client.SIMULATION_MODE', True):
-            result = client.create_market_order('BTC-EUR', 'BUY', 100.0)
-            
-            # Should return simulated result
-            assert result['status'] == 'SIMULATED'
-            assert result['side'] == 'BUY'
-            assert result['product_id'] == 'BTC-EUR'
-            assert 'simulated_order_id' in result
-    
-    def test_create_market_order_live_mode_success(self, test_env_vars, mock_rest_client):
-        """Test successful market order creation in live mode"""
+    def test_place_market_order_basic_functionality(self, test_env_vars, mock_rest_client):
+        """Test basic market order creation functionality"""
+        # Mock successful order response - use a dict instead of Mock for better attribute access
         mock_order_response = {
-            'order_id': 'test-order-id',
+            'order_id': 'test-order-123',
+            'client_order_id': 'bot-order-123',
             'product_id': 'BTC-EUR',
             'side': 'BUY',
-            'status': 'FILLED',
+            'order_configuration': {},
             'filled_size': '0.002',
-            'filled_value': '90.00'
+            'average_filled_price': '45000',
+            'total_fees': '1.0',
+            'total_value_after_fees': '99.0'
         }
-        mock_rest_client.create_order.return_value = mock_order_response
+        
+        mock_rest_client.market_order_buy.return_value = mock_order_response
+        
+        client = CoinbaseClient()
+        
+        # Mock the notification service to avoid import issues
+        with patch('utils.notification_service.NotificationService'):
+            result = client.place_market_order('BTC-EUR', 'BUY', 100.0)
+        
+        # Should return successful result
+        assert result is not None
+        assert isinstance(result, dict)
+        assert result.get('success') is True
+        assert result.get('product_id') == 'BTC-EUR'
+        assert result.get('side') == 'BUY'
+    
+    def test_place_market_order_live_mode_success(self, test_env_vars, mock_rest_client):
+        """Test successful market order creation in live mode"""
+        mock_order_response = Mock()
+        mock_order_response.order_id = 'test-order-id'
+        mock_order_response.product_id = 'BTC-EUR'
+        mock_order_response.side = 'BUY'
+        mock_order_response.filled_size = '0.002'
+        mock_order_response.average_filled_price = '45000'
+        mock_order_response.total_fees = '1.0'
+        mock_order_response.total_value_after_fees = '99.0'
+        
+        mock_rest_client.market_order_buy.return_value = mock_order_response
         
         client = CoinbaseClient()
         
         # Mock live mode
-        with patch('coinbase_client.SIMULATION_MODE', False):
-            result = client.create_market_order('BTC-EUR', 'BUY', 100.0)
+        with patch('config.SIMULATION_MODE', False):
+            result = client.place_market_order('BTC-EUR', 'BUY', 100.0)
             
             # Verify order was created
+            assert result['success'] is True
             assert result['order_id'] == 'test-order-id'
-            assert result['status'] == 'FILLED'
             assert result['side'] == 'BUY'
             
             # Verify REST client was called
-            mock_rest_client.create_order.assert_called_once()
+            mock_rest_client.market_order_buy.assert_called_once()
     
-    def test_create_market_order_live_mode_failure(self, test_env_vars, mock_rest_client):
+    def test_place_market_order_live_mode_failure(self, test_env_vars, mock_rest_client):
         """Test market order creation failure in live mode"""
-        mock_rest_client.create_order.side_effect = Exception("Order failed")
+        mock_rest_client.market_order_buy.side_effect = Exception("Order failed")
         
         client = CoinbaseClient()
         
         # Mock live mode
-        with patch('coinbase_client.SIMULATION_MODE', False):
-            result = client.create_market_order('BTC-EUR', 'BUY', 100.0)
+        with patch('config.SIMULATION_MODE', False):
+            result = client.place_market_order('BTC-EUR', 'BUY', 100.0)
             
             # Should return error result
-            assert result['status'] == 'ERROR'
+            assert result['success'] is False
             assert 'error' in result
     
-    def test_create_market_order_insufficient_funds(self, test_env_vars, mock_rest_client):
+    def test_place_market_order_insufficient_funds(self, test_env_vars, mock_rest_client):
         """Test market order creation with insufficient funds"""
-        mock_rest_client.create_order.side_effect = Exception("Insufficient funds")
+        mock_rest_client.market_order_buy.side_effect = Exception("Insufficient funds")
         
         client = CoinbaseClient()
         
         # Mock live mode
-        with patch('coinbase_client.SIMULATION_MODE', False):
-            result = client.create_market_order('BTC-EUR', 'BUY', 10000.0)  # Large amount
+        with patch('config.SIMULATION_MODE', False):
+            result = client.place_market_order('BTC-EUR', 'BUY', 10000.0)  # Large amount
             
             # Should handle insufficient funds error
+            assert result['success'] is False
+            assert 'insufficient funds' in result['error'].lower()
             assert result['status'] == 'ERROR'
             assert 'insufficient' in result['error'].lower() or 'funds' in result['error'].lower()
     
@@ -402,17 +421,17 @@ class TestOrderOperations:
         client = CoinbaseClient()
         
         # Test invalid side
-        result = client.create_market_order('BTC-EUR', 'INVALID', 100.0)
+        result = client.place_market_order('BTC-EUR', 'INVALID', 100.0)
         assert result['status'] == 'ERROR'
         assert 'invalid side' in result['error'].lower()
         
         # Test invalid amount
-        result = client.create_market_order('BTC-EUR', 'BUY', -100.0)
+        result = client.place_market_order('BTC-EUR', 'BUY', -100.0)
         assert result['status'] == 'ERROR'
         assert 'invalid amount' in result['error'].lower()
         
         # Test zero amount
-        result = client.create_market_order('BTC-EUR', 'BUY', 0.0)
+        result = client.place_market_order('BTC-EUR', 'BUY', 0.0)
         assert result['status'] == 'ERROR'
         assert 'invalid amount' in result['error'].lower()
 
@@ -630,8 +649,8 @@ class TestIntegrationScenarios:
         assert 'price' in price_data
         
         # 3. Create order (simulation)
-        with patch('coinbase_client.SIMULATION_MODE', True):
-            order_result = client.create_market_order('BTC-EUR', 'BUY', 100.0)
+        with patch('config.SIMULATION_MODE', True):
+            order_result = client.place_market_order('BTC-EUR', 'BUY', 100.0)
             assert order_result['status'] == 'SIMULATED'
     
     def test_error_recovery_workflow(self, test_env_vars, mock_rest_client):
