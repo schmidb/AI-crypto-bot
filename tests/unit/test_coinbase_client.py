@@ -23,6 +23,14 @@ from datetime import datetime, timedelta
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
+# Mock the coinbase.rest module before any imports
+sys.modules['coinbase'] = Mock()
+sys.modules['coinbase.rest'] = Mock()
+
+# Create a mock RESTClient class
+mock_rest_client_class = Mock()
+sys.modules['coinbase.rest'].RESTClient = mock_rest_client_class
+
 # Try to import CoinbaseClient, skip tests if not available
 try:
     from coinbase_client import CoinbaseClient
@@ -44,91 +52,94 @@ def mock_coinbase_imports():
         'TRADING_PAIRS': 'BTC-EUR,ETH-EUR'
     }
     
-    with patch.dict(os.environ, test_env_vars), \
-         patch('coinbase_client.RESTClient') as mock_rest_client_class, \
-         patch('utils.notification_service.NotificationService') as mock_notification, \
-         patch('config.SIMULATION_MODE', True), \
-         patch('config.Config') as mock_config_class:
-        
-        # Setup mock config
-        mock_config = Mock()
-        mock_config.BASE_CURRENCY = 'EUR'
-        mock_config.get_trading_pairs.return_value = ['BTC-EUR', 'ETH-EUR']
-        mock_config_class.return_value = mock_config
-        
-        # Setup mock REST client
-        mock_client = Mock()
-        mock_rest_client_class.return_value = mock_client
-        
-        # Mock successful responses with proper object structure
-        mock_accounts_response = Mock()
-        mock_accounts_response.accounts = [
-            Mock(
-                uuid='eur-account-id',
-                name='EUR Wallet',
-                currency='EUR',
-                available_balance=Mock(value='1000.00', currency='EUR'),
-                default=False,
-                active=True,
-                type='wallet',
-                ready=True
-            ),
-            Mock(
-                uuid='btc-account-id',
-                name='BTC Wallet',
-                currency='BTC',
-                available_balance=Mock(value='0.01', currency='BTC'),
-                default=False,
-                active=True,
-                type='wallet',
-                ready=True
-            )
-        ]
-        mock_client.get_accounts.return_value = mock_accounts_response
-        
-        # Mock product price response
-        mock_product_response = Mock()
-        mock_product_response.price = '45000.00'
-        mock_product_response.product_id = 'BTC-EUR'
-        mock_product_response.price_percentage_change_24h = '2.5'
-        mock_client.get_product.return_value = mock_product_response
-        
-        # Mock market order responses
-        mock_buy_order = Mock()
-        mock_buy_order.order_id = 'test-order-123'
-        mock_buy_order.client_order_id = 'bot-order-123'
-        mock_buy_order.product_id = 'BTC-EUR'
-        mock_buy_order.side = 'BUY'
-        mock_buy_order.filled_size = '0.002'
-        mock_buy_order.average_filled_price = '45000'
-        mock_buy_order.total_fees = '1.0'
-        mock_buy_order.total_value_after_fees = '99.0'
-        mock_client.market_order_buy.return_value = mock_buy_order
-        
-        mock_sell_order = Mock()
-        mock_sell_order.order_id = 'test-sell-order-123'
-        mock_sell_order.client_order_id = 'bot-sell-order-123'
-        mock_sell_order.product_id = 'BTC-EUR'
-        mock_sell_order.side = 'SELL'
-        mock_sell_order.filled_size = '0.002'
-        mock_sell_order.average_filled_price = '45000'
-        mock_sell_order.total_fees = '1.0'
-        mock_sell_order.total_value_after_fees = '89.0'
-        mock_client.market_order_sell.return_value = mock_sell_order
-        
-        # Mock candles response
-        mock_candles_response = Mock()
-        mock_candles_response.candles = [
-            Mock(start=1640995200, low=44000, high=46000, open=45000, close=45800, volume=1000),
-            Mock(start=1641081600, low=45800, high=47000, open=45800, close=46500, volume=1200)
-        ]
-        mock_client.get_candles.return_value = mock_candles_response
-        
-        yield {
-            'rest_client': mock_client,
-            'notification_service': mock_notification,
-            'config': mock_config
-        }
+    with patch.dict(os.environ, test_env_vars):
+        # Only apply additional mocking if CoinbaseClient is available
+        if COINBASE_CLIENT_AVAILABLE:
+            with patch('utils.notification_service.NotificationService') as mock_notification, \
+                 patch('config.SIMULATION_MODE', True), \
+                 patch('config.Config') as mock_config_class:
+                
+                # Setup mock config
+                mock_config = Mock()
+                mock_config.BASE_CURRENCY = 'EUR'
+                mock_config.get_trading_pairs.return_value = ['BTC-EUR', 'ETH-EUR']
+                mock_config_class.return_value = mock_config
+                
+                # Setup mock REST client responses
+                mock_client = Mock()
+                mock_rest_client_class.return_value = mock_client
+                
+                # Mock successful responses with proper object structure
+                mock_accounts_response = Mock()
+                mock_accounts_response.accounts = [
+                    Mock(
+                        uuid='eur-account-id',
+                        name='EUR Wallet',
+                        currency='EUR',
+                        available_balance=Mock(value='1000.00', currency='EUR'),
+                        default=False,
+                        active=True,
+                        type='wallet',
+                        ready=True
+                    ),
+                    Mock(
+                        uuid='btc-account-id',
+                        name='BTC Wallet',
+                        currency='BTC',
+                        available_balance=Mock(value='0.01', currency='BTC'),
+                        default=False,
+                        active=True,
+                        type='wallet',
+                        ready=True
+                    )
+                ]
+                mock_client.get_accounts.return_value = mock_accounts_response
+                
+                # Mock product price response
+                mock_product_response = Mock()
+                mock_product_response.price = '45000.00'
+                mock_product_response.product_id = 'BTC-EUR'
+                mock_product_response.price_percentage_change_24h = '2.5'
+                mock_client.get_product.return_value = mock_product_response
+                
+                # Mock market order responses
+                mock_buy_order = Mock()
+                mock_buy_order.order_id = 'test-order-123'
+                mock_buy_order.client_order_id = 'bot-order-123'
+                mock_buy_order.product_id = 'BTC-EUR'
+                mock_buy_order.side = 'BUY'
+                mock_buy_order.filled_size = '0.002'
+                mock_buy_order.average_filled_price = '45000'
+                mock_buy_order.total_fees = '1.0'
+                mock_buy_order.total_value_after_fees = '99.0'
+                mock_client.market_order_buy.return_value = mock_buy_order
+                
+                mock_sell_order = Mock()
+                mock_sell_order.order_id = 'test-sell-order-123'
+                mock_sell_order.client_order_id = 'bot-sell-order-123'
+                mock_sell_order.product_id = 'BTC-EUR'
+                mock_sell_order.side = 'SELL'
+                mock_sell_order.filled_size = '0.002'
+                mock_sell_order.average_filled_price = '45000'
+                mock_sell_order.total_fees = '1.0'
+                mock_sell_order.total_value_after_fees = '89.0'
+                mock_client.market_order_sell.return_value = mock_sell_order
+                
+                # Mock candles response
+                mock_candles_response = Mock()
+                mock_candles_response.candles = [
+                    Mock(start=1640995200, low=44000, high=46000, open=45000, close=45800, volume=1000),
+                    Mock(start=1641081600, low=45800, high=47000, open=45800, close=46500, volume=1200)
+                ]
+                mock_client.get_candles.return_value = mock_candles_response
+                
+                yield {
+                    'rest_client': mock_client,
+                    'notification_service': mock_notification,
+                    'config': mock_config
+                }
+        else:
+            yield {}
 
 @pytest.fixture
 def test_env_vars():
