@@ -17,14 +17,14 @@ class OpportunityManager:
         self.logger = logging.getLogger("supervisor")
         
         # Opportunity scoring parameters
-        self.min_actionable_confidence = 50  # Minimum confidence for actionable signals
+        self.min_actionable_confidence = getattr(self.config, 'CONFIDENCE_THRESHOLD_BUY', 50)  # Use config value
         self.consensus_bonus_threshold = 2   # Strategies needed for consensus bonus
         self.strong_consensus_threshold = 3  # Strategies needed for strong consensus
         self.momentum_threshold = 3.0        # 24h price change threshold for momentum bonus
         
         # Capital allocation parameters
         self.capital_reserve_ratio = 0.2     # Keep 20% EUR in reserve
-        self.min_trade_allocation = 50.0     # Minimum €50 per trade
+        self.min_trade_allocation = getattr(self.config, 'MIN_TRADE_AMOUNT', 5.0)  # Use config value
         self.max_single_trade_ratio = 0.6    # Max 60% of available capital to single trade
         self.opportunity_weight_power = 1.2  # Power factor for opportunity weighting
         

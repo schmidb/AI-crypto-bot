@@ -54,13 +54,15 @@ class ParameterMonitoringService:
         """Load recent market data for monitoring"""
         try:
             data = {}
-            products = ['BTC-USD', 'ETH-USD']
+            # Use EUR pairs to match bot configuration
+            products = ['BTC-EUR', 'ETH-EUR']
             
             for product in products:
                 # Try to load from existing files first
                 data_files = [
                     f"data/historical/{product}_hour_180d.parquet",
                     f"data/historical/{product}_hour_30d.parquet",
+                    f"data/historical/{product}_hour_7d.parquet", 
                     f"data/historical/{product}_hourly_30d.parquet"
                 ]
                 

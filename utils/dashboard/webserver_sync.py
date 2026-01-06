@@ -47,9 +47,9 @@ class WebServerSync:
             # Create hard link if needed
             if not os.path.exists(dest):
                 os.link(source, dest)
-                logger.info(f"Created hard link: {dest}")
+                logger.debug(f"Created hard link: {dest}")
             else:
-                logger.info(f"Hard link already exists: {dest}")
+                logger.debug(f"Hard link already exists: {dest}")
                 
         except Exception as e:
             logger.error(f"Error creating hard link {dest}: {e}")
@@ -204,7 +204,7 @@ class WebServerSync:
                 self._ensure_hard_link(analysis_file, dest_file)
                 synced_count += 1
             
-            logger.info(f"Synced {synced_count} detailed analysis files for trade history")
+            logger.debug(f"Synced {synced_count} detailed analysis files for trade history")
             
         except Exception as e:
             logger.error(f"Error syncing detailed analysis files: {e}")
@@ -227,7 +227,7 @@ class WebServerSync:
                     else:
                         self._ensure_hard_link(source_path, dest_path)
             
-            logger.info("Static files synced")
+            logger.debug("Static files synced")
             
         except Exception as e:
             logger.error(f"Error syncing static files: {e}")
@@ -263,7 +263,7 @@ class WebServerSync:
             with open(dest_path, "w") as f:
                 f.write(content)
             
-            logger.info(f"Modified and copied HTML file: {os.path.basename(source_path)}")
+            logger.debug(f"Modified and copied HTML file: {os.path.basename(source_path)}")
             
         except Exception as e:
             logger.error(f"Error copying and modifying HTML file {source_path}: {e}")

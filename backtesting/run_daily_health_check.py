@@ -57,14 +57,20 @@ class DailyHealthChecker:
     def load_recent_data(self, days: int = 7) -> Dict[str, pd.DataFrame]:
         """Load recent historical data for health check"""
         try:
+            # Ensure EUR data is available
+            from utils.ensure_eur_data import ensure_eur_data_available
+            ensure_eur_data_available(days)
+            
             data = {}
-            products = ['BTC-USD', 'ETH-USD']
+            # Use EUR pairs to match bot configuration
+            products = ['BTC-EUR', 'ETH-EUR']
             
             for product in products:
                 # Try to load from existing files first
                 data_files = [
                     f"data/historical/{product}_hour_180d.parquet",
-                    f"data/historical/{product}_hour_30d.parquet",
+                    f"data/historical/{product}_hour_30d.parquet", 
+                    f"data/historical/{product}_hour_7d.parquet",
                     f"data/historical/{product}_hourly_30d.parquet"
                 ]
                 
