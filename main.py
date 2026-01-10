@@ -525,8 +525,12 @@ class TradingBot:
                 discrepancies_found = False
                 total_discrepancy_value = 0.0
                 
-                # Get all assets from trading pairs plus base currency
-                all_assets = [config.BASE_CURRENCY] + [pair.split('-')[0] for pair in config.TRADING_PAIRS]
+                # Get all assets from both portfolios (current and updated)
+                all_assets = set([config.BASE_CURRENCY])
+                all_assets.update(current_portfolio.keys())
+                all_assets.update(updated_portfolio.keys())
+                # Remove non-asset keys
+                all_assets = [asset for asset in all_assets if not asset.startswith(('portfolio_value', 'initial_value', 'trades_executed', 'last_updated'))]
                 
                 for asset in all_assets:
                     if asset in current_portfolio and asset in updated_portfolio:
@@ -1389,60 +1393,68 @@ class TradingBot:
             min_trade_value = config.MIN_TRADE_AMOUNT  # Use configured minimum trade amount (€30)
             min_crypto_amount = min_trade_value / current_price
             
-            # Calculate original trade size with dynamic position sizing
-            base_trade_percentage = 0.10 + (confidence / 100.0 * 0.15)  # 10% to 25%
+            # For small portfolios, use fixed amount selling instead of percentage
+            portfolio_value_eur = portfolio.get('portfolio_value_eur', {}).get('amount', 0)
             
-            # Apply strategy-based position multiplier
-            dynamic_multiplier = 1.0
-            if strategy_details and 'combined_signal' in strategy_details:
-                dynamic_multiplier = strategy_details['combined_signal'].get('position_multiplier', 1.0)
-            
-            # Apply dynamic sizing and risk management
-            adjusted_percentage = base_trade_percentage * dynamic_multiplier
-            risk_multiplier = 0.5 if confidence < 70 else 1.0  # Reduce for low confidence
-            
-            max_crypto_amount = asset_available * adjusted_percentage * risk_multiplier
-            original_trade_value = max_crypto_amount * current_price
-            
-            # Use capital manager to calculate safe trade size
-            safe_trade_value, capital_reason = self.capital_manager.calculate_safe_trade_size(
-                "SELL", asset, portfolio, original_trade_value
-            )
-            
-            logger.info(f"💰 Capital management: {capital_reason}")
-            
-            if safe_trade_value <= 0:
-                execution_result.update({
-                    'execution_status': 'capital_management_block',
-                    'execution_message': f'Capital management blocked trade: {capital_reason}',
-                    'available_crypto': asset_available,
-                    'original_value': original_trade_value,
-                    'safe_value': safe_trade_value
-                })
-                logger.warning(f"SELL order blocked by capital management for {product_id}: {capital_reason}")
-                return execution_result
-            
-            # Convert safe trade value back to crypto amount
-            crypto_amount = safe_trade_value / current_price
-            trade_amount_base = safe_trade_value
-            
-            # Final validation
-            if crypto_amount > asset_available:
-                crypto_amount = asset_available
+            if portfolio_value_eur < 500:  # Small portfolio - use fixed amounts
+                # Sell in fixed €50 chunks for better execution
+                base_sell_amount_eur = 50.0
+                # Adjust based on confidence: 50-75 EUR
+                confidence_multiplier = 0.5 + (confidence / 200.0)  # 0.5 to 1.0
+                target_sell_eur = base_sell_amount_eur * confidence_multiplier
+                
+                crypto_amount = target_sell_eur / current_price
+                
+                # Ensure we don't sell more than we have (with 5% buffer)
+                max_sellable = asset_available * 0.95
+                crypto_amount = min(crypto_amount, max_sellable)
                 trade_amount_base = crypto_amount * current_price
-            
-            if trade_amount_base < min_trade_value:
-                execution_result.update({
-                    'execution_status': 'insufficient_size',
-                    'execution_message': f'Safe trade value (€{trade_amount_base:.2f}) below minimum (€{min_trade_value})',
-                    'available_crypto': asset_available,
-                    'safe_value': safe_trade_value
-                })
-                logger.warning(f"SELL order skipped for {product_id}: Safe trade size too small")
-                return execution_result
-            crypto_amount = max(min_crypto_amount, min(crypto_amount, asset_available * 0.90))  # Keep 10% buffer
-            
-            trade_amount_base = crypto_amount * current_price
+                
+            else:  # Large portfolio - use percentage
+                # Calculate original trade size with dynamic position sizing
+                base_trade_percentage = 0.10 + (confidence / 100.0 * 0.15)  # 10% to 25%
+                
+                # Apply strategy-based position multiplier
+                dynamic_multiplier = 1.0
+                if strategy_details and 'combined_signal' in strategy_details:
+                    dynamic_multiplier = strategy_details['combined_signal'].get('position_multiplier', 1.0)
+                
+                # Apply dynamic sizing and risk management
+                adjusted_percentage = base_trade_percentage * dynamic_multiplier
+                risk_multiplier = 0.5 if confidence < 70 else 1.0  # Reduce for low confidence
+                
+                max_crypto_amount = asset_available * adjusted_percentage * risk_multiplier
+                original_trade_value = max_crypto_amount * current_price
+                
+                # Use capital manager to calculate safe trade size
+                safe_trade_value, capital_reason = self.capital_manager.calculate_safe_trade_size(
+                    "SELL", asset, portfolio, original_trade_value
+                )
+                
+                logger.info(f"💰 Capital management: {capital_reason}")
+                
+                if safe_trade_value <= 0:
+                    execution_result.update({
+                        'execution_status': 'capital_management_block',
+                        'execution_message': f'Capital management blocked trade: {capital_reason}',
+                        'available_crypto': asset_available,
+                        'original_value': original_trade_value,
+                        'safe_value': safe_trade_value
+                    })
+                    logger.warning(f"SELL order blocked by capital management for {product_id}: {capital_reason}")
+                    return execution_result
+                
+                # Convert safe trade value back to crypto amount
+                crypto_amount = safe_trade_value / current_price
+                trade_amount_base = safe_trade_value
+                
+                # Final validation
+                if crypto_amount > asset_available:
+                    crypto_amount = asset_available
+                    trade_amount_base = crypto_amount * current_price
+                
+                crypto_amount = max(min_crypto_amount, min(crypto_amount, asset_available * 0.90))  # Keep 10% buffer
+                trade_amount_base = crypto_amount * current_price
             
             if SIMULATION_MODE:
                 # Simulate the trade
