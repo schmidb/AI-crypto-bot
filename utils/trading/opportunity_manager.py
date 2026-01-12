@@ -335,7 +335,11 @@ class OpportunityManager:
             # Get current holdings and price
             asset_data = portfolio.get(asset, {})
             crypto_amount = asset_data.get('amount', 0)
-            current_price = opp['analysis'].get('market_data', {}).get('current_price', 0)
+            # Try multiple price sources for robustness
+            market_data = opp['analysis'].get('market_data', {})
+            current_price = (market_data.get('current_price', 0) or 
+                           market_data.get('price', 0) or 
+                           asset_data.get('last_price_eur', 0))
             
             if crypto_amount > 0 and current_price > 0:
                 # Calculate EUR value of holdings
