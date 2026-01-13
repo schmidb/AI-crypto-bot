@@ -734,8 +734,10 @@ class CoinbaseClient:
                     crypto = pair.replace(f'-{base_currency}', '')
                     crypto_currencies.add(crypto)
             
-            # Always include base currency
+            # Always include base currency and stable coins
             crypto_currencies.add(base_currency)
+            crypto_currencies.add('USDC')  # Include USDC for portfolio tracking
+            crypto_currencies.add('USD')   # Include USD for portfolio tracking
             
             # Get all accounts/wallets
             accounts = self.get_accounts()
@@ -784,6 +786,15 @@ class CoinbaseClient:
             total_value = 0
             for currency in crypto_currencies:
                 if currency != base_currency:
+                    # Skip USD pricing if base currency is EUR (USD-EUR doesn't exist)
+                    if currency == 'USD' and base_currency == 'EUR':
+                        # Use approximate USD to EUR conversion (could be improved with real FX rate)
+                        portfolio[currency][f"last_price_{base_currency.lower()}"] = 0.85  # Approximate USD/EUR rate
+                        currency_value = portfolio[currency]["amount"] * 0.85
+                        total_value += currency_value
+                        logger.info(f"Retrieved {currency}: amount={portfolio[currency]['amount']}, price={base_currency}0.85 (estimated)")
+                        continue
+                    
                     try:
                         price_data = self.get_product_price(f"{currency}-{base_currency}")
                         price = price_data.get("price", 0.0)  # Already a float from get_product_price
