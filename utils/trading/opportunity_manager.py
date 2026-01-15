@@ -25,8 +25,8 @@ class OpportunityManager:
         # Capital allocation parameters
         self.capital_reserve_ratio = 0.2     # Keep 20% EUR in reserve
         self.min_trade_allocation = getattr(self.config, 'MIN_TRADE_AMOUNT', 5.0)  # Use config value
-        self.max_single_trade_ratio = 0.6    # Max 60% of available capital to single trade
-        self.opportunity_weight_power = 1.2  # Power factor for opportunity weighting
+        self.max_single_trade_ratio = 0.75   # Max 75% of available capital to single trade
+        self.opportunity_weight_power = 2.0  # Power factor for opportunity weighting (higher = more aggressive)
         
         self.logger.info("🎯 Opportunity Manager initialized")
         self.logger.info(f"  Min actionable confidence: {self.min_actionable_confidence}%")
