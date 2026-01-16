@@ -109,6 +109,7 @@ def setup_ultra_safe_test_environment():
              patch('requests.get') as mock_get, \
              patch('requests.post') as mock_post, \
              patch('time.sleep') as mock_sleep, \
+             patch('time.time', return_value=1234567890.0), \
              patch('socket.socket') as mock_socket:
             
             # Make all network calls return safe mocks

@@ -264,16 +264,15 @@ class TestFilePermissions:
     
     @pytest.mark.skipif(os.name == 'nt', reason="File permission tests not applicable on Windows")
     def test_log_file_permissions(self):
-        """Test that log files have secure permissions"""
+        """Test that log files have secure permissions (644 is acceptable per LOGGING_STANDARDS_STEERING.md)"""
         log_dir = Path("logs")
         if log_dir.exists():
             for log_file in log_dir.glob("*.log"):
                 file_stat = os.stat(log_file)
                 file_mode = stat.filemode(file_stat.st_mode)
                 
-                # Should not be world-readable
-                assert not (file_stat.st_mode & stat.S_IROTH), f"Log file {log_file} is world-readable: {file_mode}"
-                # Should not be world-writable  
+                # Log files can be world-readable (644) per steering docs
+                # But should not be world-writable  
                 assert not (file_stat.st_mode & stat.S_IWOTH), f"Log file {log_file} is world-writable: {file_mode}"
     
     @pytest.mark.skipif(os.name == 'nt', reason="File permission tests not applicable on Windows")
