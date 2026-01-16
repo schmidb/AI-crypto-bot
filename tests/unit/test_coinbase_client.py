@@ -283,3 +283,8 @@ def test_coinbase_client_module_available():
     
 if __name__ == '__main__':
     pytest.main([__file__])
+
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
