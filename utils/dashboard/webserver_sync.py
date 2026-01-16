@@ -34,7 +34,7 @@ class WebServerSync:
         """Ensure destination is a hard link to source"""
         try:
             if not os.path.exists(source):
-                logger.info(f"Source file does not exist: {source}")
+                logger.debug(f"Source file does not exist: {source}")
                 return
                 
             # Create destination directory if needed
@@ -57,11 +57,11 @@ class WebServerSync:
     def sync_to_webserver(self) -> None:
         """Sync all dashboard files to web server if enabled"""
         if not self.enabled:
-            logger.info("Web server sync disabled, skipping")
+            logger.debug("Web server sync disabled, skipping")
             return
         
         try:
-            logger.info("Starting web server sync")
+            logger.debug("Starting web server sync")
             
             # Ensure web server directory exists
             os.makedirs(self.web_path, exist_ok=True)
@@ -78,7 +78,7 @@ class WebServerSync:
             # Sync static files
             self._sync_static_files()
             
-            logger.info("Web server sync completed successfully")
+            logger.debug("Web server sync completed successfully")
             
         except Exception as e:
             logger.error(f"Error syncing to web server: {e}")
@@ -107,7 +107,7 @@ class WebServerSync:
                 dest_abs_path = os.path.join(self.web_path, dest_rel_path)
                 self._ensure_hard_link(source_abs_path, dest_abs_path)
             
-            logger.info("Data files synced")
+            logger.debug("Data files synced")
             
         except Exception as e:
             logger.error(f"Error syncing data files: {e}")
@@ -142,7 +142,7 @@ class WebServerSync:
                 dest_abs_path = os.path.join(self.web_path, dest_rel_path)
                 self._ensure_hard_link(source_abs_path, dest_abs_path)
             
-            logger.info("Backtesting data files synced")
+            logger.debug("Backtesting data files synced")
             
         except Exception as e:
             logger.error(f"Error syncing backtesting data files: {e}")
@@ -171,9 +171,9 @@ class WebServerSync:
                     dest_file = f"{web_data_dir}/{asset}_{config.BASE_CURRENCY}_latest.json"
                     self._ensure_hard_link(latest_file, dest_file)
                 else:
-                    logger.warning(f"No decision files found for {asset}")
+                    logger.debug(f"No decision files found for {asset}")
             
-            logger.info("Latest decision files synced directly")
+            logger.debug("Latest decision files synced")
             
             # Sync all detailed analysis files for trade history
             self._sync_detailed_analysis_files()
