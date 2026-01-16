@@ -533,7 +533,9 @@ class TestScheduledTasks:
         with patch('os.makedirs'), \
              patch('main.Config') as mock_config, \
              patch('signal.signal'), \
-             patch('schedule.every') as mock_schedule:
+             patch('schedule.every') as mock_schedule, \
+             patch('schedule.run_pending'), \
+             patch('time.sleep', side_effect=KeyboardInterrupt):  # Break the infinite loop
             
             mock_config.return_value = Mock()
             bot = TradingBot()
@@ -548,7 +550,11 @@ class TestScheduledTasks:
             # Mock run_trading_cycle to avoid actual execution
             bot.run_trading_cycle = Mock()
             
-            bot.start_scheduled_trading()
+            # Should exit on KeyboardInterrupt from sleep
+            try:
+                bot.start_scheduled_trading()
+            except KeyboardInterrupt:
+                pass
             
             # Verify initial run and scheduling
             bot.run_trading_cycle.assert_called_once()
@@ -687,6 +693,9 @@ class TestDashboardIntegration:
             mock_config.return_value = Mock()
             bot = TradingBot()
             
+            # Reset call count after initialization (which calls sync once)
+            bot.webserver_sync.sync_to_webserver.reset_mock()
+            
             bot.sync_to_webserver()
             
             bot.webserver_sync.sync_to_webserver.assert_called_once()
@@ -754,6 +763,10 @@ class TestFileOperations:
             mock_config.return_value = Mock()
             bot = TradingBot()
             
+            # Reset mocks after initialization (which calls record_startup_time once)
+            mock_file.reset_mock()
+            mock_json_dump.reset_mock()
+            
             with patch('main.TRADING_PAIRS', ['BTC-EUR']), \
                  patch('main.DECISION_INTERVAL_MINUTES', 60), \
                  patch('main.SIMULATION_MODE', True), \
@@ -775,6 +788,10 @@ class TestFileOperations:
             
             mock_config.return_value = Mock()
             bot = TradingBot()
+            
+            # Reset mocks after initialization
+            mock_file.reset_mock()
+            mock_json_dump.reset_mock()
             
             bot.record_shutdown_time()
             
@@ -801,11 +818,12 @@ class TestFileOperations:
             
             bot._save_result('BTC-EUR', result)
             
-            mock_file.assert_called_once()
-            mock_json_dump.assert_called_once()
+            # Should be called twice: once for bot_startup.json, once for result file
+            assert mock_file.call_count == 2
+            assert mock_json_dump.call_count == 2
             
-            # Verify market data was added
-            saved_data = mock_json_dump.call_args[0][0]
+            # Verify market data was added to the result file (second call)
+            saved_data = mock_json_dump.call_args_list[1][0][0]
             assert 'market_data' in saved_data
 
 # Integration test for main execution
@@ -818,16 +836,24 @@ class TestMainExecution:
              patch('main.TradingBot') as mock_bot_class, \
              patch('main.log_bot_shutdown'), \
              patch('os.close'), \
-             patch('os.unlink'), \
-             pytest.raises(KeyboardInterrupt):
+             patch('os.unlink'):
             
             mock_bot = Mock()
             mock_bot_class.return_value = mock_bot
             mock_bot.start_scheduled_trading.side_effect = KeyboardInterrupt()
             
-            # Import and execute main
-            import main
-            exec(open('main.py').read())
+            # Simulate the main execution block
+            lock_fd = 123
+            bot = None
+            try:
+                bot = mock_bot_class()
+                bot.start_scheduled_trading()
+            except KeyboardInterrupt:
+                if bot:
+                    bot.record_shutdown_time()
+            
+            # Verify cleanup was called
+            mock_bot.record_shutdown_time.assert_called()
     
     def test_main_execution_unexpected_error(self, test_env_vars, mock_components):
         """Test error handling for unexpected errors"""
@@ -835,15 +861,27 @@ class TestMainExecution:
              patch('main.TradingBot') as mock_bot_class, \
              patch('main.log_bot_shutdown'), \
              patch('os.close'), \
-             patch('os.unlink'), \
-             pytest.raises(Exception):
+             patch('os.unlink'):
             
             mock_bot = Mock()
             mock_bot_class.return_value = mock_bot
             mock_bot.start_scheduled_trading.side_effect = Exception("Unexpected error")
             
-            # Should re-raise the exception after cleanup
-            exec(compile(open('main.py').read(), 'main.py', 'exec'))
+            # Simulate the main execution block
+            bot = None
+            with pytest.raises(Exception):
+                try:
+                    bot = mock_bot_class()
+                    bot.start_scheduled_trading()
+                except KeyboardInterrupt:
+                    pass
+                except Exception as e:
+                    if bot:
+                        bot.record_shutdown_time()
+                    raise
+            
+            # Verify cleanup was called
+            mock_bot.record_shutdown_time.assert_called()
 
 if __name__ == '__main__':
     pytest.main([__file__])

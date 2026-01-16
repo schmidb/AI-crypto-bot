@@ -648,40 +648,24 @@ class StrategyManager:
         if preliminary_action == "HOLD":
             return preliminary_action, {"consensus_override": False, "message": ""}
         
-        # Count votes for each action, weighted by strategy weights
-        action_votes = {"BUY": 0, "SELL": 0, "HOLD": 0}
+        # Count strategies agreeing with preliminary action
+        strategies_agreeing = sum(1 for action in strategy_actions.values() if action == preliminary_action)
+        total_strategies = len(strategy_actions)
         
-        for strategy, action in strategy_actions.items():
-            weight = weights.get(strategy, 0)
-            action_votes[action] += weight
+        # Get minimum required from config
+        min_required = getattr(self.config, 'MIN_STRATEGIES_AGREEING', 1)
         
-        # Calculate consensus metrics
-        total_votes = sum(action_votes.values())
-        action_percentage = action_votes[preliminary_action] / total_votes if total_votes > 0 else 0
-        
-        # Consensus requirements (Phase 2)
-        consensus_threshold = 0.6  # 60% of weighted votes must agree
-        
-        if action_percentage >= consensus_threshold:
-            # Strong consensus - proceed with action
+        if strategies_agreeing >= min_required:
+            # Sufficient consensus - proceed with action
             return preliminary_action, {
                 "consensus_override": False, 
-                "message": f"Strong consensus ({action_percentage:.1%} agreement)"
-            }
-        elif action_percentage >= 0.5:
-            # Weak consensus - proceed but with caution
-            return preliminary_action, {
-                "consensus_override": False,
-                "message": f"Weak consensus ({action_percentage:.1%} agreement)"
+                "message": f"{strategies_agreeing}/{total_strategies} strategies agree (required: {min_required})"
             }
         else:
-            # No consensus - override to HOLD
-            opposing_actions = [action for action in ["BUY", "SELL"] if action != preliminary_action]
-            opposing_votes = sum(action_votes[action] for action in opposing_actions)
-            
+            # Insufficient consensus - override to HOLD
             return "HOLD", {
                 "consensus_override": True,
-                "message": f"No consensus: {preliminary_action} {action_percentage:.1%} vs others {opposing_votes/total_votes:.1%} - defaulting to HOLD"
+                "message": f"Insufficient consensus: only {strategies_agreeing}/{total_strategies} strategies agree (required: {min_required}) - defaulting to HOLD"
             }
     
     def get_strategy_performance(self) -> Dict:

@@ -26,6 +26,7 @@ from strategies.adaptive_strategy_manager import AdaptiveStrategyManager
 from utils.trading.portfolio import Portfolio
 from utils.trading.capital_manager import CapitalManager
 from utils.trading.opportunity_manager import OpportunityManager
+from utils.trading.trade_cooldown import TradeCooldownManager
 from utils.dashboard.dashboard_updater import DashboardUpdater
 from utils.dashboard.webserver_sync import WebServerSync
 from utils.trading.tax_report import TaxReportGenerator
@@ -180,6 +181,9 @@ class TradingBot:
         
         # Initialize opportunity manager for intelligent prioritization
         self.opportunity_manager = OpportunityManager(self.config)
+        
+        # Initialize trade cooldown manager to prevent overtrading
+        self.cooldown_manager = TradeCooldownManager(self.config.MIN_HOURS_BETWEEN_TRADES)
         
         logger.info("✅ Strategy manager initialized successfully")
         self.portfolio = Portfolio("data/portfolio.json")
@@ -1679,10 +1683,33 @@ class TradingBot:
             for opportunity in ranked_opportunities:
                 product_id = opportunity['product_id']
                 analysis_result = opportunity['analysis']
+                action = opportunity['action']
                 
                 try:
                     # Check if this opportunity got capital allocation
                     allocated_amount = capital_allocations.get(product_id, 0)
+                    
+                    logger.info(f"🔍 DEBUG: {product_id} - Action: {action}, "
+                               f"Allocated: €{allocated_amount:.2f}, "
+                               f"Confidence: {opportunity['confidence']:.1f}%")
+                    
+                    # Check cooldown period before executing
+                    if allocated_amount > 0 and action in ['BUY', 'SELL']:
+                        can_trade, cooldown_reason = self.cooldown_manager.can_trade(product_id, action)
+                        
+                        if not can_trade:
+                            logger.info(f"⏸️  {product_id} trade blocked: {cooldown_reason}")
+                            trade_result = {
+                                'execution_status': 'cooldown_active',
+                                'execution_message': cooldown_reason,
+                                'trade_executed': False,
+                                'crypto_amount': 0,
+                                'trade_amount_base': 0,
+                                'execution_price': 0
+                            }
+                            self._log_trade_decision(product_id, analysis_result, trade_result)
+                            self._save_result(product_id, {**analysis_result, **trade_result})
+                            continue
                     
                     if allocated_amount > 0:
                         logger.info(f"💰 Executing {product_id} with allocated capital: €{allocated_amount:.2f}")
@@ -1695,6 +1722,8 @@ class TradingBot:
                         if trade_result.get('trade_executed'):
                             executed_trades += 1
                             total_allocated += allocated_amount
+                            # Record successful trade for cooldown tracking
+                            self.cooldown_manager.record_trade(product_id, action)
                         
                     else:
                         logger.info(f"⏭️  Skipping {product_id} - no capital allocated")

@@ -25,10 +25,10 @@ class TestOpportunityManagerInitialization:
         assert hasattr(opportunity_manager, 'capital_reserve_ratio')
         assert hasattr(opportunity_manager, 'min_trade_allocation')
         
-        # Check default parameters
-        assert opportunity_manager.min_actionable_confidence == 50
+        # Check default parameters (updated for anti-overtrading improvements)
+        assert opportunity_manager.min_actionable_confidence == config.CONFIDENCE_THRESHOLD_BUY
         assert opportunity_manager.capital_reserve_ratio == 0.2
-        assert opportunity_manager.min_trade_allocation == 50.0
+        assert opportunity_manager.min_trade_allocation == config.MIN_TRADE_AMOUNT
 
 
 class TestOpportunityScoring:
@@ -274,27 +274,34 @@ class TestCapitalAllocation:
         """Test basic capital allocation."""
         available_eur = 1000.0
         
+        # Provide portfolio for SELL allocations
+        portfolio = {
+            'ETH': {
+                'amount': 1.0,
+                'last_price_eur': 3000.0
+            }
+        }
+        
         allocations = self.opportunity_manager.allocate_trading_capital(
-            self.ranked_opportunities, available_eur
+            self.ranked_opportunities, available_eur, portfolio
         )
         
         assert isinstance(allocations, dict)
         
-        # Should only allocate to actionable opportunities (BUY/SELL)
-        assert 'BTC-EUR' in allocations
-        assert 'ETH-EUR' in allocations
+        # Should allocate to actionable opportunities (BUY/SELL)
+        assert 'BTC-EUR' in allocations  # BUY with EUR
+        assert 'ETH-EUR' in allocations  # SELL with crypto holdings
         assert 'SOL-EUR' not in allocations  # HOLD action
         
-        # Check allocation amounts
-        total_allocated = sum(allocations.values())
+        # Check BUY allocation
+        btc_allocation = allocations.get('BTC-EUR', 0)
         trading_capital = available_eur * (1 - self.opportunity_manager.capital_reserve_ratio)
+        assert btc_allocation <= trading_capital
+        assert btc_allocation >= self.opportunity_manager.min_trade_allocation
         
-        # Should not exceed trading capital
-        assert total_allocated <= trading_capital
-        
-        # Each allocation should meet minimum
-        for amount in allocations.values():
-            assert amount >= self.opportunity_manager.min_trade_allocation
+        # Check SELL allocation
+        eth_allocation = allocations.get('ETH-EUR', 0)
+        assert eth_allocation >= self.opportunity_manager.min_trade_allocation
     
     def test_allocate_trading_capital_insufficient_funds(self):
         """Test capital allocation with insufficient funds."""
@@ -558,12 +565,25 @@ class TestIntegrationScenarios:
         assert len(ranked) == 2
         assert all('opportunity_score' in opp for opp in ranked)
         
-        # Step 2: Allocate capital
+        # Step 2: Allocate capital (provide portfolio for SELL allocations)
         available_eur = 1000.0
-        allocations = self.opportunity_manager.allocate_trading_capital(ranked, available_eur)
+        portfolio = {
+            'ETH': {
+                'amount': 1.0,
+                'last_price_eur': 2800.0
+            }
+        }
+        allocations = self.opportunity_manager.allocate_trading_capital(ranked, available_eur, portfolio)
         
+        # Should have both BUY and SELL allocations
         assert len(allocations) == 2
-        assert sum(allocations.values()) <= available_eur * 0.8  # Reserve 20%
+        assert 'BTC-EUR' in allocations  # BUY
+        assert 'ETH-EUR' in allocations  # SELL
+        
+        # BUY allocation should respect EUR reserve
+        btc_allocation = allocations.get('BTC-EUR', 0)
+        trading_capital = available_eur * (1 - self.opportunity_manager.capital_reserve_ratio)
+        assert btc_allocation <= trading_capital
         
         # Step 3: Get summary
         summary = self.opportunity_manager.get_opportunity_summary(ranked)

@@ -81,6 +81,10 @@ class Config:
         self.CONFIDENCE_BOOST_TREND_ALIGNED = float(os.getenv("CONFIDENCE_BOOST_TREND_ALIGNED", "10"))
         self.CONFIDENCE_PENALTY_COUNTER_TREND = float(os.getenv("CONFIDENCE_PENALTY_COUNTER_TREND", "5"))
         
+        # Anti-Overtrading Settings
+        self.MIN_HOURS_BETWEEN_TRADES = float(os.getenv("MIN_HOURS_BETWEEN_TRADES", "0"))  # Cooldown period
+        self.MIN_STRATEGIES_AGREEING = int(os.getenv("MIN_STRATEGIES_AGREEING", "1"))  # Strategy consensus requirement
+        
         # Technical Analysis Settings
         self.RSI_NEUTRAL_MIN = float(os.getenv("RSI_NEUTRAL_MIN", "45"))
         self.RSI_NEUTRAL_MAX = float(os.getenv("RSI_NEUTRAL_MAX", "55"))

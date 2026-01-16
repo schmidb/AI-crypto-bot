@@ -17,6 +17,10 @@ class AdaptiveStrategyManager(StrategyManager):
     def __init__(self, config, llm_analyzer=None, news_sentiment_analyzer=None, volatility_analyzer=None):
         super().__init__(config, llm_analyzer, news_sentiment_analyzer, volatility_analyzer)
         
+        # Ensure logger is set (for tests that patch parent __init__)
+        if not hasattr(self, 'logger'):
+            self.logger = logging.getLogger(__name__)
+        
         # Market regime specific strategy priorities
         self.regime_strategy_priority = {
             "trending": ["trend_following", "momentum", "llm_strategy", "mean_reversion"],
@@ -53,8 +57,10 @@ class AdaptiveStrategyManager(StrategyManager):
         # OPTIMIZED: Lower default fallback thresholds
         self.default_thresholds = {"buy": 30, "sell": 30}
         
+        # Log initialization
         self.logger.info("🚀 Adaptive Strategy Manager initialized")
         self.logger.info(f"📊 Market regime priorities: {self.regime_strategy_priority}")
+    
     
     def detect_market_regime_enhanced(self, technical_indicators: Dict, market_data: Dict) -> str:
         """
@@ -104,7 +110,7 @@ class AdaptiveStrategyManager(StrategyManager):
             return regime
             
         except Exception as e:
-            self.logger.warning(f"Market regime detection failed: {e}, defaulting to 'ranging'")
+            self.logger.info(f"Market regime detection failed: {e}, defaulting to 'ranging'")
             return "ranging"
     
     def get_adaptive_threshold(self, strategy_name: str, action: str, market_regime: str) -> float:
@@ -116,12 +122,12 @@ class AdaptiveStrategyManager(StrategyManager):
         
         try:
             threshold = self.adaptive_thresholds[market_regime][strategy_name][action_key]
-            self.logger.debug(f"Adaptive threshold for {strategy_name}/{action}/{market_regime}: {threshold}%")
+            self.logger.info(f"Adaptive threshold for {strategy_name}/{action}/{market_regime}: {threshold}%")
             return threshold
         except KeyError:
             # Fallback to default
             default = self.default_thresholds[action_key]
-            self.logger.debug(f"Using default threshold for {strategy_name}/{action}: {default}%")
+            self.logger.info(f"Using default threshold for {strategy_name}/{action}: {default}%")
             return default
     
     def _combine_strategy_signals_adaptive(self, 
@@ -166,10 +172,10 @@ class AdaptiveStrategyManager(StrategyManager):
                     
                     if secondary_signal.action == signal.action:
                         confirmation_bonus += 5  # Agreement bonus
-                        self.logger.debug(f"✅ {secondary_strategy} agrees with {signal.action}")
+                        self.logger.info(f"✅ {secondary_strategy} agrees with {signal.action}")
                     elif secondary_signal.action != "HOLD" and secondary_signal.confidence > 60:
                         veto_penalty += 10  # Strong disagreement penalty
-                        self.logger.debug(f"❌ {secondary_strategy} strongly disagrees ({secondary_signal.action} {secondary_signal.confidence:.1f}%)")
+                        self.logger.info(f"❌ {secondary_strategy} strongly disagrees ({secondary_signal.action} {secondary_signal.confidence:.1f}%)")
                 
                 # Calculate final confidence with bonuses/penalties
                 final_confidence = signal.confidence + confirmation_bonus - veto_penalty
@@ -195,7 +201,7 @@ class AdaptiveStrategyManager(StrategyManager):
                 else:
                     self.logger.info(f"⚠️  {strategy_name} signal weakened by disagreement ({final_confidence:.1f}% < {threshold}%)")
             else:
-                self.logger.debug(f"⏭️  {strategy_name} below threshold ({signal.confidence:.1f}% < {threshold}%)")
+                self.logger.info(f"⏭️  {strategy_name} below threshold ({signal.confidence:.1f}% < {threshold}%)")
         
         # If no strategy meets threshold, return HOLD with average confidence
         avg_confidence = sum(s.confidence for s in strategy_signals.values()) / len(strategy_signals)
@@ -261,6 +267,6 @@ class AdaptiveStrategyManager(StrategyManager):
                     current_price=current_price
                 )
         except Exception as e:
-            self.logger.warning(f"Failed to record decision for performance tracking: {e}")
+            self.logger.info(f"Failed to record decision for performance tracking: {e}")
         
         return combined_signal
