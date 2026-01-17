@@ -13,7 +13,7 @@ import os
 # Mock the problematic imports before importing daily_report
 sys.modules['google.genai'] = Mock()
 sys.modules['llm_analyzer'] = Mock()
-sys.modules['config'] = Mock()
+# Don't mock config globally - use patches in individual tests instead
 
 # Now we can import
 from daily_report import markdown_to_html
@@ -90,15 +90,27 @@ def mock_llm_analyzer():
 def mock_report_generator():
     """Create a mocked DailyReportGenerator"""
     # Mock the Config and LLMAnalyzer classes at module level
-    with patch('daily_report.Config', Mock()), \
-         patch('daily_report.LLMAnalyzer', Mock()):
+    with patch('daily_report.Config') as mock_config_class, \
+         patch('daily_report.LLMAnalyzer') as mock_llm_class:
         
-        from daily_report import DailyReportGenerator
-        generator = DailyReportGenerator()
+        # Configure the mocks to return Mock instances
+        mock_config_class.return_value = Mock()
+        mock_llm_class.return_value = Mock()
+        
+        # Import after patching
+        import importlib
+        import daily_report as dr_module
+        importlib.reload(dr_module)
+        
+        generator = dr_module.DailyReportGenerator()
         generator.config = Mock()
         generator.llm_analyzer = Mock()
         generator.llm_analyzer.client = Mock()
-        return generator
+        
+        yield generator
+        
+        # Cleanup: reload again to reset module state
+        importlib.reload(dr_module)
 
 
 def test_daily_report_generator_init(mock_report_generator):

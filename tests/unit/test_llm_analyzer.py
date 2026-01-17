@@ -157,8 +157,12 @@ class TestLLMAnalyzerConfiguration:
             mock_config_class.return_value = mock_config
             
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
-                from llm_analyzer import LLMAnalyzer
-                analyzer = LLMAnalyzer()
+                # Reload module to ensure clean state
+                import importlib
+                import llm_analyzer as llm_module
+                importlib.reload(llm_module)
+                
+                analyzer = llm_module.LLMAnalyzer()
                 
                 # Verify correct models are configured
                 assert analyzer.model == 'gemini-3-flash-preview'
@@ -173,8 +177,12 @@ class TestLLMAnalyzerConfiguration:
             mock_config_class.return_value = mock_config
             
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
-                from llm_analyzer import LLMAnalyzer
-                analyzer = LLMAnalyzer()
+                # Reload module to ensure clean state
+                import importlib
+                import llm_analyzer as llm_module
+                importlib.reload(llm_module)
+                
+                analyzer = llm_module.LLMAnalyzer()
                 
                 # Verify global location is used
                 assert analyzer.location == 'global'

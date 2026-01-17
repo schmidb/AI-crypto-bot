@@ -7,15 +7,47 @@ that can be used across all test modules.
 
 import pytest
 import os
+import sys
 import tempfile
 import json
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock, MagicMock, patch
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
 
 # Test environment setup
 os.environ['TESTING'] = 'true'
 os.environ['SIMULATION_MODE'] = 'true'
+
+
+@pytest.fixture(autouse=True)
+def reset_mocks():
+    """Reset all mocks after each test to prevent test pollution."""
+    yield
+    # Clear any patches that might be lingering
+    patch.stopall()
+
+
+@pytest.fixture(autouse=True)
+def isolate_imports():
+    """Ensure clean import state for each test."""
+    # Store original modules
+    original_modules = {}
+    mock_modules = ['google.genai', 'google.genai.types', 'google.oauth2', 
+                    'google.oauth2.service_account', 'schedule', 'psutil']
+    
+    for mod in mock_modules:
+        if mod in sys.modules:
+            original_modules[mod] = sys.modules[mod]
+    
+    yield
+    
+    # Restore or remove mocked modules
+    for mod in mock_modules:
+        if mod in original_modules:
+            sys.modules[mod] = original_modules[mod]
+        elif mod in sys.modules and isinstance(sys.modules[mod], Mock):
+            # Remove mock modules that weren't there originally
+            pass  # Keep them for now to avoid import errors
 
 
 @pytest.fixture(scope="session")
