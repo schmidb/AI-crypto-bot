@@ -19,6 +19,35 @@ from config import Config
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def markdown_to_html(text: str) -> str:
+    """Convert simple markdown to HTML for email display"""
+    import re
+    
+    # Convert headers
+    text = re.sub(r'^### (.*?)$', r'<h3 style="color: #333; margin: 15px 0 10px 0; font-size: 16px;">\1</h3>', text, flags=re.MULTILINE)
+    text = re.sub(r'^\*\* (.*?)$', r'<h4 style="color: #555; margin: 12px 0 8px 0; font-size: 14px; font-weight: bold;">\1</h4>', text, flags=re.MULTILINE)
+    
+    # Convert bold text
+    text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
+    
+    # Convert bullet points
+    text = re.sub(r'^\* (.*?)$', r'<li style="margin: 5px 0;">\1</li>', text, flags=re.MULTILINE)
+    
+    # Wrap consecutive <li> items in <ul>
+    text = re.sub(r'(<li.*?</li>\n?)+', lambda m: f'<ul style="margin: 10px 0; padding-left: 20px;">{m.group(0)}</ul>', text)
+    
+    # Convert line breaks to paragraphs
+    paragraphs = text.split('\n\n')
+    formatted_paragraphs = []
+    for p in paragraphs:
+        p = p.strip()
+        if p and not p.startswith('<'):
+            formatted_paragraphs.append(f'<p style="margin: 10px 0; line-height: 1.6;">{p}</p>')
+        else:
+            formatted_paragraphs.append(p)
+    
+    return '\n'.join(formatted_paragraphs)
+
 class DailyReportGenerator:
     def __init__(self):
         self.config = Config()
@@ -339,18 +368,12 @@ Format with clear sections and emojis. Be concise and actionable.
                 logger.error(f"Direct LLM call failed: {e}")
                 analysis = f"AI analysis failed: {str(e)}"
             
-            # Format the AI analysis to match the clean email style
-            formatted_analysis = f"""━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤖 AI MARKET ANALYSIS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-{analysis}"""
-            return formatted_analysis
+            # Convert markdown to HTML for nice email display
+            return markdown_to_html(analysis)
             
         except Exception as e:
             logger.error(f"Error generating AI analysis: {e}")
-            return f"AI analysis failed: {str(e)}"
+            return f"<p>AI analysis failed: {str(e)}</p>"
     
     def send_email_report(self, subject: str, body: str, to_email: str = "markus@juntoai.org"):
         """Send email report via Gmail SMTP"""
@@ -570,7 +593,7 @@ Strategy: {trading_perf['performance_status']}"""
     <!-- AI Analysis -->
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <h2 style="margin: 0 0 15px 0; color: #333; font-size: 18px; border-bottom: 2px solid #eee; padding-bottom: 10px;">🤖 AI Market Analysis</h2>
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; white-space: pre-line; font-family: monospace; font-size: 14px;">
+        <div style="color: #333; line-height: 1.6;">
 {ai_analysis}
         </div>
     </div>
