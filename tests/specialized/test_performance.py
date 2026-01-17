@@ -7,13 +7,20 @@ and scalability of the trading bot components.
 
 import pytest
 import time
-import psutil
+import sys
 import threading
 import tempfile
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
+
+# Mock psutil and google modules before imports
+sys.modules['psutil'] = Mock()
+sys.modules['google.genai'] = Mock()
+sys.modules['google.genai.types'] = Mock()
+sys.modules['google.oauth2'] = Mock()
+sys.modules['google.oauth2.service_account'] = Mock()
 
 from coinbase_client import CoinbaseClient
 from llm_analyzer import LLMAnalyzer

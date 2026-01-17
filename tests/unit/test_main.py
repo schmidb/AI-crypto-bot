@@ -26,6 +26,13 @@ from unittest.mock import Mock, patch, MagicMock, call, mock_open
 from datetime import datetime, timedelta
 from pathlib import Path
 
+# Mock required modules before importing main
+sys.modules['schedule'] = Mock()
+sys.modules['google.genai'] = Mock()
+sys.modules['google.genai.types'] = Mock()
+sys.modules['google.oauth2'] = Mock()
+sys.modules['google.oauth2.service_account'] = Mock()
+
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
