@@ -6,10 +6,17 @@ and risk management systems across the trading bot.
 """
 
 import pytest
+import sys
 import tempfile
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, Mock
 import pandas as pd
+
+# Mock required modules
+sys.modules['google.genai'] = Mock()
+sys.modules['google.genai.types'] = Mock()
+sys.modules['google.oauth2'] = Mock()
+sys.modules['google.oauth2.service_account'] = Mock()
 
 from coinbase_client import CoinbaseClient
 from utils.trading.portfolio import Portfolio
