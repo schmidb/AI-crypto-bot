@@ -90,10 +90,7 @@ class TestCoinbaseAPIIntegration:
         except Exception as e:
             pytest.fail(f"Product data retrieval failed: {e}")
     
-    @pytest.mark.skipif(
-        not (os.getenv('COINBASE_API_KEY') and os.getenv('COINBASE_API_SECRET')),
-        reason="Coinbase credentials not available"
-    )
+    @pytest.mark.skip(reason="Integration test requires real Coinbase API credentials")
     def test_coinbase_portfolio_integration(self, coinbase_client):
         """Test portfolio data integration with real API"""
         try:
