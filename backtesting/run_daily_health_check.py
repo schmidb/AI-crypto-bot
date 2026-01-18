@@ -250,14 +250,23 @@ class DailyHealthChecker:
             logger.error("No data available for health check")
             return {'error': 'No data available'}
         
-        # Strategies to check
+        # Strategies to check - TECHNICAL ONLY (LLM cannot be accurately backtested)
         strategies = ['momentum', 'mean_reversion', 'trend_following']
+        
+        logger.warning("⚠️  LLM strategy excluded from backtesting - cannot simulate neural network decisions")
         
         # Run health checks
         results = {
             'timestamp': datetime.now().isoformat(),
             'check_type': 'daily_health',
             'data_period_days': 7,
+            'validation_scope': 'technical_strategies_only',
+            'warnings': [
+                "⚠️  LLM strategy excluded from backtesting",
+                "⚠️  LLM uses Google Gemini API (neural network) - cannot be simulated with rules",
+                "⚠️  Results represent technical strategies only, not actual bot behavior",
+                "ℹ️  For actual bot performance, see live trading logs and performance tracking"
+            ],
             'strategies': {},
             'summary': {
                 'total_strategies': 0,

@@ -1827,6 +1827,8 @@ class TradingBot:
         # Schedule integrated analysis tasks
         schedule.every().day.at("06:00").do(self.run_daily_health_check_task)
         schedule.every().monday.at("07:00").do(self.run_weekly_validation_task)
+        # Live performance tracking - actual bot performance (not simulated)
+        schedule.every().day.at("07:30").do(self.run_live_performance_tracking)
         # Daily email report at 8:00 AM
         schedule.every().day.at("08:00").do(self.send_daily_email_report)
         # Monthly stability task - run on 1st of each month at 09:00 (moved to avoid conflict)
@@ -1840,8 +1842,9 @@ class TradingBot:
         logger.info("  - Trading cycle: Every 60 minutes")
         logger.info("  - Web server sync: Every 5 minutes")
         logger.info("  - Weekly cleanup: Sunday 2:00 AM")
-        logger.info("  - Daily health check: 6:00 AM daily")
-        logger.info("  - Weekly validation: 7:00 AM Mondays")
+        logger.info("  - Daily health check: 6:00 AM daily (technical strategies only)")
+        logger.info("  - Weekly validation: 7:00 AM Mondays (technical strategies only)")
+        logger.info("  - Live performance tracking: 7:30 AM daily (actual bot performance)")
         logger.info("  - Daily email report: 8:00 AM daily")
         logger.info("  - Monthly stability: 9:00 AM 1st of month")
         logger.info("  - Parameter monitoring: Every 4 hours")
@@ -2039,6 +2042,32 @@ class TradingBot:
             return success
         except Exception as e:
             logger.error(f"Error in scheduled weekly validation: {e}")
+            return False
+    
+    def run_live_performance_tracking(self):
+        """Scheduled task for live performance tracking (actual bot performance)"""
+        try:
+            logger.info("📊 Running live performance tracking...")
+            
+            # Import and run live performance tracker
+            from utils.monitoring.live_performance_tracker import generate_live_performance_report
+            success = generate_live_performance_report(days=7)
+            
+            if success:
+                logger.info("✅ Live performance tracking completed successfully")
+                # Send notification
+                try:
+                    self.notification_service.send_status_notification(
+                        "📊 Live Performance Report\n\nActual bot performance tracked from trading logs (not simulated)."
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to send performance tracking notification: {e}")
+            else:
+                logger.error("❌ Live performance tracking failed")
+                
+            return success
+        except Exception as e:
+            logger.error(f"Error in live performance tracking: {e}")
             return False
     
     def _check_monthly_stability_task(self):

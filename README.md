@@ -98,6 +98,12 @@ For detailed information, see the [Developer Documentation](docs/):
 - **[Phase 1 Implementation](docs/PHASE_1_OPPORTUNITY_PRIORITIZATION.md)** - Complete Phase 1 technical details
 - **[Opportunity Manager](utils/trading/opportunity_manager.py)** - Core prioritization logic
 
+### ⚠️ **Important: Backtesting Limitations**
+- **[Backtesting Analysis](BACKTEST_LLM_ANALYSIS.md)** - Critical information about LLM backtesting limitations
+- **Technical strategies** (momentum, mean_reversion, trend_following) can be accurately backtested
+- **LLM strategy** uses Google Gemini API and cannot be simulated - backtest results are approximations only
+- **Live performance tracking** monitors actual bot decisions from trading logs (not simulated)
+
 ### 📖 **Core Documentation**
 - **[Trading Strategies](docs/TRADING_STRATEGIES.md)** - How the bot makes decisions
 - **[Configuration Guide](docs/CONFIGURATION.md)** - Complete setup instructions

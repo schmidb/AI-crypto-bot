@@ -427,8 +427,14 @@ Format with clear sections and emojis. Be concise and actionable.
             value_changes = self.calculate_value_changes(portfolio)
             server_ip = self.get_server_ip()
             
+            # Get live performance report (actual bot performance)
+            live_performance = self.get_live_performance_report()
+            
             # Generate AI analysis using existing Vertex AI
-            ai_analysis = self.generate_ai_analysis(log_data, portfolio)
+            ai_analysis_markdown = self.generate_ai_analysis(log_data, portfolio)
+            
+            # Convert markdown to HTML for email display
+            ai_analysis = markdown_to_html(ai_analysis_markdown)
             
             # Create email content
             subject = f"🤖 Crypto Bot Daily Report - {datetime.now().strftime('%Y-%m-%d')}"
@@ -441,7 +447,7 @@ Format with clear sections and emojis. Be concise and actionable.
             # Create professional HTML email
             body = self._create_html_email(
                 total_value, trades_count, errors_count, 
-                portfolio, value_changes, ai_analysis, server_ip
+                portfolio, value_changes, ai_analysis, server_ip, live_performance
             )
             
             if test_mode:
@@ -467,6 +473,25 @@ Format with clear sections and emojis. Be concise and actionable.
         except Exception as e:
             logger.error(f"Error generating daily report: {e}")
     
+    def get_live_performance_report(self) -> Dict[str, Any]:
+        """Get live performance report (actual bot performance, not simulated)"""
+        try:
+            from utils.monitoring.live_performance_tracker import LivePerformanceTracker
+            
+            tracker = LivePerformanceTracker()
+            report = tracker.generate_live_performance_report(days=7)
+            
+            if 'error' not in report:
+                logger.info("Live performance report loaded successfully")
+                return report
+            else:
+                logger.warning(f"Live performance report error: {report.get('error')}")
+                return {'status': 'error', 'message': report.get('error')}
+                
+        except Exception as e:
+            logger.error(f"Failed to load live performance report: {e}")
+            return {'status': 'error', 'message': str(e)}
+    
     def _format_trading_performance(self, trading_perf: Dict) -> str:
         """Format trading performance vs buy-and-hold comparison"""
         if trading_perf.get('status') != 'success':
@@ -478,7 +503,61 @@ Hold Value: €{trading_perf['hold_value']:.2f} | Active Value: €{trading_perf
 {trading_perf['performance_emoji']} Trading Alpha: €{trading_perf['trading_alpha']:+.2f} ({trading_perf['trading_alpha_pct']:+.1f}%)
 Strategy: {trading_perf['performance_status']}"""
 
-    def _create_html_email(self, total_value, trades_count, errors_count, portfolio, value_changes, ai_analysis, server_ip):
+    def _format_live_performance_html(self, live_performance: Dict) -> str:
+        """Format live performance report for email (actual bot performance, not simulated)"""
+        try:
+            strategy_usage = live_performance.get('strategy_usage', {})
+            trading_perf = live_performance.get('trading_performance', {})
+            
+            # Strategy usage stats
+            total_decisions = strategy_usage.get('total_decisions', 0)
+            actions = strategy_usage.get('action_breakdown', {})
+            avg_confidence = strategy_usage.get('average_confidence', 0)
+            
+            # Trading performance stats
+            total_trades = trading_perf.get('total_trades', 0)
+            buy_trades = trading_perf.get('buy_trades', 0)
+            sell_trades = trading_perf.get('sell_trades', 0)
+            trading_freq = trading_perf.get('trading_frequency', 0)
+            net_flow = trading_perf.get('net_flow', 0)
+            
+            net_flow_color = "#28a745" if net_flow >= 0 else "#dc3545"
+            
+            return f"""
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                <h3 style="color: #007bff; margin: 0 0 15px 0;">📊 Live Performance (Last 7 Days)</h3>
+                <p style="margin: 5px 0; color: #666; font-size: 13px;">
+                    <em>⚠️ This shows ACTUAL bot decisions from real Google Gemini API, not simulated backtests</em>
+                </p>
+                
+                <div style="margin: 15px 0;">
+                    <strong style="color: #333;">Decision Activity:</strong><br>
+                    <span style="color: #666;">Total Decisions: {total_decisions}</span><br>
+                    <span style="color: #28a745;">BUY: {actions.get('BUY', 0)}</span> | 
+                    <span style="color: #dc3545;">SELL: {actions.get('SELL', 0)}</span> | 
+                    <span style="color: #6c757d;">HOLD: {actions.get('HOLD', 0)}</span><br>
+                    <span style="color: #666;">Avg Confidence: {avg_confidence:.1f}%</span>
+                </div>
+                
+                <div style="margin: 15px 0;">
+                    <strong style="color: #333;">Executed Trades:</strong><br>
+                    <span style="color: #666;">Total: {total_trades} trades</span><br>
+                    <span style="color: #28a745;">Buys: {buy_trades}</span> | 
+                    <span style="color: #dc3545;">Sells: {sell_trades}</span><br>
+                    <span style="color: #666;">Frequency: {trading_freq:.2f} trades/day</span><br>
+                    <span style="color: {net_flow_color};">Net Flow: €{net_flow:+.2f}</span>
+                </div>
+                
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
+                    📈 Full report: <code>reports/live_performance/latest_live_performance.json</code>
+                </p>
+            </div>
+            """
+        except Exception as e:
+            logger.error(f"Error formatting live performance: {e}")
+            return ""
+
+    def _create_html_email(self, total_value, trades_count, errors_count, portfolio, value_changes, ai_analysis, server_ip, live_performance=None):
         """Create professional HTML email"""
         # Get asset values
         eur_amount = portfolio.get('EUR', {}).get('amount', 0)
@@ -495,6 +574,9 @@ Strategy: {trading_perf['performance_status']}"""
         # Status colors
         status_color = "#28a745" if value_changes['total_change'] >= 0 else "#dc3545"
         error_color = "#ffc107" if errors_count > 0 else "#28a745"
+        
+        # Format live performance section
+        live_perf_html = self._format_live_performance_html(live_performance) if live_performance and live_performance.get('status') != 'error' else ""
         
         return f"""
 <!DOCTYPE html>
@@ -589,6 +671,9 @@ Strategy: {trading_perf['performance_status']}"""
             </div>
         </div>''' if sol_amount > 0 else ''}
     </div>
+    
+    <!-- Live Performance Report -->
+    {live_perf_html}
     
     <!-- AI Analysis -->
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">

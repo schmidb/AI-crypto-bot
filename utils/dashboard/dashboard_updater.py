@@ -49,6 +49,7 @@ class DashboardUpdater:
             self._update_latest_decisions(trading_data)
             self._update_logs_data()
             self._update_performance_data(portfolio)  # Add performance data update
+            self._update_live_performance_data()  # Add live performance tracking
             self._update_html_detailed_analysis()  # Add HTML detailed analysis update
             self._create_individual_latest_files()  # Create individual latest files for dashboard
             self._update_timestamp()
@@ -525,6 +526,28 @@ class DashboardUpdater:
                 
         except Exception as e:
             logger.error(f"Error updating performance data: {e}")
+    
+    def _update_live_performance_data(self) -> None:
+        """Update live performance tracking data for dashboard"""
+        try:
+            from utils.monitoring.live_performance_tracker import LivePerformanceTracker
+            
+            tracker = LivePerformanceTracker()
+            report = tracker.generate_live_performance_report(days=7)
+            
+            if 'error' not in report:
+                # Save to dashboard data directory
+                os.makedirs("data/dashboard/live_performance", exist_ok=True)
+                
+                with open("data/dashboard/live_performance/latest.json", "w") as f:
+                    json.dump(report, f, indent=2, default=str)
+                
+                logger.info("Live performance data updated for dashboard")
+            else:
+                logger.warning(f"Live performance report error: {report.get('error')}")
+                
+        except Exception as e:
+            logger.error(f"Error updating live performance data: {e}")
     
     def get_performance_data_for_period(self, period: str = "30d") -> Dict[str, Any]:
         """
