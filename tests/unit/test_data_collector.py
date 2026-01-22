@@ -258,7 +258,7 @@ class TestTechnicalIndicatorCalculations:
         """Test successful technical indicator calculation"""
         # Create sample DataFrame
         sample_data = pd.DataFrame({
-            'time': pd.date_range('2022-01-01', periods=25, freq='H'),
+            'time': pd.date_range('2022-01-01', periods=25, freq='h'),
             'close': [45000 + i*100 for i in range(25)],
             'high': [45500 + i*100 for i in range(25)],
             'low': [44500 + i*100 for i in range(25)],
