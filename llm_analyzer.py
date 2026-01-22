@@ -127,42 +127,19 @@ class LLMAnalyzer:
     def _call_genai(self, prompt: str) -> Dict:
         """Call NEW google-genai library for text generation"""
         try:
-            # Enhance prompt to explicitly request JSON
+            # Simplified prompt for more reliable JSON responses
             enhanced_prompt = f"""
             {prompt}
 
-            IMPORTANT: Your response MUST be in valid JSON format with the following structure:
+            CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, just JSON.
+            
+            Required format:
             {{
               "decision": "BUY|SELL|HOLD",
-              "confidence": <number between 0-100>,
-              "reasoning": ["detailed reason 1", "detailed reason 2", "detailed reason 3"],
-              "risk_assessment": "low|medium|high",
-              "technical_indicators": {{
-                "rsi": {{
-                  "value": <rsi_value>,
-                  "signal": "oversold|neutral|overbought",
-                  "weight": 0.3
-                }},
-                "macd": {{
-                  "macd_line": <macd_value>,
-                  "signal_line": <signal_value>,
-                  "histogram": <histogram_value>,
-                  "signal": "bullish|bearish|neutral",
-                  "weight": 0.4
-                }},
-                "bollinger_bands": {{
-                  "signal": "breakout_upper|breakout_lower|squeeze|normal",
-                  "weight": 0.3
-                }}
-              }},
-              "market_conditions": {{
-                "trend": "bullish|bearish|sideways",
-                "volatility": "low|moderate|high",
-                "volume": "below_average|average|above_average"
-              }}
+              "confidence": <0-100>,
+              "reasoning": ["reason1", "reason2", "reason3"],
+              "risk_assessment": "low|medium|high"
             }}
-
-            Do not include any text outside of the JSON structure.
             """
 
             try:
@@ -172,7 +149,7 @@ class LLMAnalyzer:
                     contents=[enhanced_prompt],
                     config=types.GenerateContentConfig(
                         temperature=0.2,
-                        max_output_tokens=10000,
+                        max_output_tokens=2000,  # Reduced from 10000 to prevent truncation
                         top_p=0.8,
                         top_k=40
                     )
@@ -184,13 +161,13 @@ class LLMAnalyzer:
             except Exception as primary_error:
                 logger.warning(f"Primary model {self.model} failed: {primary_error}, trying fallback")
                 
-                # Try fallback model
+                # Try fallback model with same simplified config
                 response = self.client.models.generate_content(
                     model=self.fallback_model,
                     contents=[enhanced_prompt],
                     config=types.GenerateContentConfig(
                         temperature=0.2,
-                        max_output_tokens=10000,
+                        max_output_tokens=2000,  # Reduced from 10000
                         top_p=0.8,
                         top_k=40
                     )
@@ -218,9 +195,8 @@ class LLMAnalyzer:
             }
 
     def _parse_llm_response(self, response_text: str) -> Dict:
-        """Parse the LLM response to extract trading decision"""
+        """Parse the LLM response to extract trading decision with robust error handling"""
         try:
-            # Try to parse as JSON
             # Find JSON content between curly braces
             start_idx = response_text.find('{')
             end_idx = response_text.rfind('}') + 1
@@ -228,25 +204,49 @@ class LLMAnalyzer:
             if start_idx >= 0 and end_idx > start_idx:
                 json_str = response_text[start_idx:end_idx]
                 analysis_result = json.loads(json_str)
+                
+                # Validate required fields
+                if 'decision' not in analysis_result or 'confidence' not in analysis_result:
+                    raise ValueError("Missing required fields: decision or confidence")
+                    
+                return analysis_result
             else:
-                # Fallback to default response
-                logger.warning(f"Could not find JSON in response: {response_text}")
-                analysis_result = {
-                    "decision": "HOLD",
-                    "confidence": 50,
-                    "reasoning": "Could not parse LLM response as JSON",
-                    "risk_assessment": "medium"
-                }
-        except json.JSONDecodeError:
-            logger.warning(f"Failed to parse JSON from response: {str(response_text)}")
-            analysis_result = {
+                raise ValueError("No JSON structure found in response")
+                
+        except (json.JSONDecodeError, ValueError) as e:
+            # Try to extract partial data from incomplete JSON
+            logger.warning(f"JSON parse failed, attempting partial extraction: {str(e)[:100]}")
+            
+            try:
+                # Extract decision and confidence using regex as fallback
+                import re
+                decision_match = re.search(r'"decision"\s*:\s*"(BUY|SELL|HOLD)"', response_text, re.IGNORECASE)
+                confidence_match = re.search(r'"confidence"\s*:\s*(\d+)', response_text)
+                
+                if decision_match and confidence_match:
+                    decision = decision_match.group(1).upper()
+                    confidence = int(confidence_match.group(1))
+                    
+                    logger.info(f"Extracted partial data: {decision} ({confidence}%)")
+                    return {
+                        "decision": decision,
+                        "confidence": confidence,
+                        "reasoning": ["Partial LLM response - extracted key fields"],
+                        "risk_assessment": "medium",
+                        "partial_parse": True
+                    }
+            except Exception as extract_error:
+                logger.debug(f"Partial extraction failed: {extract_error}")
+            
+            # Final fallback
+            logger.warning("Using safe fallback response")
+            return {
                 "decision": "HOLD",
                 "confidence": 50,
-                "reasoning": "Could not parse LLM response as JSON",
-                "risk_assessment": "medium"
+                "reasoning": ["Could not parse LLM response"],
+                "risk_assessment": "medium",
+                "parse_failed": True
             }
-
-        return analysis_result
 
     def _prepare_market_summary(self, market_data: pd.DataFrame, current_price: float, trading_pair: str) -> Dict:
         """Prepare a summary of market data for the LLM"""
