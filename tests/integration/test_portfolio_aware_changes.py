@@ -11,8 +11,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 
 class TestConfigurationChanges:
-    """Test that configuration changes are properly applied"""
+    """Test that configuration changes are properly applied in production environment"""
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_buy_threshold_increased_to_70(self):
         """Verify BUY threshold was increased from 65 to 70"""
         import os
@@ -24,6 +28,10 @@ class TestConfigurationChanges:
         assert buy_threshold == 70.0, \
             f"BUY threshold should be 70 to reduce BUY signals, got {buy_threshold}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_sell_threshold_remains_55(self):
         """Verify SELL threshold remains at 55"""
         import os
@@ -34,6 +42,10 @@ class TestConfigurationChanges:
         assert sell_threshold == 55.0, \
             f"SELL threshold should be 55 to encourage SELL signals, got {sell_threshold}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_threshold_gap_is_15_points(self):
         """Verify 15-point gap between BUY and SELL thresholds"""
         import os
@@ -46,6 +58,10 @@ class TestConfigurationChanges:
         assert gap == 15.0, \
             f"15-point gap should favor SELL signals over BUY, got {gap}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_eur_allocation_target_increased(self):
         """Verify EUR allocation target increased from 12% to 25%"""
         import os
@@ -56,6 +72,10 @@ class TestConfigurationChanges:
         assert eur_target == 25.0, \
             f"EUR target should be 25% to maintain adequate reserves, got {eur_target}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_min_eur_reserve_increased(self):
         """Verify minimum EUR reserve increased from 15 to 25"""
         import os
@@ -66,6 +86,10 @@ class TestConfigurationChanges:
         assert min_reserve == 25.0, \
             f"Minimum EUR reserve should be 25 to prevent capital depletion, got {min_reserve}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_rebalance_target_matches_allocation(self):
         """Verify rebalance target matches EUR allocation target"""
         import os
@@ -192,6 +216,10 @@ class TestExpectedBehavior:
         assert current_pct < target_pct, \
             f"Current EUR ({current_pct:.1f}%) should be below target ({target_pct}%)"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_buy_threshold_harder_than_sell(self):
         """Verify BUY is harder to trigger than SELL"""
         import os

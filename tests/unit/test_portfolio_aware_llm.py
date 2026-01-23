@@ -250,8 +250,12 @@ class TestPortfolioDataFlow:
 
 
 class TestConfidenceThresholds:
-    """Test that new confidence thresholds are properly configured"""
+    """Test that new confidence thresholds are properly configured in production"""
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_buy_threshold_is_70(self):
         """Test that BUY threshold is set to 70"""
         import os
@@ -261,6 +265,10 @@ class TestConfidenceThresholds:
         buy_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_BUY', '30'))
         assert buy_threshold == 70.0, f"Expected 70, got {buy_threshold}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_sell_threshold_is_55(self):
         """Test that SELL threshold is set to 55"""
         import os
@@ -270,6 +278,10 @@ class TestConfidenceThresholds:
         sell_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_SELL', '30'))
         assert sell_threshold == 55.0, f"Expected 55, got {sell_threshold}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_buy_threshold_higher_than_sell(self):
         """Test that BUY threshold is higher than SELL (encourages SELL)"""
         import os
@@ -284,6 +296,10 @@ class TestConfidenceThresholds:
         assert buy_threshold - sell_threshold == 15.0, \
             f"Gap should be 15, got {buy_threshold - sell_threshold}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_eur_allocation_target_is_25(self):
         """Test that EUR allocation target is 25%"""
         import os
@@ -293,6 +309,10 @@ class TestConfidenceThresholds:
         eur_target = float(os.getenv('TARGET_EUR_ALLOCATION', '12'))
         assert eur_target == 25.0, f"Expected 25, got {eur_target}"
     
+    @pytest.mark.skipif(
+        not os.path.exists('.env'),
+        reason="Requires .env file with production configuration"
+    )
     def test_min_eur_reserve_is_25(self):
         """Test that minimum EUR reserve is 25"""
         import os
