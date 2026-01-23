@@ -129,18 +129,25 @@ class LLMAnalyzer:
         try:
             # Simplified prompt for more reliable JSON responses
             enhanced_prompt = f"""
-            {prompt}
+{prompt}
 
-            CRITICAL: Respond ONLY with valid JSON. No markdown, no explanations, just JSON.
-            
-            Required format:
-            {{
-              "decision": "BUY|SELL|HOLD",
-              "confidence": <0-100>,
-              "reasoning": ["reason1", "reason2", "reason3"],
-              "risk_assessment": "low|medium|high"
-            }}
-            """
+CRITICAL INSTRUCTIONS:
+1. Respond ONLY with valid JSON
+2. NO markdown code blocks (no ```json or ```)
+3. NO explanations before or after the JSON
+4. ENSURE all commas are present between fields
+5. Use double quotes for all strings
+
+Required format (copy this structure exactly):
+{{
+  "decision": "BUY",
+  "confidence": 75,
+  "reasoning": ["reason1", "reason2"],
+  "risk_assessment": "medium"
+}}
+
+Your response must be valid JSON that can be parsed directly.
+"""
 
             try:
                 # Try primary model first using NEW google-genai API
@@ -196,13 +203,24 @@ class LLMAnalyzer:
 
     def _parse_llm_response(self, response_text: str) -> Dict:
         """Parse the LLM response to extract trading decision with robust error handling"""
+        import re
+        
         try:
+            # Remove markdown code blocks if present
+            response_text = re.sub(r'```json\s*', '', response_text)
+            response_text = re.sub(r'```\s*', '', response_text)
+            
             # Find JSON content between curly braces
             start_idx = response_text.find('{')
             end_idx = response_text.rfind('}') + 1
 
             if start_idx >= 0 and end_idx > start_idx:
                 json_str = response_text[start_idx:end_idx]
+                
+                # Fix common JSON errors: missing commas after arrays/objects
+                json_str = re.sub(r'(\])\s*\n\s*"', r'\1,\n  "', json_str)
+                json_str = re.sub(r'(\})\s*\n\s*"', r'\1,\n  "', json_str)
+                
                 analysis_result = json.loads(json_str)
                 
                 # Validate required fields
@@ -218,21 +236,31 @@ class LLMAnalyzer:
             logger.warning(f"JSON parse failed, attempting partial extraction: {str(e)[:100]}")
             
             try:
-                # Extract decision and confidence using regex as fallback
-                import re
+                # Extract all fields using regex as fallback
                 decision_match = re.search(r'"decision"\s*:\s*"(BUY|SELL|HOLD)"', response_text, re.IGNORECASE)
                 confidence_match = re.search(r'"confidence"\s*:\s*(\d+)', response_text)
+                risk_match = re.search(r'"risk_assessment"\s*:\s*"(\w+)"', response_text, re.IGNORECASE)
+                reasoning_match = re.search(r'"reasoning"\s*:\s*\[(.*?)\]', response_text, re.DOTALL)
                 
                 if decision_match and confidence_match:
                     decision = decision_match.group(1).upper()
                     confidence = int(confidence_match.group(1))
+                    risk = risk_match.group(1).lower() if risk_match else "medium"
+                    
+                    # Extract reasoning items
+                    reasoning = ["Partial LLM response - extracted key fields"]
+                    if reasoning_match:
+                        reasons_text = reasoning_match.group(1)
+                        reasons = re.findall(r'"([^"]+)"', reasons_text)
+                        if reasons:
+                            reasoning = reasons
                     
                     logger.info(f"Extracted partial data: {decision} ({confidence}%)")
                     return {
                         "decision": decision,
                         "confidence": confidence,
-                        "reasoning": ["Partial LLM response - extracted key fields"],
-                        "risk_assessment": "medium",
+                        "reasoning": reasoning,
+                        "risk_assessment": risk,
                         "partial_parse": True
                     }
             except Exception as extract_error:
