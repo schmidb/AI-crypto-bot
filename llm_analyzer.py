@@ -356,6 +356,41 @@ MA50: {ma50}
 MA200: {ma200}
 Volatility: {volatility}"""
 
+        # Add portfolio balance context if available
+        if additional_context and "portfolio" in additional_context:
+            portfolio = additional_context["portfolio"]
+            eur_balance = portfolio.get('EUR', {}).get('amount', 0)
+            portfolio_value = portfolio.get('portfolio_value_eur', {}).get('amount', 1)
+            eur_pct = (eur_balance / portfolio_value) * 100 if portfolio_value > 0 else 0
+            
+            # Get target from config
+            from config import config
+            target_eur_pct = config.TARGET_EUR_ALLOCATION
+            
+            base_prompt += f"""
+
+PORTFOLIO BALANCE CONTEXT:
+- EUR Available: €{eur_balance:.2f}
+- EUR Allocation: {eur_pct:.1f}% (Target: {target_eur_pct:.0f}%)
+- Portfolio Value: €{portfolio_value:.2f}"""
+            
+            # Add capital constraint guidance
+            if eur_pct < target_eur_pct * 0.6:  # Critical low
+                base_prompt += f"""
+- ⚠️ CRITICAL: EUR balance is VERY LOW ({eur_pct:.1f}% vs {target_eur_pct:.0f}% target)
+- STRONGLY PREFER SELL signals to replenish EUR reserves
+- Avoid BUY signals unless extremely compelling (>85% confidence)"""
+            elif eur_pct < target_eur_pct:  # Below target
+                base_prompt += f"""
+- ⚠️ WARNING: EUR balance is below target ({eur_pct:.1f}% vs {target_eur_pct:.0f}%)
+- PREFER SELL signals to increase EUR reserves
+- Be cautious with BUY signals"""
+            elif eur_pct > target_eur_pct * 1.5:  # Too much cash
+                base_prompt += f"""
+- ✅ EUR balance is HIGH ({eur_pct:.1f}% vs {target_eur_pct:.0f}% target)
+- Good opportunity for BUY signals
+- Consider deploying excess capital"""
+
         # Add optimized technical indicators if available
         if additional_context and "indicators" in additional_context:
             indicators = additional_context["indicators"]
@@ -542,6 +577,7 @@ Respond with ONLY a JSON object in this format:
             # Get indicators and market data
             indicators = data.get("indicators", {})
             market_data = data.get("market_data", {})
+            portfolio = data.get("portfolio", {})  # Get portfolio data
             
             # Debug logging to verify LLM input data
             logger.info(f"🔍 LLM INPUT DEBUG for {product_id}:")
@@ -552,11 +588,19 @@ Respond with ONLY a JSON object in this format:
                 if key in indicators:
                     logger.info(f"    {key}: {indicators[key]}")
             logger.info(f"  Historical Data Points: {len(historical_data)}")
+            
+            # Log portfolio context if available
+            if portfolio:
+                eur_balance = portfolio.get('EUR', {}).get('amount', 0)
+                portfolio_value = portfolio.get('portfolio_value_eur', {}).get('amount', 1)
+                eur_pct = (eur_balance / portfolio_value) * 100 if portfolio_value > 0 else 0
+                logger.info(f"  Portfolio: EUR €{eur_balance:.2f} ({eur_pct:.1f}%)")
 
-            # Create additional context from indicators
+            # Create additional context from indicators and portfolio
             additional_context = {
                 "indicators": indicators,
-                "market_data": market_data
+                "market_data": market_data,
+                "portfolio": portfolio  # Include portfolio in context
             }
 
             # Call the actual analysis method
