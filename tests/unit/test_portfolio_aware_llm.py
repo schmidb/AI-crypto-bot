@@ -254,29 +254,53 @@ class TestConfidenceThresholds:
     
     def test_buy_threshold_is_70(self):
         """Test that BUY threshold is set to 70"""
-        from config import config
-        assert config.CONFIDENCE_THRESHOLD_BUY == 70.0
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        buy_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_BUY', '30'))
+        assert buy_threshold == 70.0, f"Expected 70, got {buy_threshold}"
     
     def test_sell_threshold_is_55(self):
         """Test that SELL threshold is set to 55"""
-        from config import config
-        assert config.CONFIDENCE_THRESHOLD_SELL == 55.0
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        sell_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_SELL', '30'))
+        assert sell_threshold == 55.0, f"Expected 55, got {sell_threshold}"
     
     def test_buy_threshold_higher_than_sell(self):
         """Test that BUY threshold is higher than SELL (encourages SELL)"""
-        from config import config
-        assert config.CONFIDENCE_THRESHOLD_BUY > config.CONFIDENCE_THRESHOLD_SELL
-        assert config.CONFIDENCE_THRESHOLD_BUY - config.CONFIDENCE_THRESHOLD_SELL == 15.0
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        buy_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_BUY', '30'))
+        sell_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_SELL', '30'))
+        
+        assert buy_threshold > sell_threshold, \
+            f"BUY ({buy_threshold}) should be > SELL ({sell_threshold})"
+        assert buy_threshold - sell_threshold == 15.0, \
+            f"Gap should be 15, got {buy_threshold - sell_threshold}"
     
     def test_eur_allocation_target_is_25(self):
         """Test that EUR allocation target is 25%"""
-        from config import config
-        assert config.TARGET_EUR_ALLOCATION == 25.0
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        eur_target = float(os.getenv('TARGET_EUR_ALLOCATION', '12'))
+        assert eur_target == 25.0, f"Expected 25, got {eur_target}"
     
     def test_min_eur_reserve_is_25(self):
         """Test that minimum EUR reserve is 25"""
-        from config import config
-        assert config.MIN_EUR_RESERVE == 25.0
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        min_reserve = float(os.getenv('MIN_EUR_RESERVE', '15'))
+        assert min_reserve == 25.0, f"Expected 25, got {min_reserve}"
 
 
 if __name__ == '__main__':

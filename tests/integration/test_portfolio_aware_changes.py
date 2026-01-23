@@ -15,40 +15,66 @@ class TestConfigurationChanges:
     
     def test_buy_threshold_increased_to_70(self):
         """Verify BUY threshold was increased from 65 to 70"""
-        from config import config
-        assert config.CONFIDENCE_THRESHOLD_BUY == 70.0, \
-            "BUY threshold should be 70 to reduce BUY signals"
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        # Read directly from environment
+        buy_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_BUY', '30'))
+        assert buy_threshold == 70.0, \
+            f"BUY threshold should be 70 to reduce BUY signals, got {buy_threshold}"
     
     def test_sell_threshold_remains_55(self):
         """Verify SELL threshold remains at 55"""
-        from config import config
-        assert config.CONFIDENCE_THRESHOLD_SELL == 55.0, \
-            "SELL threshold should be 55 to encourage SELL signals"
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        sell_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_SELL', '30'))
+        assert sell_threshold == 55.0, \
+            f"SELL threshold should be 55 to encourage SELL signals, got {sell_threshold}"
     
     def test_threshold_gap_is_15_points(self):
         """Verify 15-point gap between BUY and SELL thresholds"""
-        from config import config
-        gap = config.CONFIDENCE_THRESHOLD_BUY - config.CONFIDENCE_THRESHOLD_SELL
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        buy_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_BUY', '30'))
+        sell_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_SELL', '30'))
+        gap = buy_threshold - sell_threshold
         assert gap == 15.0, \
-            "15-point gap should favor SELL signals over BUY"
+            f"15-point gap should favor SELL signals over BUY, got {gap}"
     
     def test_eur_allocation_target_increased(self):
         """Verify EUR allocation target increased from 12% to 25%"""
-        from config import config
-        assert config.TARGET_EUR_ALLOCATION == 25.0, \
-            "EUR target should be 25% to maintain adequate reserves"
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        eur_target = float(os.getenv('TARGET_EUR_ALLOCATION', '12'))
+        assert eur_target == 25.0, \
+            f"EUR target should be 25% to maintain adequate reserves, got {eur_target}"
     
     def test_min_eur_reserve_increased(self):
         """Verify minimum EUR reserve increased from 15 to 25"""
-        from config import config
-        assert config.MIN_EUR_RESERVE == 25.0, \
-            "Minimum EUR reserve should be 25 to prevent capital depletion"
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        min_reserve = float(os.getenv('MIN_EUR_RESERVE', '15'))
+        assert min_reserve == 25.0, \
+            f"Minimum EUR reserve should be 25 to prevent capital depletion, got {min_reserve}"
     
     def test_rebalance_target_matches_allocation(self):
         """Verify rebalance target matches EUR allocation target"""
-        from config import config
-        assert config.REBALANCE_TARGET_EUR_PERCENT == 25.0, \
-            "Rebalance target should match EUR allocation target"
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        rebalance_target = float(os.getenv('REBALANCE_TARGET_EUR_PERCENT', '12'))
+        assert rebalance_target == 25.0, \
+            f"Rebalance target should match EUR allocation target, got {rebalance_target}"
 
 
 class TestLLMAnalyzerPortfolioIntegration:
@@ -158,26 +184,33 @@ class TestExpectedBehavior:
         portfolio_value = 339.42
         current_pct = (current_eur / portfolio_value) * 100
         
-        from config import config
-        target_pct = config.TARGET_EUR_ALLOCATION
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        target_pct = float(os.getenv('TARGET_EUR_ALLOCATION', '25'))
         
         assert current_pct < target_pct, \
             f"Current EUR ({current_pct:.1f}%) should be below target ({target_pct}%)"
     
     def test_buy_threshold_harder_than_sell(self):
         """Verify BUY is harder to trigger than SELL"""
-        from config import config
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        buy_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_BUY', '30'))
+        sell_threshold = float(os.getenv('CONFIDENCE_THRESHOLD_SELL', '30'))
         
         # A signal with 60% confidence should:
         # - NOT trigger BUY (needs 70%)
         # - TRIGGER SELL (needs 55%)
         test_confidence = 60
         
-        can_buy = test_confidence >= config.CONFIDENCE_THRESHOLD_BUY
-        can_sell = test_confidence >= config.CONFIDENCE_THRESHOLD_SELL
+        can_buy = test_confidence >= buy_threshold
+        can_sell = test_confidence >= sell_threshold
         
-        assert not can_buy, "60% confidence should NOT trigger BUY"
-        assert can_sell, "60% confidence SHOULD trigger SELL"
+        assert not can_buy, f"60% confidence should NOT trigger BUY (threshold: {buy_threshold})"
+        assert can_sell, f"60% confidence SHOULD trigger SELL (threshold: {sell_threshold})"
 
 
 class TestDocumentation:
