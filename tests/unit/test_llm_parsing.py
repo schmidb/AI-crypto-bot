@@ -172,7 +172,7 @@ class TestLLMTokenLimitConfiguration:
             content = f.read()
             
         # Should have simplified format instructions
-        assert 'Respond ONLY with valid JSON' in content or 'ONLY with valid JSON' in content
+        assert 'ONLY valid JSON' in content
 
 
 if __name__ == '__main__':
