@@ -131,22 +131,16 @@ class LLMAnalyzer:
             enhanced_prompt = f"""
 {prompt}
 
-CRITICAL INSTRUCTIONS:
-1. Respond ONLY with valid JSON
+CRITICAL INSTRUCTIONS FOR JSON RESPONSE:
+1. Respond with ONLY valid JSON - nothing else
 2. NO markdown code blocks (no ```json or ```)
 3. NO explanations before or after the JSON
-4. ENSURE all commas are present between fields
+4. NO trailing commas in arrays or objects
 5. Use double quotes for all strings
+6. Ensure all brackets and braces are properly closed
 
-Required format (copy this structure exactly):
-{{
-  "decision": "BUY",
-  "confidence": 75,
-  "reasoning": ["reason1", "reason2"],
-  "risk_assessment": "medium"
-}}
-
-Your response must be valid JSON that can be parsed directly.
+Example of correct format:
+{{"decision": "HOLD", "confidence": 65, "reasoning": ["Market consolidating", "Waiting for clearer signal"], "risk_assessment": "medium"}}
 """
 
             try:
@@ -209,6 +203,7 @@ Your response must be valid JSON that can be parsed directly.
             # Remove markdown code blocks if present
             response_text = re.sub(r'```json\s*', '', response_text)
             response_text = re.sub(r'```\s*', '', response_text)
+            response_text = response_text.strip()
             
             # Find JSON content between curly braces
             start_idx = response_text.find('{')
@@ -217,15 +212,33 @@ Your response must be valid JSON that can be parsed directly.
             if start_idx >= 0 and end_idx > start_idx:
                 json_str = response_text[start_idx:end_idx]
                 
-                # Fix common JSON errors: missing commas after arrays/objects
-                json_str = re.sub(r'(\])\s*\n\s*"', r'\1,\n  "', json_str)
-                json_str = re.sub(r'(\})\s*\n\s*"', r'\1,\n  "', json_str)
+                # Fix common JSON errors
+                json_str = re.sub(r'(\])\s*\n\s*"', r'\1,\n  "', json_str)  # Missing comma after array
+                json_str = re.sub(r'(\})\s*\n\s*"', r'\1,\n  "', json_str)  # Missing comma after object
+                json_str = re.sub(r',\s*}', '}', json_str)  # Trailing comma before }
+                json_str = re.sub(r',\s*]', ']', json_str)  # Trailing comma before ]
                 
                 analysis_result = json.loads(json_str)
                 
-                # Validate required fields
+                # Validate and normalize required fields
                 if 'decision' not in analysis_result or 'confidence' not in analysis_result:
                     raise ValueError("Missing required fields: decision or confidence")
+                
+                # Normalize decision to uppercase
+                analysis_result['decision'] = analysis_result['decision'].upper()
+                
+                # Ensure confidence is an integer
+                analysis_result['confidence'] = int(analysis_result['confidence'])
+                
+                # Ensure reasoning is a list
+                if 'reasoning' not in analysis_result:
+                    analysis_result['reasoning'] = ["LLM analysis completed"]
+                elif isinstance(analysis_result['reasoning'], str):
+                    analysis_result['reasoning'] = [analysis_result['reasoning']]
+                
+                # Ensure risk_assessment exists
+                if 'risk_assessment' not in analysis_result:
+                    analysis_result['risk_assessment'] = 'medium'
                     
                 return analysis_result
             else:
@@ -494,46 +507,25 @@ DECISION CRITERIA for Long-term Trading:
 - SELL: Fundamental deterioration, major trend breaks, profit realization
 - HOLD: Stable trends, minor corrections, building positions gradually"""
 
-        # Add request for enhanced JSON response
+        # Add request for simplified JSON response (more reliable)
         base_prompt += """
 
-Respond with ONLY a JSON object in this format:
+CRITICAL: Respond with ONLY valid JSON. No markdown, no explanations.
+
+Required format (copy exactly):
 {
-  "decision": "BUY|SELL|HOLD",
-  "confidence": <0-100>,
-  "reasoning": ["detailed reason 1", "detailed reason 2", "detailed reason 3"],
-  "risk_assessment": "low|medium|high",
-  "timeframe_analysis": {
-    "short_term_trend": "bullish|bearish|neutral",
-    "momentum_strength": "strong|moderate|weak",
-    "entry_timing": "excellent|good|poor"
-  },
-  "technical_indicators": {
-    "rsi": {
-      "value": <rsi_value>,
-      "signal": "oversold|neutral|overbought",
-      "weight": 0.3
-    },
-    "macd": {
-      "macd_line": <macd_value>,
-      "signal_line": <signal_value>,
-      "histogram": <histogram_value>,
-      "signal": "bullish|bearish|neutral",
-      "weight": 0.4
-    },
-    "bollinger_bands": {
-      "signal": "breakout_upper|breakout_lower|squeeze|normal",
-      "position": <bb_position_value>,
-      "timeframe_hours": <bb_timeframe>,
-      "weight": 0.3
-    }
-  },
-  "market_conditions": {
-    "trend": "bullish|bearish|sideways",
-    "volatility": "low|moderate|high",
-    "volume": "below_average|average|above_average"
-  }
-}"""
+  "decision": "BUY",
+  "confidence": 75,
+  "reasoning": ["reason 1", "reason 2", "reason 3"],
+  "risk_assessment": "medium"
+}
+
+Rules:
+- decision: Must be exactly "BUY", "SELL", or "HOLD"
+- confidence: Integer from 0 to 100
+- reasoning: Array of 2-4 short strings
+- risk_assessment: Must be exactly "low", "medium", or "high"
+"""
         return base_prompt
     def analyze_market(self, data: Dict) -> Dict:
         """
