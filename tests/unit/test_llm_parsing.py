@@ -158,12 +158,12 @@ class TestLLMTokenLimitConfiguration:
     """Test that token limits are properly configured"""
     
     def test_max_output_tokens_reduced(self):
-        """Verify max_output_tokens is set to 2000 (not 10000)"""
+        """Verify max_output_tokens is set to 500 for concise responses"""
         with open('llm_analyzer.py', 'r') as f:
             content = f.read()
             
-        # Check that we're using 2000, not 10000
-        assert 'max_output_tokens=2000' in content or 'max_output_tokens: 2000' in content
+        # Check that we're using 500 for concise responses
+        assert 'max_output_tokens=500' in content
         assert 'max_output_tokens=10000' not in content
     
     def test_simplified_prompt_format(self):
