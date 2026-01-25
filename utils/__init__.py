@@ -7,6 +7,5 @@ __all__ = [
     'dashboard_updater',
     'trade_logger',
     'webserver_sync',
-    'tax_report',
-    'strategy_evaluator'
+    'tax_report'
 ]

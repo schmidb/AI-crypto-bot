@@ -127,20 +127,22 @@ class LLMAnalyzer:
     def _call_genai(self, prompt: str) -> Dict:
         """Call NEW google-genai library for text generation"""
         try:
-            # Simplified prompt for more reliable JSON responses
+            # Enhanced prompt with strict JSON formatting instructions
             enhanced_prompt = f"""
 {prompt}
 
-CRITICAL INSTRUCTIONS FOR JSON RESPONSE:
-1. Respond with ONLY valid JSON - nothing else
-2. NO markdown code blocks (no ```json or ```)
-3. NO explanations before or after the JSON
-4. NO trailing commas in arrays or objects
-5. Use double quotes for all strings
-6. Ensure all brackets and braces are properly closed
+CRITICAL: Respond with ONLY valid JSON. No explanations, no markdown, no extra text.
 
-Example of correct format:
-{{"decision": "HOLD", "confidence": 65, "reasoning": ["Market consolidating", "Waiting for clearer signal"], "risk_assessment": "medium"}}
+Required format (copy this structure exactly):
+{{"decision": "BUY", "confidence": 75, "reasoning": ["reason1", "reason2"], "risk_assessment": "medium"}}
+
+Rules:
+- decision: Must be "BUY", "SELL", or "HOLD"
+- confidence: Integer 0-100
+- reasoning: Array of 2-3 short strings
+- risk_assessment: Must be "low", "medium", or "high"
+
+Your JSON response:
 """
 
             try:
@@ -149,10 +151,10 @@ Example of correct format:
                     model=self.model,
                     contents=[enhanced_prompt],
                     config=types.GenerateContentConfig(
-                        temperature=0.2,
-                        max_output_tokens=2000,  # Reduced from 10000 to prevent truncation
-                        top_p=0.8,
-                        top_k=40
+                        temperature=0.1,  # Lower temperature for more consistent formatting
+                        max_output_tokens=500,  # Reduced to force concise responses
+                        top_p=0.9,
+                        top_k=20
                     )
                 )
                 
@@ -162,15 +164,15 @@ Example of correct format:
             except Exception as primary_error:
                 logger.warning(f"Primary model {self.model} failed: {primary_error}, trying fallback")
                 
-                # Try fallback model with same simplified config
+                # Try fallback model with same strict config
                 response = self.client.models.generate_content(
                     model=self.fallback_model,
                     contents=[enhanced_prompt],
                     config=types.GenerateContentConfig(
-                        temperature=0.2,
-                        max_output_tokens=2000,  # Reduced from 10000
-                        top_p=0.8,
-                        top_k=40
+                        temperature=0.1,  # Lower temperature for consistency
+                        max_output_tokens=500,  # Reduced for concise responses
+                        top_p=0.9,
+                        top_k=20
                     )
                 )
                 
@@ -200,35 +202,40 @@ Example of correct format:
         import re
         
         try:
-            # Remove markdown code blocks if present
-            response_text = re.sub(r'```json\s*', '', response_text)
-            response_text = re.sub(r'```\s*', '', response_text)
+            # Clean the response
             response_text = response_text.strip()
             
-            # Find JSON content between curly braces
+            # Remove markdown code blocks
+            response_text = re.sub(r'```json\s*', '', response_text)
+            response_text = re.sub(r'```\s*', '', response_text)
+            
+            # Find JSON object - look for outermost braces
             start_idx = response_text.find('{')
             end_idx = response_text.rfind('}') + 1
 
             if start_idx >= 0 and end_idx > start_idx:
                 json_str = response_text[start_idx:end_idx]
                 
-                # Fix common JSON errors
-                json_str = re.sub(r'(\])\s*\n\s*"', r'\1,\n  "', json_str)  # Missing comma after array
-                json_str = re.sub(r'(\})\s*\n\s*"', r'\1,\n  "', json_str)  # Missing comma after object
-                json_str = re.sub(r',\s*}', '}', json_str)  # Trailing comma before }
-                json_str = re.sub(r',\s*]', ']', json_str)  # Trailing comma before ]
+                # Fix common JSON formatting issues
+                json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)  # Remove trailing commas
+                json_str = re.sub(r'(\])\s*\n\s*"', r'\1,\n  "', json_str)  # Add missing commas after arrays
+                json_str = re.sub(r'(\})\s*\n\s*"', r'\1,\n  "', json_str)  # Add missing commas after objects
                 
+                # Parse JSON
                 analysis_result = json.loads(json_str)
                 
-                # Validate and normalize required fields
+                # Validate required fields
                 if 'decision' not in analysis_result or 'confidence' not in analysis_result:
                     raise ValueError("Missing required fields: decision or confidence")
                 
-                # Normalize decision to uppercase
-                analysis_result['decision'] = analysis_result['decision'].upper()
+                # Normalize and validate
+                analysis_result['decision'] = str(analysis_result['decision']).upper()
+                if analysis_result['decision'] not in ['BUY', 'SELL', 'HOLD']:
+                    raise ValueError(f"Invalid decision: {analysis_result['decision']}")
                 
-                # Ensure confidence is an integer
-                analysis_result['confidence'] = int(analysis_result['confidence'])
+                analysis_result['confidence'] = int(float(analysis_result['confidence']))
+                if not 0 <= analysis_result['confidence'] <= 100:
+                    analysis_result['confidence'] = max(0, min(100, analysis_result['confidence']))
                 
                 # Ensure reasoning is a list
                 if 'reasoning' not in analysis_result:
@@ -236,48 +243,78 @@ Example of correct format:
                 elif isinstance(analysis_result['reasoning'], str):
                     analysis_result['reasoning'] = [analysis_result['reasoning']]
                 
-                # Ensure risk_assessment exists
+                # Ensure risk_assessment exists and is valid
                 if 'risk_assessment' not in analysis_result:
                     analysis_result['risk_assessment'] = 'medium'
+                else:
+                    risk = str(analysis_result['risk_assessment']).lower()
+                    if risk not in ['low', 'medium', 'high']:
+                        analysis_result['risk_assessment'] = 'medium'
+                    else:
+                        analysis_result['risk_assessment'] = risk
                     
                 return analysis_result
             else:
                 raise ValueError("No JSON structure found in response")
                 
         except (json.JSONDecodeError, ValueError) as e:
-            # Try to extract partial data from incomplete JSON
-            logger.warning(f"JSON parse failed, attempting partial extraction: {str(e)[:100]}")
+            # Fallback: Extract fields using regex
+            logger.warning(f"JSON parse failed, using regex extraction: {str(e)[:80]}")
             
             try:
-                # Extract all fields using regex as fallback
-                decision_match = re.search(r'"decision"\s*:\s*"(BUY|SELL|HOLD)"', response_text, re.IGNORECASE)
-                confidence_match = re.search(r'"confidence"\s*:\s*(\d+)', response_text)
-                risk_match = re.search(r'"risk_assessment"\s*:\s*"(\w+)"', response_text, re.IGNORECASE)
-                reasoning_match = re.search(r'"reasoning"\s*:\s*\[(.*?)\]', response_text, re.DOTALL)
+                # Try multiple extraction patterns
                 
-                if decision_match and confidence_match:
+                # Pattern 1: Standard JSON fields
+                decision_match = re.search(r'"?decision"?\s*:\s*"?(BUY|SELL|HOLD)"?', response_text, re.IGNORECASE)
+                confidence_match = re.search(r'"?confidence"?\s*:\s*(\d+)', response_text)
+                
+                # Pattern 2: Look for decision/action words in text
+                if not decision_match:
+                    if re.search(r'\b(buy|buying|purchase)\b', response_text, re.IGNORECASE):
+                        decision = "BUY"
+                    elif re.search(r'\b(sell|selling)\b', response_text, re.IGNORECASE):
+                        decision = "SELL"
+                    else:
+                        decision = "HOLD"
+                else:
                     decision = decision_match.group(1).upper()
+                
+                # Pattern 3: Extract confidence from various formats
+                if confidence_match:
                     confidence = int(confidence_match.group(1))
-                    risk = risk_match.group(1).lower() if risk_match else "medium"
+                else:
+                    # Look for percentage patterns
+                    pct_match = re.search(r'(\d+)\s*%', response_text)
+                    confidence = int(pct_match.group(1)) if pct_match else 65
+                
+                # Clamp confidence to valid range
+                confidence = max(0, min(100, confidence))
+                
+                # Extract risk assessment
+                risk_match = re.search(r'"?risk_assessment"?\s*:\s*"?(low|medium|high)"?', response_text, re.IGNORECASE)
+                risk = risk_match.group(1).lower() if risk_match else "medium"
+                
+                # Extract reasoning array
+                reasoning = []
+                reasoning_match = re.search(r'"?reasoning"?\s*:\s*\[(.*?)\]', response_text, re.DOTALL)
+                if reasoning_match:
+                    reasons_text = reasoning_match.group(1)
+                    reasoning = re.findall(r'"([^"]+)"', reasons_text)
+                
+                if not reasoning:
+                    reasoning = [f"Extracted {decision} signal from LLM response"]
+                
+                logger.info(f"✓ Regex extraction successful: {decision} ({confidence}%)")
+                return {
+                    "decision": decision,
+                    "confidence": confidence,
+                    "reasoning": reasoning,
+                    "risk_assessment": risk,
+                    "partial_parse": True
+                }
                     
-                    # Extract reasoning items
-                    reasoning = ["Partial LLM response - extracted key fields"]
-                    if reasoning_match:
-                        reasons_text = reasoning_match.group(1)
-                        reasons = re.findall(r'"([^"]+)"', reasons_text)
-                        if reasons:
-                            reasoning = reasons
-                    
-                    logger.info(f"Extracted partial data: {decision} ({confidence}%)")
-                    return {
-                        "decision": decision,
-                        "confidence": confidence,
-                        "reasoning": reasoning,
-                        "risk_assessment": risk,
-                        "partial_parse": True
-                    }
             except Exception as extract_error:
-                logger.debug(f"Partial extraction failed: {extract_error}")
+                logger.warning(f"Regex extraction failed: {extract_error}")
             
             # Final fallback
             logger.warning("Using safe fallback response")
@@ -510,21 +547,23 @@ DECISION CRITERIA for Long-term Trading:
         # Add request for simplified JSON response (more reliable)
         base_prompt += """
 
-CRITICAL: Respond with ONLY valid JSON. No markdown, no explanations.
+RESPONSE FORMAT (CRITICAL):
+Respond with ONLY this JSON structure. No other text.
 
-Required format (copy exactly):
 {
   "decision": "BUY",
   "confidence": 75,
-  "reasoning": ["reason 1", "reason 2", "reason 3"],
+  "reasoning": ["reason 1", "reason 2"],
   "risk_assessment": "medium"
 }
 
-Rules:
-- decision: Must be exactly "BUY", "SELL", or "HOLD"
-- confidence: Integer from 0 to 100
-- reasoning: Array of 2-4 short strings
-- risk_assessment: Must be exactly "low", "medium", or "high"
+RULES:
+- decision: "BUY", "SELL", or "HOLD" (uppercase)
+- confidence: 0-100 (integer)
+- reasoning: 2-4 short strings
+- risk_assessment: "low", "medium", or "high" (lowercase)
+
+Start response with {:
 """
         return base_prompt
     def analyze_market(self, data: Dict) -> Dict:

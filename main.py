@@ -30,7 +30,6 @@ from utils.trading.trade_cooldown import TradeCooldownManager
 from utils.dashboard.dashboard_updater import DashboardUpdater
 from utils.dashboard.webserver_sync import WebServerSync
 from utils.trading.tax_report import TaxReportGenerator
-from utils.backtest.strategy_evaluator import StrategyEvaluator
 from utils.logger import get_supervisor_logger, log_bot_shutdown
 from utils.notification_service import NotificationService
 from utils.cleanup_manager import CleanupManager
@@ -210,9 +209,6 @@ class TradingBot:
         
         # Initialize tax report generator
         self.tax_report_generator = TaxReportGenerator()
-        
-        # Initialize strategy evaluator
-        self.strategy_evaluator = StrategyEvaluator()
         
         # Initialize notification service
         self.notification_service = NotificationService()
@@ -1633,8 +1629,8 @@ class TradingBot:
                     confidence = analysis_result.get('confidence', 0)
                     logger.info(f"Analysis for {product_id}: {action} (confidence: {confidence:.1f}%)")
                     
-                    # Add delay between API calls to avoid rate limiting
-                    time.sleep(1)
+                    # Add delay between API calls to avoid rate limiting (increased to 5s for Gemini API)
+                    time.sleep(5)
                     
                 except Exception as e:
                     logger.error(f"Error analyzing {product_id}: {e}")
@@ -1810,9 +1806,6 @@ class TradingBot:
         # Schedule daily tax report generation at midnight
         schedule.every().day.at("00:00").do(self.generate_tax_report)
         
-        # Schedule weekly strategy performance report on Sunday at 1 AM
-        schedule.every().sunday.at("01:00").do(self.generate_strategy_report)
-        
         # Schedule portfolio rebalancing every 3 hours
         # TODO: Implement portfolio rebalancing method
         # schedule.every(180).minutes.do(self.portfolio.check_and_rebalance)
@@ -1958,24 +1951,6 @@ class TradingBot:
             logger.error(f"Error generating tax report: {e}")
             return False
             
-    def generate_strategy_report(self):
-        """Generate a strategy performance report"""
-        try:
-            output_file = f"reports/strategy_performance_{datetime.now().strftime('%Y%m%d')}.xlsx"
-            
-            logger.info("Generating strategy performance report")
-            success = self.strategy_evaluator.generate_performance_report(output_file)
-            
-            if success:
-                logger.info(f"Strategy performance report generated successfully: {output_file}")
-            else:
-                logger.error("Failed to generate strategy performance report")
-                
-            return success
-        except Exception as e:
-            logger.error(f"Error generating strategy performance report: {e}")
-            return False
-    
     def run_daily_health_check_task(self):
         """Scheduled task wrapper for daily health check"""
         try:

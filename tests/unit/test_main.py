@@ -89,7 +89,6 @@ def mock_components():
         DashboardUpdater=Mock(),
         WebServerSync=Mock(),
         TaxReportGenerator=Mock(),
-        StrategyEvaluator=Mock(),
         NotificationService=Mock(),
         CleanupManager=Mock(),
         DailyReportGenerator=Mock(),
