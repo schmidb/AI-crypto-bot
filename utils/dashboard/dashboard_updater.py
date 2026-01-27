@@ -218,6 +218,9 @@ class DashboardUpdater:
             # Enhanced Trading Strategy
             detailed_config['CONFIDENCE_THRESHOLD_BUY'] = getattr(config, 'CONFIDENCE_THRESHOLD_BUY', None)
             detailed_config['CONFIDENCE_THRESHOLD_SELL'] = getattr(config, 'CONFIDENCE_THRESHOLD_SELL', None)
+            detailed_config['DISPLAY_THRESHOLD_BUY'] = getattr(config, 'DISPLAY_THRESHOLD_BUY', None)
+            detailed_config['DISPLAY_THRESHOLD_SELL'] = getattr(config, 'DISPLAY_THRESHOLD_SELL', None)
+            detailed_config['THRESHOLD_NOTE'] = "CONFIDENCE_THRESHOLD values are for display only. Adaptive system uses regime-specific thresholds."
             detailed_config['CONFIDENCE_BOOST_TREND_ALIGNED'] = getattr(config, 'CONFIDENCE_BOOST_TREND_ALIGNED', None)
             detailed_config['CONFIDENCE_PENALTY_COUNTER_TREND'] = getattr(config, 'CONFIDENCE_PENALTY_COUNTER_TREND', None)
             

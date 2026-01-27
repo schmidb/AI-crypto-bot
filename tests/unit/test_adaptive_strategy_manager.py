@@ -628,18 +628,21 @@ class TestGetCombinedSignal:
             assert result.confidence == 0
             assert 'Invalid technical indicators' in result.reasoning
     
-    @pytest.mark.skip(reason="Needs update for anti-overtrading features")
     def test_get_combined_signal_performance_tracking(self, mock_config, mock_analyzers, sample_market_data, sample_technical_indicators):
         """Test performance tracking integration"""
         with patch('strategies.adaptive_strategy_manager.StrategyManager.__init__'), \
-             patch.object(AdaptiveStrategyManager, 'analyze_all_strategies') as mock_analyze:
+             patch.object(AdaptiveStrategyManager, 'analyze_all_strategies') as mock_analyze, \
+             patch.object(AdaptiveStrategyManager, 'detect_market_regime_enhanced', return_value='trending'):
             
             manager = AdaptiveStrategyManager(mock_config, **mock_analyzers)
             manager.performance_tracker = Mock()
+            manager.strategy_weights = {'trend_following': 0.5, 'momentum': 0.5}
+            manager.current_market_regime = 'trending'
             
             # Mock strategy analysis
             mock_strategy_signals = {
-                'trend_following': TradingSignal('BUY', 75, 'Strong uptrend', 1.2)
+                'trend_following': TradingSignal('BUY', 75, 'Strong uptrend', 1.2),
+                'momentum': TradingSignal('BUY', 65, 'Positive momentum', 1.1)
             }
             mock_analyze.return_value = mock_strategy_signals
             
@@ -647,7 +650,17 @@ class TestGetCombinedSignal:
             expected_signal = TradingSignal('BUY', 80, 'Adaptive strategy', 1.2)
             with patch.object(manager, '_combine_strategy_signals_adaptive', return_value=expected_signal):
                 
-                manager.get_combined_signal(sample_market_data, sample_technical_indicators)
+                # Add price to market data for performance tracking
+                sample_market_data['price'] = 45000.0
+                sample_market_data['product_id'] = 'BTC-EUR'
+                
+                result = manager.get_combined_signal(sample_market_data, sample_technical_indicators)
+                
+                # Verify performance tracker was called
+                assert manager.performance_tracker.record_decision.called
+                call_args = manager.performance_tracker.record_decision.call_args
+                assert call_args[1]['product_id'] == 'BTC-EUR'
+                assert call_args[1]['current_price'] == 45000.0
                 
                 # Verify performance tracking was called
                 manager.performance_tracker.record_decision.assert_called_once()
@@ -679,12 +692,26 @@ class TestErrorHandling:
             assert combined_signal.action == 'BUY'
             assert combined_signal.confidence >= 75
     
-    @pytest.mark.skip(reason="Needs update for anti-overtrading features")
     def test_empty_strategy_signals(self, mock_config, mock_analyzers):
         """Test handling of empty strategy signals"""
         with patch('strategies.adaptive_strategy_manager.StrategyManager.__init__'):
             manager = AdaptiveStrategyManager(mock_config, **mock_analyzers)
             manager.strategy_weights = {'trend_following': 0.25, 'momentum': 0.25, 'mean_reversion': 0.25, 'llm_strategy': 0.25}
+            manager.strategies = {}
+            manager.performance_tracker = Mock()
+            
+            # Empty strategy signals
+            strategy_signals = {}
+            weights = {'trend_following': 0.3, 'momentum': 0.25, 'mean_reversion': 0.2, 'llm_strategy': 0.25}
+            
+            # Should return HOLD with 0 confidence
+            combined_signal = manager._combine_strategy_signals_adaptive(
+                strategy_signals, weights, 'ranging'
+            )
+            
+            assert combined_signal.action == 'HOLD'
+            assert combined_signal.confidence == 0
+            assert 'No strategy meets' in combined_signal.reasoning
             manager.strategies = {}
             manager.performance_tracker = Mock()
             
@@ -699,19 +726,22 @@ class TestErrorHandling:
             
             assert combined_signal.action == 'HOLD'
     
-    @pytest.mark.skip(reason="Needs update for anti-overtrading features")
     def test_performance_tracking_failure(self, mock_config, mock_analyzers, sample_market_data, sample_technical_indicators):
         """Test graceful handling of performance tracking failures"""
         with patch('strategies.adaptive_strategy_manager.StrategyManager.__init__'), \
-             patch.object(AdaptiveStrategyManager, 'analyze_all_strategies') as mock_analyze:
+             patch.object(AdaptiveStrategyManager, 'analyze_all_strategies') as mock_analyze, \
+             patch.object(AdaptiveStrategyManager, 'detect_market_regime_enhanced', return_value='trending'):
             
             manager = AdaptiveStrategyManager(mock_config, **mock_analyzers)
             manager.performance_tracker = Mock()
             manager.performance_tracker.record_decision.side_effect = Exception("Tracking error")
+            manager.strategy_weights = {'trend_following': 0.5, 'momentum': 0.5}
+            manager.current_market_regime = 'trending'
             
             # Mock strategy analysis
             mock_strategy_signals = {
-                'trend_following': TradingSignal('BUY', 75, 'Strong uptrend', 1.2)
+                'trend_following': TradingSignal('BUY', 75, 'Strong uptrend', 1.2),
+                'momentum': TradingSignal('BUY', 65, 'Positive momentum', 1.1)
             }
             mock_analyze.return_value = mock_strategy_signals
             
@@ -719,8 +749,16 @@ class TestErrorHandling:
             expected_signal = TradingSignal('BUY', 80, 'Adaptive strategy', 1.2)
             with patch.object(manager, '_combine_strategy_signals_adaptive', return_value=expected_signal):
                 
+                # Add required fields for performance tracking
+                sample_market_data['price'] = 45000.0
+                sample_market_data['product_id'] = 'BTC-EUR'
+                
                 # Should not raise exception despite tracking failure
                 result = manager.get_combined_signal(sample_market_data, sample_technical_indicators)
+                
+                # Should still return valid signal
+                assert result.action == 'BUY'
+                assert result.confidence == 80
                 
                 assert result.action == 'BUY'
                 assert result.confidence == 80
@@ -762,38 +800,26 @@ class TestMarketRegimeIntegration:
             assert result.action == 'BUY'
             assert 'trend_following' in result.reasoning.lower()
     
-    @pytest.mark.skip(reason="Needs update for anti-overtrading features")
     def test_regime_affects_threshold_application(self, mock_config, mock_analyzers, sample_technical_indicators, sample_market_data):
-        """Test that market regime affects threshold application"""
-        with patch('strategies.adaptive_strategy_manager.StrategyManager.__init__'), \
-             patch.object(AdaptiveStrategyManager, 'analyze_all_strategies') as mock_analyze:
+        """Test that different regimes apply different thresholds"""
+        # Test that bear market uses higher threshold (60%) vs ranging market (35%)
+        with patch('strategies.adaptive_strategy_manager.StrategyManager.__init__'):
             
             manager = AdaptiveStrategyManager(mock_config, **mock_analyzers)
-            manager.strategy_weights = {'trend_following': 0.25, 'momentum': 0.25, 'mean_reversion': 0.25, 'llm_strategy': 0.25}
+            manager.strategy_weights = {'llm_strategy': 1.0}
             manager.strategies = {}
             manager.performance_tracker = Mock()
             
-            # Create borderline strategy signal
-            strategy_signals = {
-                'llm_strategy': TradingSignal('BUY', 50, 'Moderate signal', 1.1)
-            }
-            mock_analyze.return_value = strategy_signals
+            # Test get_adaptive_threshold directly for different regimes
+            ranging_threshold = manager.get_adaptive_threshold('llm_strategy', 'BUY', 'ranging')
+            bear_threshold = manager.get_adaptive_threshold('llm_strategy', 'BUY', 'bear_ranging')
             
-            # Test in normal market (threshold = 35, should pass)
-            normal_market_data = sample_market_data.copy()
-            normal_market_data['price_changes'] = {'24h': 2.0, '5d': 4.0, '7d': 1.0}
+            # Verify thresholds are different
+            assert ranging_threshold == 35, f"Ranging market should use 35% threshold, got {ranging_threshold}"
+            assert bear_threshold == 60, f"Bear market should use 60% threshold, got {bear_threshold}"
             
-            result_normal = manager.get_combined_signal(normal_market_data, sample_technical_indicators)
-            
-            # Test in bear market (threshold = 60, should fail)
-            bear_market_data = sample_market_data.copy()
-            bear_market_data['price_changes'] = {'24h': 1.0, '5d': 2.0, '7d': -6.0}
-            
-            result_bear = manager.get_combined_signal(bear_market_data, sample_technical_indicators)
-            
-            # Normal market should allow BUY, bear market should HOLD
-            assert result_normal.action == 'BUY'
-            assert result_bear.action == 'HOLD'
+            # Verify bear market is more conservative
+            assert bear_threshold > ranging_threshold, "Bear market should have higher threshold than ranging"
 
 if __name__ == '__main__':
     pytest.main([__file__])

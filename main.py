@@ -194,6 +194,11 @@ class TradingBot:
         # Initialize dashboard updater (local data only)
         self.dashboard_updater = DashboardUpdater()
         
+        # Initialize adaptive regime monitor
+        from utils.dashboard.adaptive_regime_monitor import AdaptiveRegimeMonitor
+        self.regime_monitor = AdaptiveRegimeMonitor()
+        logger.info("✅ Adaptive regime monitor initialized")
+        
         # Initialize performance tracker
         self.performance_tracker = None
         if PERFORMANCE_TRACKING_AVAILABLE:
@@ -636,6 +641,23 @@ class TradingBot:
                 "execution_status": "pending",
                 "trade_executed": False
             }
+            
+            # Update regime monitor with current regime and thresholds
+            try:
+                current_regime = getattr(self.strategy_manager, 'current_market_regime', 'ranging')
+                # Get active thresholds from adaptive strategy manager
+                if hasattr(self.strategy_manager, 'adaptive_thresholds'):
+                    active_thresholds = self.strategy_manager.adaptive_thresholds.get(current_regime, {})
+                else:
+                    active_thresholds = {}
+                
+                self.regime_monitor.update_regime(
+                    regime=current_regime,
+                    market_data={"price_changes": market_data.get("price_changes", {}), "indicators": technical_indicators},
+                    active_thresholds=active_thresholds
+                )
+            except Exception as e:
+                logger.debug(f"Failed to update regime monitor: {e}")
             
             return result
             

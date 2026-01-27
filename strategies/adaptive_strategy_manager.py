@@ -204,7 +204,7 @@ class AdaptiveStrategyManager(StrategyManager):
                 self.logger.info(f"⏭️  {strategy_name} below threshold ({signal.confidence:.1f}% < {threshold}%)")
         
         # If no strategy meets threshold, return HOLD with average confidence
-        avg_confidence = sum(s.confidence for s in strategy_signals.values()) / len(strategy_signals)
+        avg_confidence = sum(s.confidence for s in strategy_signals.values()) / len(strategy_signals) if strategy_signals else 0
         
         self.logger.info(f"🛑 No strategy meets adaptive thresholds - HOLD (avg confidence: {avg_confidence:.1f}%)")
         

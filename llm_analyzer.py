@@ -258,8 +258,8 @@ Your JSON response:
                 raise ValueError("No JSON structure found in response")
                 
         except (json.JSONDecodeError, ValueError) as e:
-            # Fallback: Extract fields using regex
-            logger.warning(f"JSON parse failed, using regex extraction: {str(e)[:80]}")
+            # Fallback: Extract fields using regex (this is expected and works reliably)
+            logger.debug(f"JSON parse failed, using regex extraction: {str(e)[:80]}")
             
             try:
                 # Try multiple extraction patterns

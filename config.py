@@ -75,9 +75,15 @@ class Config:
         self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
         self.LOG_FILE = os.getenv("LOG_FILE", "logs/crypto_bot.log")
         
-        # Enhanced Trading Strategy Settings - OPTIMIZATION 2: Lower confidence thresholds
-        self.CONFIDENCE_THRESHOLD_BUY = float(os.getenv("CONFIDENCE_THRESHOLD_BUY", "30"))  # Optimized from backtesting
-        self.CONFIDENCE_THRESHOLD_SELL = float(os.getenv("CONFIDENCE_THRESHOLD_SELL", "30"))  # Optimized from backtesting
+        # Enhanced Trading Strategy Settings - LEGACY: For display only
+        # NOTE: These thresholds are NOT used for trading decisions
+        # The AdaptiveStrategyManager uses regime-specific thresholds instead
+        self.DISPLAY_THRESHOLD_BUY = float(os.getenv("CONFIDENCE_THRESHOLD_BUY", "30"))  # Display only
+        self.DISPLAY_THRESHOLD_SELL = float(os.getenv("CONFIDENCE_THRESHOLD_SELL", "30"))  # Display only
+        
+        # Backward compatibility aliases (deprecated)
+        self.CONFIDENCE_THRESHOLD_BUY = self.DISPLAY_THRESHOLD_BUY
+        self.CONFIDENCE_THRESHOLD_SELL = self.DISPLAY_THRESHOLD_SELL
         self.CONFIDENCE_BOOST_TREND_ALIGNED = float(os.getenv("CONFIDENCE_BOOST_TREND_ALIGNED", "10"))
         self.CONFIDENCE_PENALTY_COUNTER_TREND = float(os.getenv("CONFIDENCE_PENALTY_COUNTER_TREND", "5"))
         
