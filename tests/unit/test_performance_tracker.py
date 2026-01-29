@@ -10,7 +10,7 @@ import json
 import os
 import tempfile
 import shutil
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
@@ -245,7 +245,7 @@ class TestPortfolioSnapshots:
     def test_snapshot_frequency_daily(self):
         """Test daily snapshot frequency logic"""
         # Set last snapshot to yesterday
-        yesterday = datetime.utcnow() - timedelta(days=1)
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
         self.tracker.config["last_snapshot_date"] = yesterday.isoformat()
         self.tracker.config["snapshot_frequency"] = "daily"
         
@@ -253,7 +253,7 @@ class TestPortfolioSnapshots:
         assert self.tracker._should_take_snapshot() is True
         
         # Set last snapshot to 1 hour ago
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
         self.tracker.config["last_snapshot_date"] = one_hour_ago.isoformat()
         
         # Should not take snapshot (less than 1 day ago)
@@ -264,14 +264,14 @@ class TestPortfolioSnapshots:
         self.tracker.config["snapshot_frequency"] = "hourly"
         
         # Set last snapshot to 2 hours ago
-        two_hours_ago = datetime.utcnow() - timedelta(hours=2)
+        two_hours_ago = datetime.now(timezone.utc) - timedelta(hours=2)
         self.tracker.config["last_snapshot_date"] = two_hours_ago.isoformat()
         
         # Should take snapshot
         assert self.tracker._should_take_snapshot() is True
         
         # Set last snapshot to 30 minutes ago
-        thirty_min_ago = datetime.utcnow() - timedelta(minutes=30)
+        thirty_min_ago = datetime.now(timezone.utc) - timedelta(minutes=30)
         self.tracker.config["last_snapshot_date"] = thirty_min_ago.isoformat()
         
         # Should not take snapshot
@@ -284,7 +284,7 @@ class TestPortfolioSnapshots:
         
         # Set frequency to daily and last snapshot to now
         self.tracker.config["snapshot_frequency"] = "daily"
-        self.tracker.config["last_snapshot_date"] = datetime.utcnow().isoformat()
+        self.tracker.config["last_snapshot_date"] = datetime.now(timezone.utc).isoformat()
         
         result = self.tracker.take_portfolio_snapshot(portfolio_data)
         
@@ -421,7 +421,7 @@ class TestPerformanceDataRetrieval:
     
     def _add_test_snapshots(self):
         """Add test snapshots for different time periods"""
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         
         # Add snapshots for different periods
         test_snapshots = [

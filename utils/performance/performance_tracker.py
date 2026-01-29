@@ -8,7 +8,7 @@ and maintains historical portfolio performance data.
 import json
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional, Union
 from pathlib import Path
 
@@ -71,7 +71,7 @@ class PerformanceTracker:
                     "snapshot_frequency": "daily",
                     "last_snapshot_date": None,
                     "tracking_enabled": True,
-                    "created_date": datetime.utcnow().isoformat(),
+                    "created_date": datetime.now(timezone.utc).isoformat(),
                     "version": "1.0"
                 }
                 
@@ -113,7 +113,7 @@ class PerformanceTracker:
         """
         try:
             if start_date is None:
-                start_date = datetime.utcnow().isoformat()
+                start_date = datetime.now(timezone.utc).isoformat()
             
             # Update configuration
             self.config.update({
@@ -121,7 +121,7 @@ class PerformanceTracker:
                 "initial_portfolio_value": initial_portfolio_value,
                 "initial_portfolio_composition": initial_portfolio_composition,
                 "tracking_enabled": True,
-                "last_updated": datetime.utcnow().isoformat()
+                "last_updated": datetime.now(timezone.utc).isoformat()
             })
             
             # Add to reset history
@@ -169,7 +169,7 @@ class PerformanceTracker:
                 logger.debug("Performance tracking disabled, skipping snapshot")
                 return False
             
-            current_time = datetime.utcnow().isoformat()
+            current_time = datetime.now(timezone.utc).isoformat()
             
             # Check if we should take a snapshot based on frequency
             if not self._should_take_snapshot():
@@ -201,7 +201,7 @@ class PerformanceTracker:
             
             # Keep only recent snapshots (configurable retention)
             retention_days = self.config.get("retention_days", 365)
-            cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
             snapshots = [s for s in snapshots if datetime.fromisoformat(s["timestamp"]) > cutoff_date]
             
             # Save snapshots
@@ -228,7 +228,7 @@ class PerformanceTracker:
                 return True  # First snapshot
             
             last_snapshot_time = datetime.fromisoformat(last_snapshot)
-            current_time = datetime.utcnow()
+            current_time = datetime.now(timezone.utc)
             time_diff = current_time - last_snapshot_time
             
             if frequency == "hourly":
@@ -285,7 +285,7 @@ class PerformanceTracker:
             bool: True if reset successful
         """
         try:
-            reset_date = datetime.utcnow().isoformat()
+            reset_date = datetime.now(timezone.utc).isoformat()
             
             # Add to reset history
             reset_entry = {
@@ -396,10 +396,10 @@ class PerformanceTracker:
             # Parse period
             if period.endswith('d'):
                 days = int(period[:-1])
-                cutoff_date = datetime.utcnow() - timedelta(days=days)
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
             elif period.endswith('y'):
                 years = int(period[:-1])
-                cutoff_date = datetime.utcnow() - timedelta(days=years * 365)
+                cutoff_date = datetime.now(timezone.utc) - timedelta(days=years * 365)
             else:
                 logger.warning(f"Unknown period format: {period}, using all data")
                 return snapshots
