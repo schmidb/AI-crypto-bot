@@ -21,6 +21,17 @@ sys.modules['google.oauth2.service_account'] = Mock()
 # Add project root to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
+@pytest.fixture(autouse=True)
+def reset_llm_analyzer_import():
+    """Reset LLMAnalyzer import before each test to avoid mock pollution"""
+    # Remove llm_analyzer from sys.modules if it exists
+    if 'llm_analyzer' in sys.modules:
+        del sys.modules['llm_analyzer']
+    yield
+    # Clean up after test
+    if 'llm_analyzer' in sys.modules:
+        del sys.modules['llm_analyzer']
+
 @pytest.fixture
 def mock_config_values():
     """Mock config values for testing"""
