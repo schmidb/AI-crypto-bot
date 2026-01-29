@@ -9,7 +9,7 @@ import json
 import os
 import csv
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional, Tuple
 from pathlib import Path
 import uuid
@@ -61,7 +61,7 @@ class PerformanceManager:
                 default_periods = {
                     "periods": [],
                     "active_period": None,
-                    "created_date": datetime.utcnow().isoformat()
+                    "created_date": datetime.now(timezone.utc).isoformat()
                 }
                 with open(self.periods_file, 'w') as f:
                     json.dump(default_periods, f, indent=2)
@@ -71,7 +71,7 @@ class PerformanceManager:
                 default_goals = {
                     "goals": [],
                     "active_goals": [],
-                    "created_date": datetime.utcnow().isoformat()
+                    "created_date": datetime.now(timezone.utc).isoformat()
                 }
                 with open(self.goals_file, 'w') as f:
                     json.dump(default_goals, f, indent=2)
@@ -84,7 +84,7 @@ class PerformanceManager:
                         "eth_eur": {"name": "Ethereum (ETH-EUR)", "enabled": True},
                         "market_average": {"name": "Crypto Market Average", "enabled": False}
                     },
-                    "created_date": datetime.utcnow().isoformat()
+                    "created_date": datetime.now(timezone.utc).isoformat()
                 }
                 with open(self.benchmarks_file, 'w') as f:
                     json.dump(default_benchmarks, f, indent=2)
@@ -120,7 +120,7 @@ class PerformanceManager:
             
             # Create reset record
             reset_record = {
-                "reset_date": datetime.utcnow().isoformat(),
+                "reset_date": datetime.now(timezone.utc).isoformat(),
                 "confirmation_code": confirmation_code,
                 "previous_data_backed_up": reset_result.get("backup_created", False),
                 "backup_file": reset_result.get("backup_file")
@@ -171,7 +171,7 @@ class PerformanceManager:
         """
         try:
             if start_date is None:
-                start_date = datetime.utcnow()
+                start_date = datetime.now(timezone.utc)
             
             period_id = str(uuid.uuid4())
             period = {
@@ -180,7 +180,7 @@ class PerformanceManager:
                 "description": description,
                 "start_date": start_date.isoformat(),
                 "end_date": end_date.isoformat() if end_date else None,
-                "created_date": datetime.utcnow().isoformat(),
+                "created_date": datetime.now(timezone.utc).isoformat(),
                 "status": "active" if end_date is None else "planned"
             }
             
@@ -277,7 +277,7 @@ class PerformanceManager:
                 "target_value": target_value,
                 "timeframe": timeframe,
                 "description": description,
-                "created_date": datetime.utcnow().isoformat(),
+                "created_date": datetime.now(timezone.utc).isoformat(),
                 "status": "active"
             }
             
@@ -394,7 +394,7 @@ class PerformanceManager:
             benchmarks_data["benchmarks"][benchmark_id] = {
                 "name": name,
                 "enabled": enabled,
-                "added_date": datetime.utcnow().isoformat()
+                "added_date": datetime.now(timezone.utc).isoformat()
             }
             
             with open(self.benchmarks_file, 'w') as f:
@@ -494,7 +494,7 @@ class PerformanceManager:
             Dict with export status and file path
         """
         try:
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             export_dir = self.performance_path / "exports"
             export_dir.mkdir(exist_ok=True)
             
@@ -521,7 +521,7 @@ class PerformanceManager:
         export_file = export_dir / f"performance_export_{timestamp}.json"
         
         export_data = {
-            "export_date": datetime.utcnow().isoformat(),
+            "export_date": datetime.now(timezone.utc).isoformat(),
             "export_timestamp": timestamp,
             "include_snapshots": include_snapshots,
             "include_metrics": include_metrics
@@ -651,7 +651,7 @@ class PerformanceManager:
             insights = self._generate_performance_insights(current_metrics, period)
             
             report = {
-                "report_date": datetime.utcnow().isoformat(),
+                "report_date": datetime.now(timezone.utc).isoformat(),
                 "period": period,
                 "performance_metrics": current_metrics,
                 "goals_status": goals_status,
@@ -664,7 +664,7 @@ class PerformanceManager:
             reports_dir = self.performance_path / "reports"
             reports_dir.mkdir(exist_ok=True)
             
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             report_file = reports_dir / f"performance_report_{period}_{timestamp}.json"
             
             with open(report_file, 'w') as f:

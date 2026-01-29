@@ -8,7 +8,7 @@ Updates performance data files for dashboard consumption.
 import json
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
@@ -119,7 +119,7 @@ class PerformanceDashboardUpdater:
             advanced_features = self._generate_advanced_features(period_data)
             
             return {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "tracking_info": tracking_info,
                 "period_data": period_data,
                 "chart_data": chart_data,
@@ -132,7 +132,7 @@ class PerformanceDashboardUpdater:
         except Exception as e:
             logger.error(f"Error generating performance data: {e}")
             return {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "error": str(e)
             }
     
