@@ -124,8 +124,6 @@ def test_opportunity_manager():
     print("  ✓ Reserve management (20% kept in reserve)")
     print("  ✓ Minimum trade size enforcement")
     print("  ✓ Comprehensive opportunity analytics")
-    
-    return True
 
 if __name__ == "__main__":
     try:
