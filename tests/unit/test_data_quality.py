@@ -14,7 +14,7 @@ Tests to ensure data integrity and catch data quality issues before they affect 
 import pytest
 from unittest.mock import Mock, patch
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import json
 import numpy as np
 
@@ -101,13 +101,13 @@ class TestMarketDataQuality:
     
     def test_timestamp_validity(self):
         """Test timestamp data validity and freshness."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
-        # Valid timestamps
+        # Valid timestamps (remove timezone info for Z suffix)
         valid_timestamps = [
-            now.isoformat() + 'Z',
-            (now - timedelta(minutes=5)).isoformat() + 'Z',
-            (now - timedelta(hours=1)).isoformat() + 'Z'
+            now.replace(tzinfo=None).isoformat() + 'Z',
+            (now - timedelta(minutes=5)).replace(tzinfo=None).isoformat() + 'Z',
+            (now - timedelta(hours=1)).replace(tzinfo=None).isoformat() + 'Z'
         ]
         
         for timestamp_str in valid_timestamps:
@@ -115,23 +115,23 @@ class TestMarketDataQuality:
             timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
             assert isinstance(timestamp, datetime)
             
-            # Test freshness (data shouldn't be too old)
-            age = now - timestamp.replace(tzinfo=None)
+            # Test freshness (data shouldn't be too old) - compare timezone-aware datetimes
+            age = now - timestamp
             assert age.total_seconds() < 7200, f"Data is too old: {age.total_seconds()} seconds"
     
     def test_stale_data_detection(self):
         """Test detection of stale data."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
-        # Stale timestamps (older than 2 hours)
+        # Stale timestamps (older than 2 hours) - remove timezone info for Z suffix
         stale_timestamps = [
-            (now - timedelta(hours=3)).isoformat() + 'Z',
-            (now - timedelta(days=1)).isoformat() + 'Z'
+            (now - timedelta(hours=3)).replace(tzinfo=None).isoformat() + 'Z',
+            (now - timedelta(days=1)).replace(tzinfo=None).isoformat() + 'Z'
         ]
         
         for timestamp_str in stale_timestamps:
             timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-            age = now - timestamp.replace(tzinfo=None)
+            age = now - timestamp
             
             # Should detect as stale
             assert age.total_seconds() > 7200, f"Should detect as stale: {age.total_seconds()} seconds"
@@ -347,17 +347,17 @@ class TestDataCollectorQuality:
     
     def test_data_freshness_validation(self):
         """Test data freshness validation."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
-        # Test fresh data (within last 5 minutes)
-        fresh_timestamp = (now - timedelta(minutes=2)).isoformat() + 'Z'
+        # Test fresh data (within last 5 minutes) - remove timezone info for Z suffix
+        fresh_timestamp = (now - timedelta(minutes=2)).replace(tzinfo=None).isoformat() + 'Z'
         fresh_data = {
             'timestamp': fresh_timestamp,
             'price': 50000.0
         }
         
         timestamp = datetime.fromisoformat(fresh_data['timestamp'].replace('Z', '+00:00'))
-        age_seconds = (now - timestamp.replace(tzinfo=None)).total_seconds()
+        age_seconds = (now - timestamp).total_seconds()
         
         assert age_seconds < 300, f"Data should be fresh: {age_seconds} seconds old"
     
@@ -405,12 +405,12 @@ class TestDataQualityIntegration:
     
     def test_end_to_end_data_quality(self):
         """Test data quality from collection to strategy analysis."""
-        # Mock complete, valid data set
+        # Mock complete, valid data set - remove timezone info for Z suffix
         market_data = {
             'price': 50000.0,
             'volume': {'current': 1500000, 'average': 1200000},
             'price_changes': {'1h': 2.0, '4h': 3.0, '24h': 5.0, '5d': 8.0},
-            'timestamp': datetime.utcnow().isoformat() + 'Z'
+            'timestamp': datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + 'Z'
         }
         
         technical_indicators = {

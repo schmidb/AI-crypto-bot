@@ -7,7 +7,7 @@ risk metrics, and trading performance analysis.
 
 import pytest
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, MagicMock
 
 from utils.performance.performance_calculator import PerformanceCalculator
@@ -30,7 +30,7 @@ class TestReturnCalculations:
         self.calculator = PerformanceCalculator()
         
         # Create test snapshots
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         self.test_snapshots = [
             {
                 "timestamp": (base_time - timedelta(days=30)).isoformat(),
@@ -62,11 +62,11 @@ class TestReturnCalculations:
         """Test total return calculation with negative returns"""
         negative_snapshots = [
             {
-                "timestamp": (datetime.utcnow() - timedelta(days=30)).isoformat(),
+                "timestamp": (datetime.now(timezone.utc) - timedelta(days=30)).isoformat(),
                 "total_value_eur": 1000.0
             },
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "total_value_eur": 900.0
             }
         ]
@@ -79,7 +79,7 @@ class TestReturnCalculations:
     
     def test_total_return_calculation_with_insufficient_data(self):
         """Test total return calculation with insufficient data"""
-        single_snapshot = [{"timestamp": datetime.utcnow().isoformat(), "total_value_eur": 1000.0}]
+        single_snapshot = [{"timestamp": datetime.now(timezone.utc).isoformat(), "total_value_eur": 1000.0}]
         
         result = self.calculator.calculate_total_return(single_snapshot)
         
@@ -89,7 +89,7 @@ class TestReturnCalculations:
     def test_annualized_return_calculation(self):
         """Test annualized return calculation"""
         # Create snapshots spanning exactly 1 year with 20% total return
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         yearly_snapshots = [
             {
                 "timestamp": (base_time - timedelta(days=365)).isoformat(),
@@ -111,7 +111,7 @@ class TestReturnCalculations:
     def test_compound_annual_growth_rate(self):
         """Test CAGR calculation for multi-year periods"""
         # Create snapshots spanning 2 years
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         multi_year_snapshots = [
             {
                 "timestamp": (base_time - timedelta(days=730)).isoformat(),  # 2 years ago
@@ -134,8 +134,8 @@ class TestReturnCalculations:
         """Test return calculation edge cases"""
         # Test with zero initial value
         zero_initial_snapshots = [
-            {"timestamp": datetime.utcnow().isoformat(), "total_value_eur": 0.0},
-            {"timestamp": (datetime.utcnow() + timedelta(days=1)).isoformat(), "total_value_eur": 100.0}
+            {"timestamp": datetime.now(timezone.utc).isoformat(), "total_value_eur": 0.0},
+            {"timestamp": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(), "total_value_eur": 100.0}
         ]
         
         result = self.calculator.calculate_total_return(zero_initial_snapshots)
@@ -151,7 +151,7 @@ class TestTradingPerformanceCalculations:
         self.calculator = PerformanceCalculator()
         
         # Create test trade history
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         self.test_trades = [
             {
                 "timestamp": (base_time - timedelta(days=10)).isoformat(),
@@ -192,7 +192,7 @@ class TestTradingPerformanceCalculations:
     def test_trading_performance_with_period_filter(self):
         """Test trading performance with period filtering"""
         # Filter to last 7 days
-        period_start = (datetime.utcnow() - timedelta(days=7)).isoformat()
+        period_start = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
         
         result = self.calculator.calculate_trading_performance(
             self.test_trades, period_start=period_start
@@ -245,7 +245,7 @@ class TestRiskMetrics:
         self.calculator = PerformanceCalculator()
         
         # Create test snapshots with varying values for risk calculation
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         self.risk_snapshots = []
         
         # Create daily snapshots with some volatility
@@ -295,7 +295,7 @@ class TestRiskMetrics:
     def test_risk_metrics_with_insufficient_data(self):
         """Test risk metrics with insufficient data"""
         insufficient_snapshots = [
-            {"timestamp": datetime.utcnow().isoformat(), "total_value_eur": 1000.0}
+            {"timestamp": datetime.now(timezone.utc).isoformat(), "total_value_eur": 1000.0}
         ]
         
         result = self.calculator.calculate_risk_metrics(insufficient_snapshots)
@@ -312,7 +312,7 @@ class TestMarketPerformanceCalculations:
         self.calculator = PerformanceCalculator()
         
         # Create test data
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         self.market_snapshots = [
             {
                 "timestamp": (base_time - timedelta(days=30)).isoformat(),
@@ -421,7 +421,7 @@ class TestPerformanceCalculatorUtilities:
     
     def test_trade_filtering_by_period(self):
         """Test trade filtering by date period"""
-        base_time = datetime.utcnow()
+        base_time = datetime.now(timezone.utc)
         test_trades = [
             {"timestamp": (base_time - timedelta(days=5)).isoformat()},
             {"timestamp": (base_time - timedelta(days=15)).isoformat()},
@@ -441,11 +441,11 @@ class TestPerformanceCalculatorUtilities:
         """Test annualized return utility function"""
         test_snapshots = [
             {
-                "timestamp": (datetime.utcnow() - timedelta(days=365)).isoformat(),
+                "timestamp": (datetime.now(timezone.utc) - timedelta(days=365)).isoformat(),
                 "total_value_eur": 1000.0
             },
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "total_value_eur": 1200.0
             }
         ]
@@ -458,7 +458,7 @@ class TestPerformanceCalculatorUtilities:
     def test_win_rate_utility(self):
         """Test win rate utility function"""
         test_trades = [
-            {"action": "BUY", "timestamp": datetime.utcnow().isoformat()}
+            {"action": "BUY", "timestamp": datetime.now(timezone.utc).isoformat()}
         ]
         
         # Mock the trading performance calculation

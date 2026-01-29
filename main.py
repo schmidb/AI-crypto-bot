@@ -5,7 +5,7 @@ import json
 import schedule
 import signal
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import os
 import sys
 from typing import Dict, List, Any
@@ -285,9 +285,9 @@ class TradingBot:
                 startup_data = json.load(f)
             
             # Update next decision time
-            next_decision_time = datetime.utcnow() + timedelta(minutes=DECISION_INTERVAL_MINUTES)
+            next_decision_time = datetime.now(timezone.utc) + timedelta(minutes=DECISION_INTERVAL_MINUTES)
             startup_data["next_decision_time"] = next_decision_time.isoformat()
-            startup_data["last_decision_time"] = datetime.utcnow().isoformat()
+            startup_data["last_decision_time"] = datetime.now(timezone.utc).isoformat()
             
             # Write back to file
             with open("data/cache/bot_startup.json", "w") as f:
@@ -299,7 +299,7 @@ class TradingBot:
     def record_startup_time(self):
         """Record the bot startup time"""
         try:
-            startup_time = datetime.utcnow()
+            startup_time = datetime.now(timezone.utc)
             next_decision_time = startup_time + timedelta(minutes=DECISION_INTERVAL_MINUTES)
             
             startup_data = {
@@ -329,7 +329,7 @@ class TradingBot:
     def record_shutdown_time(self):
         """Record the bot shutdown time and set status to offline"""
         try:
-            shutdown_time = datetime.utcnow()
+            shutdown_time = datetime.now(timezone.utc)
             
             # Try to read existing startup data first
             startup_data = {}
@@ -430,7 +430,7 @@ class TradingBot:
                     if isinstance(data, dict) and "last_price_eur" in data
                 },
                 "snapshot_type": "scheduled",
-                "trading_session_id": f"session_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+                "trading_session_id": f"session_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
             }
             
             # Take the snapshot
@@ -480,7 +480,7 @@ class TradingBot:
                     if not existing_trade or existing_trade.get('price', 0) == 0:
                         # Create a placeholder "hold" trade with current price
                         placeholder_trade = {
-                            "timestamp": datetime.utcnow().isoformat(),  # Use UTC time for consistency
+                            "timestamp": datetime.now(timezone.utc).isoformat(),  # Use UTC time for consistency
                             "product_id": product_id,
                             "action": "hold",
                             "price": data.get("price", 0),
@@ -763,7 +763,7 @@ class TradingBot:
                 "recent_trades": recent_trades,
                 "market_data": market_data,
                 "status": "running",
-                "timestamp": datetime.utcnow().isoformat()  # Use UTC time for consistency
+                "timestamp": datetime.now(timezone.utc).isoformat()  # Use UTC time for consistency
             }
             
             # Get current portfolio data
@@ -1575,7 +1575,7 @@ class TradingBot:
         try:
             from datetime import datetime, timedelta
             
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             
             # Time periods to calculate
             periods = {
