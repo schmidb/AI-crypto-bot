@@ -112,28 +112,69 @@ class HybridPerformanceTracker:
         
         self.logger.debug(f"Recorded decision for {product_id}: {len(strategy_signals)} strategies + combined")
     
-    def update_decision_outcomes(self):
-        """Update decision outcomes based on price movements"""
+    def update_decision_outcomes(self, data_collector=None):
+        """Update decision outcomes based on price movements
+        
+        Args:
+            data_collector: DataCollector instance for fetching current prices
+        """
         
         current_time = datetime.now()
         updated_count = 0
         
-        for record in self.decision_records:
+        # Group records by product_id to minimize API calls
+        products_to_update = {}
+        
+        for i, record in enumerate(self.decision_records):
             if record.was_correct is not None:
                 continue  # Already evaluated
             
             decision_time = datetime.fromisoformat(record.timestamp)
+            time_elapsed = current_time - decision_time
             
-            # Check if enough time has passed for evaluation (24h)
-            if current_time - decision_time < timedelta(hours=24):
-                continue
+            # Update prices at different intervals
+            if time_elapsed >= timedelta(hours=1) and record.price_after_1h is None:
+                if record.product_id not in products_to_update:
+                    products_to_update[record.product_id] = []
+                products_to_update[record.product_id].append((i, '1h'))
             
-            # Get price data for evaluation (would need to implement price fetching)
-            # For now, we'll mark as placeholder
-            record.was_correct = self._evaluate_decision_accuracy(record)
+            if time_elapsed >= timedelta(hours=4) and record.price_after_4h is None:
+                if record.product_id not in products_to_update:
+                    products_to_update[record.product_id] = []
+                products_to_update[record.product_id].append((i, '4h'))
             
-            if record.was_correct is not None:
-                updated_count += 1
+            if time_elapsed >= timedelta(hours=24) and record.price_after_24h is None:
+                if record.product_id not in products_to_update:
+                    products_to_update[record.product_id] = []
+                products_to_update[record.product_id].append((i, '24h'))
+        
+        # Fetch current prices and update records
+        if data_collector and products_to_update:
+            for product_id, updates in products_to_update.items():
+                try:
+                    current_price = data_collector.get_current_price(product_id)
+                    if current_price > 0:
+                        for record_idx, timeframe in updates:
+                            record = self.decision_records[record_idx]
+                            
+                            # Update price for the timeframe
+                            if timeframe == '1h':
+                                record.price_after_1h = current_price
+                                record.profit_loss_1h = ((current_price - record.price_at_decision) / record.price_at_decision) * 100
+                            elif timeframe == '4h':
+                                record.price_after_4h = current_price
+                                record.profit_loss_4h = ((current_price - record.price_at_decision) / record.price_at_decision) * 100
+                            elif timeframe == '24h':
+                                record.price_after_24h = current_price
+                                record.profit_loss_24h = ((current_price - record.price_at_decision) / record.price_at_decision) * 100
+                                
+                                # Evaluate correctness after 24h
+                                record.was_correct = self._evaluate_decision_accuracy(record)
+                                if record.was_correct is not None:
+                                    updated_count += 1
+                            
+                except Exception as e:
+                    self.logger.error(f"Error fetching price for {product_id}: {e}")
         
         if updated_count > 0:
             self._save_decision_records()
@@ -338,10 +379,33 @@ class HybridPerformanceTracker:
         perf.last_updated = datetime.now().isoformat()
     
     def _evaluate_decision_accuracy(self, record: DecisionRecord) -> Optional[bool]:
-        """Evaluate if a decision was correct (placeholder implementation)"""
+        """Evaluate if a decision was correct based on 24h price movement
         
-        # This would need actual price data to evaluate
-        # For now, return None to indicate not evaluated
+        Args:
+            record: Decision record with price data
+            
+        Returns:
+            True if decision was correct, False if incorrect, None if cannot evaluate
+        """
+        
+        if record.price_after_24h is None or record.profit_loss_24h is None:
+            return None
+        
+        # Define correctness based on action and price movement
+        # BUY is correct if price went up (profit > 0)
+        # SELL is correct if price went down (profit < 0 from selling perspective)
+        # HOLD is correct if price stayed relatively stable (within ±2%)
+        
+        if record.action == "BUY":
+            # BUY is correct if price increased
+            return record.profit_loss_24h > 0
+        elif record.action == "SELL":
+            # SELL is correct if price decreased (negative profit means good sell)
+            return record.profit_loss_24h < 0
+        elif record.action == "HOLD":
+            # HOLD is correct if price stayed relatively stable (within ±2%)
+            return abs(record.profit_loss_24h) <= 2.0
+        
         return None
     
     def get_adaptive_weights(self, base_weights: Dict[str, float]) -> Dict[str, float]:

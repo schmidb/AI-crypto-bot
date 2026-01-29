@@ -241,6 +241,23 @@ class TradingBot:
         
         logger.info(f"Trading bot initialized with trading pairs: {TRADING_PAIRS}")
     
+    def update_decision_outcomes(self):
+        """Update outcomes for past trading decisions"""
+        try:
+            logger.info("🔄 Updating decision outcomes...")
+            
+            # Update outcomes in strategy manager's performance tracker
+            if hasattr(self.strategy_manager, 'performance_tracker'):
+                self.strategy_manager.performance_tracker.update_decision_outcomes(
+                    data_collector=self.data_collector
+                )
+                logger.info("✅ Decision outcomes updated successfully")
+            else:
+                logger.warning("Performance tracker not available in strategy manager")
+                
+        except Exception as e:
+            logger.error(f"Error updating decision outcomes: {e}")
+    
     
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully"""
@@ -1825,6 +1842,9 @@ class TradingBot:
         # Schedule regular runs
         schedule.every(DECISION_INTERVAL_MINUTES).minutes.do(self.run_trading_cycle)
         
+        # Schedule decision outcome updates every hour (to track performance)
+        schedule.every().hour.do(self.update_decision_outcomes)
+        
         # Schedule daily tax report generation at midnight
         schedule.every().day.at("00:00").do(self.generate_tax_report)
         
@@ -1855,6 +1875,7 @@ class TradingBot:
         
         logger.info("📅 Scheduled tasks configured:")
         logger.info("  - Trading cycle: Every 60 minutes")
+        logger.info("  - Decision outcome tracking: Every hour")
         logger.info("  - Web server sync: Every 5 minutes")
         logger.info("  - Weekly cleanup: Sunday 2:00 AM")
         logger.info("  - Daily health check: 6:00 AM daily (technical strategies only)")
