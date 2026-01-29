@@ -174,12 +174,7 @@ class TestLLMAnalyzerConfiguration:
     
     def test_llm_analyzer_uses_correct_models(self, mock_config_values, mock_genai_client):
         """Test that LLMAnalyzer uses the correct Gemini models"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -190,12 +185,7 @@ class TestLLMAnalyzerConfiguration:
     
     def test_llm_analyzer_uses_global_location(self, mock_config_values, mock_genai_client):
         """Test that LLMAnalyzer uses global location for preview models"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -209,12 +199,7 @@ class TestPromptGeneration:
     
     def test_prepare_market_summary(self, mock_config_values, mock_genai_client, sample_market_data):
         """Test market summary preparation"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -227,12 +212,7 @@ class TestPromptGeneration:
     
     def test_create_analysis_prompt(self, mock_config_values, mock_genai_client):
         """Test analysis prompt creation doesn't crash"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -242,12 +222,7 @@ class TestPromptGeneration:
     
     def test_create_trading_prompt(self, mock_config_values, mock_genai_client, sample_technical_indicators):
         """Test trading prompt creation doesn't crash"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -261,12 +236,7 @@ class TestResponseParsing:
     
     def test_parse_llm_response_valid_json(self, mock_config_values, mock_genai_client):
         """Test parsing valid JSON response"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -285,12 +255,7 @@ class TestResponseParsing:
     
     def test_parse_llm_response_with_markdown(self, mock_config_values, mock_genai_client):
         """Test parsing response with markdown code blocks"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -310,12 +275,7 @@ class TestResponseParsing:
     
     def test_parse_llm_response_invalid_json(self, mock_config_values, mock_genai_client):
         """Test parsing invalid JSON response"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -331,12 +291,7 @@ class TestResponseParsing:
     
     def test_parse_trading_decision(self, mock_config_values, mock_genai_client):
         """Test trading decision parsing method exists"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -350,12 +305,7 @@ class TestAPIInteraction:
     
     def test_call_genai_success(self, mock_config_values, mock_genai_client):
         """Test successful GenAI API call"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -366,12 +316,7 @@ class TestAPIInteraction:
     
     def test_call_genai_with_fallback(self, mock_config_values):
         """Test GenAI call with fallback to secondary model"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             # Primary model fails, fallback succeeds
             mock_client = Mock()
             mock_response = Mock()
@@ -393,12 +338,7 @@ class TestAPIInteraction:
     
     def test_get_llm_response(self, mock_config_values, mock_genai_client):
         """Test getting LLM response"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -413,19 +353,14 @@ class TestMarketAnalysis:
     
     def test_analyze_market_data(self, mock_config_values, mock_genai_client, sample_market_data, sample_technical_indicators):
         """Test market data analysis"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
                 
                 result = analyzer.analyze_market_data(
                     sample_market_data,
-                    sample_technical_indicators,
+                    47000,
                     'BTC-EUR'
                 )
                 
@@ -433,12 +368,7 @@ class TestMarketAnalysis:
     
     def test_analyze_market_with_portfolio(self, mock_config_values, mock_genai_client):
         """Test market analysis with portfolio context"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -455,12 +385,7 @@ class TestMarketAnalysis:
     
     def test_get_trading_decision(self, mock_config_values, mock_genai_client):
         """Test getting trading decision"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
                 from llm_analyzer import LLMAnalyzer
                 analyzer = LLMAnalyzer()
@@ -482,12 +407,7 @@ class TestErrorHandling:
     
     def test_handle_api_timeout(self, mock_config_values):
         """Test handling of API timeout"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             mock_client = Mock()
             mock_client.models.generate_content.side_effect = TimeoutError("API timeout")
             
@@ -503,12 +423,7 @@ class TestErrorHandling:
     
     def test_handle_invalid_response_format(self, mock_config_values, mock_genai_client):
         """Test handling of invalid response format"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             mock_genai_client.models.generate_content.return_value.text = "Invalid response"
             
             with patch('llm_analyzer.genai.Client', return_value=mock_genai_client):
@@ -522,12 +437,7 @@ class TestErrorHandling:
     
     def test_handle_missing_required_fields(self, mock_config_values, mock_genai_client):
         """Test handling of response with missing required fields"""
-        with patch('config.Config') as mock_config_class:
-            mock_config = Mock()
-            for key, value in mock_config_values.items():
-                setattr(mock_config, key, value)
-            mock_config_class.return_value = mock_config
-            
+        with patch.dict('os.environ', mock_config_values):
             # Response missing 'confidence' field
             incomplete_response = json.dumps({
                 'decision': 'BUY',
