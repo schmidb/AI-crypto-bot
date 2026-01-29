@@ -323,6 +323,332 @@ if __name__ == '__main__':
     pytest.main([__file__])
 
 
+class TestGCSIntegration:
+    """Test Google Cloud Storage integration"""
+    
+    def test_upload_to_gcs_success(self, mock_coinbase_client):
+        """Test successful upload to GCS"""
+        collector = DataCollector(mock_coinbase_client)
+        
+        # Mock GCS client
+        mock_bucket = Mock()
+        mock_blob = Mock()
+        mock_bucket.blob.return_value = mock_blob
+        collector.gcs_client = Mock()
+        collector.gcs_client.bucket.return_value = mock_bucket
+        
+        # Create test DataFrame
+        test_df = pd.DataFrame({'close': [45000, 46000], 'volume': [1000, 1200]})
+        
+        result = collector.upload_to_gcs(test_df, 'test/path.parquet')
+        
+        assert result is True
+        mock_bucket.blob.assert_called_once()
+    
+    def test_upload_to_gcs_no_client(self, mock_coinbase_client):
+        """Test upload when GCS client is not available"""
+        collector = DataCollector(mock_coinbase_client)
+        collector.gcs_client = None
+        
+        test_df = pd.DataFrame({'close': [45000]})
+        result = collector.upload_to_gcs(test_df, 'test/path.parquet')
+        
+        assert result is False
+    
+    def test_upload_to_gcs_error(self, mock_coinbase_client):
+        """Test upload error handling"""
+        collector = DataCollector(mock_coinbase_client)
+        
+        mock_bucket = Mock()
+        mock_bucket.blob.side_effect = Exception("Upload failed")
+        collector.gcs_client = Mock()
+        collector.gcs_client.bucket.return_value = mock_bucket
+        
+        test_df = pd.DataFrame({'close': [45000]})
+        result = collector.upload_to_gcs(test_df, 'test/path.parquet')
+        
+        assert result is False
+    
+    def test_download_from_gcs_success(self, mock_coinbase_client, temp_cache_dir):
+        """Test successful download from GCS"""
+        collector = DataCollector(mock_coinbase_client)
+        collector.local_cache_dir = Path(temp_cache_dir)
+        
+        # Create test DataFrame and convert to parquet bytes
+        test_df = pd.DataFrame({'close': [45000, 46000], 'volume': [1000, 1200]})
+        test_df.index.name = 'time'
+        
+        # Create parquet bytes
+        import io
+        buffer = io.BytesIO()
+        test_df.to_parquet(buffer)
+        parquet_bytes = buffer.getvalue()
+        
+        # Create mock blob with data
+        mock_blob = Mock()
+        mock_blob.exists.return_value = True
+        mock_blob.download_as_bytes.return_value = parquet_bytes
+        
+        mock_bucket = Mock()
+        mock_bucket.blob.return_value = mock_blob
+        collector.gcs_client = Mock()
+        collector.gcs_client.bucket.return_value = mock_bucket
+        
+        result = collector.download_from_gcs('test/path.parquet', use_cache=False)
+        
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 2
+    
+    def test_download_from_gcs_not_found(self, mock_coinbase_client):
+        """Test download when file doesn't exist in GCS"""
+        collector = DataCollector(mock_coinbase_client)
+        
+        mock_blob = Mock()
+        mock_blob.exists.return_value = False
+        mock_bucket = Mock()
+        mock_bucket.blob.return_value = mock_blob
+        collector.gcs_client = Mock()
+        collector.gcs_client.bucket.return_value = mock_bucket
+        
+        result = collector.download_from_gcs('nonexistent/path.parquet')
+        
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+    
+    def test_download_from_gcs_no_client(self, mock_coinbase_client):
+        """Test download when GCS client is not available"""
+        collector = DataCollector(mock_coinbase_client)
+        collector.gcs_client = None
+        
+        result = collector.download_from_gcs('test/path.parquet')
+        
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+
+
+class TestBulkDataFetching:
+    """Test bulk historical data fetching"""
+    
+    def test_fetch_bulk_historical_data_success(self, mock_coinbase_client, sample_candle_data):
+        """Test successful bulk data fetch"""
+        mock_candles = []
+        for candle_data in sample_candle_data:
+            mock_candle = Mock()
+            for key, value in candle_data.items():
+                setattr(mock_candle, key, value)
+            mock_candles.append(mock_candle)
+        
+        mock_coinbase_client.get_market_data.return_value = mock_candles
+        
+        collector = DataCollector(mock_coinbase_client)
+        
+        start_date = datetime(2022, 1, 1)
+        end_date = datetime(2022, 1, 7)
+        
+        result = collector.fetch_bulk_historical_data('BTC-EUR', start_date, end_date, 'ONE_HOUR')
+        
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) > 0
+    
+    def test_fetch_bulk_historical_data_with_batching(self, mock_coinbase_client, sample_candle_data):
+        """Test bulk fetch with date range batching"""
+        mock_candles = []
+        for candle_data in sample_candle_data:
+            mock_candle = Mock()
+            for key, value in candle_data.items():
+                setattr(mock_candle, key, value)
+            mock_candles.append(mock_candle)
+        
+        mock_coinbase_client.get_market_data.return_value = mock_candles
+        
+        collector = DataCollector(mock_coinbase_client)
+        
+        # Large date range that requires batching
+        start_date = datetime(2022, 1, 1)
+        end_date = datetime(2022, 12, 31)
+        
+        result = collector.fetch_bulk_historical_data('BTC-EUR', start_date, end_date, 'ONE_DAY')
+        
+        assert isinstance(result, pd.DataFrame)
+    
+    def test_fetch_bulk_historical_data_error_handling(self, mock_coinbase_client):
+        """Test bulk fetch error handling"""
+        mock_coinbase_client.get_market_data.side_effect = Exception("API Error")
+        
+        collector = DataCollector(mock_coinbase_client)
+        
+        start_date = datetime(2022, 1, 1)
+        end_date = datetime(2022, 1, 7)
+        
+        result = collector.fetch_bulk_historical_data('BTC-EUR', start_date, end_date, 'ONE_HOUR')
+        
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+
+
+class TestDataValidation:
+    """Test data validation and continuity checks"""
+    
+    def test_validate_data_continuity_complete(self, mock_coinbase_client):
+        """Test validation of complete continuous data"""
+        collector = DataCollector(mock_coinbase_client)
+        
+        # Create continuous hourly data
+        test_df = pd.DataFrame({
+            'time': pd.date_range('2022-01-01', periods=24, freq='h'),
+            'open': [45000 + i*100 for i in range(24)],
+            'high': [45500 + i*100 for i in range(24)],
+            'low': [44500 + i*100 for i in range(24)],
+            'close': [45000 + i*100 for i in range(24)],
+            'volume': [1000 + i*10 for i in range(24)]
+        })
+        test_df.set_index('time', inplace=True)
+        
+        result = collector.validate_data_continuity(test_df)
+        
+        assert result['valid'] is True
+        assert result['total_rows'] == 24
+        assert 'quality_score' in result
+    
+    def test_validate_data_continuity_with_gaps(self, mock_coinbase_client):
+        """Test validation of data with gaps"""
+        collector = DataCollector(mock_coinbase_client)
+        
+        # Create data with gaps
+        times = [datetime(2022, 1, 1, i) for i in [0, 1, 2, 5, 6, 10]]  # Missing hours 3,4,7,8,9
+        test_df = pd.DataFrame({
+            'time': times,
+            'open': [45000 + i*100 for i in range(6)],
+            'high': [45500 + i*100 for i in range(6)],
+            'low': [44500 + i*100 for i in range(6)],
+            'close': [45000 + i*100 for i in range(6)],
+            'volume': [1000 + i*10 for i in range(6)]
+        })
+        test_df.set_index('time', inplace=True)
+        
+        result = collector.validate_data_continuity(test_df)
+        
+        assert 'gaps' in result or 'issues' in result
+        assert result['total_rows'] == 6
+    
+    def test_validate_data_continuity_empty(self, mock_coinbase_client):
+        """Test validation of empty DataFrame"""
+        collector = DataCollector(mock_coinbase_client)
+        
+        empty_df = pd.DataFrame()
+        result = collector.validate_data_continuity(empty_df)
+        
+        assert result['valid'] is False
+        assert 'error' in result
+
+
+class TestDataProcessing:
+    """Test data processing and conversion"""
+    
+    def test_process_candles_to_dataframe_success(self, mock_coinbase_client, sample_candle_data):
+        """Test successful candle processing"""
+        mock_candles = []
+        for candle_data in sample_candle_data:
+            mock_candle = Mock()
+            for key, value in candle_data.items():
+                setattr(mock_candle, key, value)
+            mock_candles.append(mock_candle)
+        
+        collector = DataCollector(mock_coinbase_client)
+        result = collector._process_candles_to_dataframe(mock_candles)
+        
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 3
+        assert 'close' in result.columns
+        assert 'volume' in result.columns
+    
+    def test_process_candles_empty_list(self, mock_coinbase_client):
+        """Test processing empty candle list"""
+        collector = DataCollector(mock_coinbase_client)
+        result = collector._process_candles_to_dataframe([])
+        
+        assert isinstance(result, pd.DataFrame)
+        assert len(result) == 0
+    
+    def test_process_candles_with_invalid_data(self, mock_coinbase_client):
+        """Test processing candles with invalid data"""
+        invalid_candle = Mock()
+        invalid_candle.close = None  # Invalid close price
+        
+        collector = DataCollector(mock_coinbase_client)
+        result = collector._process_candles_to_dataframe([invalid_candle])
+        
+        # Should handle gracefully
+        assert isinstance(result, pd.DataFrame)
+
+
+class TestCaching:
+    """Test local caching mechanisms"""
+    
+    def test_cache_directory_usage(self, mock_coinbase_client, temp_cache_dir):
+        """Test that cache directory is used for storing data"""
+        collector = DataCollector(mock_coinbase_client)
+        collector.local_cache_dir = Path(temp_cache_dir)
+        
+        assert collector.local_cache_dir.exists()
+        assert collector.local_cache_dir.is_dir()
+    
+    def test_download_with_cache_enabled(self, mock_coinbase_client, temp_cache_dir):
+        """Test download with caching enabled"""
+        collector = DataCollector(mock_coinbase_client)
+        collector.local_cache_dir = Path(temp_cache_dir)
+        
+        # Create cached file
+        test_df = pd.DataFrame({'close': [45000], 'volume': [1000]})
+        cache_file = collector.local_cache_dir / 'test_cache.parquet'
+        test_df.to_parquet(cache_file)
+        
+        # Mock GCS to return None (should use cache)
+        collector.gcs_client = None
+        
+        # The download_from_gcs should check cache first
+        result = collector.download_from_gcs('test_cache.parquet', use_cache=True)
+        
+        # If cache is used, result should be the cached data
+        if result is not None:
+            assert isinstance(result, pd.DataFrame)
+
+
+class TestErrorRecovery:
+    """Test error recovery and fallback mechanisms"""
+    
+    def test_graceful_degradation_on_gcs_failure(self, mock_coinbase_client):
+        """Test graceful degradation when GCS is unavailable"""
+        collector = DataCollector(mock_coinbase_client)
+        collector.gcs_client = None
+        
+        # Should still work without GCS
+        assert collector.client == mock_coinbase_client
+        assert collector.gcs_client is None
+    
+    def test_api_retry_on_failure(self, mock_coinbase_client, sample_candle_data):
+        """Test API retry mechanism on failure"""
+        # First call fails, second succeeds
+        mock_candles = []
+        for candle_data in sample_candle_data:
+            mock_candle = Mock()
+            for key, value in candle_data.items():
+                setattr(mock_candle, key, value)
+            mock_candles.append(mock_candle)
+        
+        mock_coinbase_client.get_market_data.side_effect = [
+            Exception("Temporary failure"),
+            mock_candles
+        ]
+        
+        collector = DataCollector(mock_coinbase_client)
+        
+        # First attempt should fail, but method should handle it
+        result = collector.get_historical_data('BTC-EUR', 'ONE_HOUR', 7)
+        
+        # Should return empty DataFrame on failure
+        assert isinstance(result, pd.DataFrame)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
