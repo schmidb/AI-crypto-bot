@@ -103,7 +103,7 @@ class IntervalOptimizer:
                 return {}
             
             # Add indicators to the data
-            from utils.indicator_factory import IndicatorFactory
+            from utils.performance.indicator_factory import IndicatorFactory
             indicator_factory = IndicatorFactory()
             data_with_indicators = indicator_factory.calculate_all_indicators(resampled_df, product)
             

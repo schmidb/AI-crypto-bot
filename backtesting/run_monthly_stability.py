@@ -17,7 +17,7 @@ import logging
 
 # Import our backtesting infrastructure
 from utils.backtest_suite import ComprehensiveBacktestSuite
-from utils.indicator_factory import IndicatorFactory
+from utils.performance.indicator_factory import IndicatorFactory
 from data_collector import DataCollector
 from coinbase_client import CoinbaseClient
 from backtesting.sync_to_gcs import GCSBacktestSync

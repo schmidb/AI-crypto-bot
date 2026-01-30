@@ -17,7 +17,6 @@ import logging
 
 # Import our backtesting infrastructure
 from utils.backtest_suite import ComprehensiveBacktestSuite
-from utils.indicator_factory import IndicatorFactory
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -43,7 +42,6 @@ class DailyHealthChecker:
             coinbase_client = CoinbaseClient()
             self.data_collector = DataCollector(coinbase_client, gcs_bucket_name=None)
             self.backtest_suite = ComprehensiveBacktestSuite()
-            self.indicator_factory = IndicatorFactory()
             
             if sync_to_gcs:
                 self.gcs_sync = GCSBacktestSync()
@@ -112,8 +110,14 @@ class DailyHealthChecker:
                                  strategy: str) -> Dict[str, Any]:
         """Run health check for a single strategy"""
         try:
-            # Add indicators
-            data_with_indicators = self.indicator_factory.calculate_all_indicators(data, product)
+            # Add indicators using DataCollector
+            indicators = self.data_collector.calculate_indicators(data)
+            
+            # Combine data with indicators
+            data_with_indicators = data.copy()
+            for key, value in indicators.items():
+                if isinstance(value, (int, float)):
+                    data_with_indicators[key] = value
             
             # Run backtest
             result = self.backtest_suite.run_single_strategy(
