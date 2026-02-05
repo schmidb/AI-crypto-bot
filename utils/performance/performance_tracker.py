@@ -202,10 +202,24 @@ class PerformanceTracker:
             # Keep only recent snapshots (configurable retention)
             retention_days = self.config.get("retention_days", 365)
             cutoff_date = datetime.now(timezone.utc) - timedelta(days=retention_days)
-            snapshots = [s for s in snapshots if datetime.fromisoformat(s["timestamp"]) > cutoff_date]
+            
+            # Filter snapshots with timezone-aware comparison
+            filtered_snapshots = []
+            for s in snapshots:
+                try:
+                    snapshot_time = datetime.fromisoformat(s["timestamp"])
+                    # Make timezone-aware if naive
+                    if snapshot_time.tzinfo is None:
+                        snapshot_time = snapshot_time.replace(tzinfo=timezone.utc)
+                    if snapshot_time > cutoff_date:
+                        filtered_snapshots.append(s)
+                except Exception as e:
+                    logger.warning(f"Error parsing snapshot timestamp: {e}")
+                    # Keep snapshot if we can't parse timestamp
+                    filtered_snapshots.append(s)
             
             # Save snapshots
-            self._save_snapshots(snapshots)
+            self._save_snapshots(filtered_snapshots)
             
             # Update last snapshot date in config
             self.config["last_snapshot_date"] = current_time
@@ -228,6 +242,10 @@ class PerformanceTracker:
                 return True  # First snapshot
             
             last_snapshot_time = datetime.fromisoformat(last_snapshot)
+            # Make timezone-aware if naive
+            if last_snapshot_time.tzinfo is None:
+                last_snapshot_time = last_snapshot_time.replace(tzinfo=timezone.utc)
+            
             current_time = datetime.now(timezone.utc)
             time_diff = current_time - last_snapshot_time
             

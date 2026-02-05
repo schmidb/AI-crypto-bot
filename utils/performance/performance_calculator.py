@@ -8,7 +8,7 @@ return calculations, risk metrics, and trading performance analysis.
 import json
 import logging
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional, Tuple
 from statistics import mean, stdev
 import numpy as np
@@ -71,6 +71,13 @@ class PerformanceCalculator:
             # Calculate time period
             start_date = datetime.fromisoformat(sorted_snapshots[0]["timestamp"])
             end_date = datetime.fromisoformat(sorted_snapshots[-1]["timestamp"])
+            
+            # Make timezone-aware if naive
+            if start_date.tzinfo is None:
+                start_date = start_date.replace(tzinfo=timezone.utc)
+            if end_date.tzinfo is None:
+                end_date = end_date.replace(tzinfo=timezone.utc)
+            
             days_elapsed = (end_date - start_date).days
             
             # Calculate annualized return

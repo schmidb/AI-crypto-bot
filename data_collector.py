@@ -55,12 +55,16 @@ class DataCollector:
             start_timestamp = int(start_time.timestamp())
             end_timestamp = int(end_time.timestamp())
             
+            # Format timestamps - remove timezone info before adding 'Z'
+            start_str = start_time.replace(tzinfo=None).isoformat() + "Z"
+            end_str = end_time.replace(tzinfo=None).isoformat() + "Z"
+            
             # Use the wrapper method that properly handles the response
             candles = self.client.get_market_data(
                 product_id=product_id,
                 granularity=granularity,
-                start_time=start_time.isoformat() + "Z",
-                end_time=end_time.isoformat() + "Z"
+                start_time=start_str,
+                end_time=end_str
             )
             
             if not candles:
@@ -367,12 +371,16 @@ class DataCollector:
                     # Rate limiting: 10 requests per second
                     time.sleep(0.1)
                     
+                    # Format timestamps - remove timezone info before adding 'Z'
+                    start_str = current_start.replace(tzinfo=None).isoformat() + "Z"
+                    end_str = current_end.replace(tzinfo=None).isoformat() + "Z"
+                    
                     # Fetch data directly using the API for specific date range
                     candles = self.client.get_market_data(
                         product_id=product_id,
                         granularity=granularity,
-                        start_time=current_start.isoformat() + "Z",
-                        end_time=current_end.isoformat() + "Z"
+                        start_time=start_str,
+                        end_time=end_str
                     )
                     
                     if candles:

@@ -681,11 +681,15 @@ class CoinbaseClient:
                     else:  # 5d
                         granularity = "ONE_DAY"
                     
+                    # Format timestamps - remove timezone info before adding 'Z'
+                    start_str = start_time.replace(tzinfo=None).isoformat() + 'Z'
+                    end_str = now.replace(tzinfo=None).isoformat() + 'Z'
+                    
                     historical_data = self.get_market_data(
                         product_id=product_id,
                         granularity=granularity,
-                        start_time=start_time.isoformat() + 'Z',
-                        end_time=now.isoformat() + 'Z'
+                        start_time=start_str,
+                        end_time=end_str
                     )
                     
                     if historical_data and len(historical_data) > 0:
