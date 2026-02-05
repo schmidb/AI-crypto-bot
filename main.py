@@ -1590,12 +1590,16 @@ class TradingBot:
                     # Calculate start time
                     start_time = now - config["delta"]
                     
+                    # Format timestamps - remove timezone info and add 'Z' for UTC
+                    start_str = start_time.replace(tzinfo=None).isoformat() + 'Z'
+                    end_str = now.replace(tzinfo=None).isoformat() + 'Z'
+                    
                     # Get historical candle data from Coinbase
                     historical_data = self.data_collector.client.get_market_data(
                         product_id=product_id,
                         granularity=config["granularity"],
-                        start_time=start_time.isoformat() + 'Z',
-                        end_time=now.isoformat() + 'Z'
+                        start_time=start_str,
+                        end_time=end_str
                     )
                     
                     if historical_data and len(historical_data) > 0:

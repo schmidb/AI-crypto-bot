@@ -1,7 +1,7 @@
 import logging
 import json
 import os
-import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Any
 import pandas as pd
 from config import config
@@ -105,7 +105,7 @@ class DashboardUpdater:
                     f.write("timestamp,portfolio_value_usd,btc_amount,eth_amount,sol_amount,usd_amount,btc_price,eth_price,sol_price,portfolio_value_eur\n")
             
             # Extract and append data
-            timestamp = datetime.datetime.now().isoformat()
+            timestamp = datetime.now(timezone.utc).isoformat()
             
             # Handle portfolio values that might be dictionaries or numbers
             portfolio_value_usd_raw = portfolio.get("portfolio_value_usd", 0)
@@ -335,20 +335,36 @@ class DashboardUpdater:
     def _update_logs_data(self) -> None:
         """Update logs data for dashboard display"""
         try:
-            from utils.log_reader import LogReader
-            
-            # Initialize log reader
-            log_reader = LogReader()
-            
-            # Get recent logs (last 30 lines)
-            logs_data = log_reader.get_formatted_logs(num_lines=30)
-            
-            # Save to dashboard data directory
-            os.makedirs("data/cache", exist_ok=True)
-            with open("data/cache/logs_data.json", "w") as f:
-                json.dump(logs_data, f, indent=2)
-            
-            logger.debug("Updated logs data for dashboard")
+            try:
+                from utils.log_reader import LogReader
+                
+                # Initialize log reader
+                log_reader = LogReader()
+                
+                # Get recent logs (last 30 lines)
+                logs_data = log_reader.get_formatted_logs(num_lines=30)
+                
+                # Save to dashboard data directory
+                os.makedirs("data/cache", exist_ok=True)
+                with open("data/cache/logs_data.json", "w") as f:
+                    json.dump(logs_data, f, indent=2)
+                
+                logger.debug("Updated logs data for dashboard")
+                
+            except ImportError as ie:
+                logger.debug(f"LogReader module not available: {ie}")
+                # Create minimal logs data without LogReader
+                empty_logs = {
+                    "logs": [],
+                    "parsed_logs": [],
+                    "stats": {"exists": False, "error": "LogReader module not available"},
+                    "count": 0,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "status": "unavailable"
+                }
+                os.makedirs("data/cache", exist_ok=True)
+                with open("data/cache/logs_data.json", "w") as f:
+                    json.dump(empty_logs, f, indent=2)
             
         except Exception as e:
             logger.error(f"Error updating logs data: {e}")
@@ -359,7 +375,7 @@ class DashboardUpdater:
                     "parsed_logs": [],
                     "stats": {"exists": False, "error": str(e)},
                     "count": 0,
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "status": "error",
                     "error": str(e)
                 }
@@ -378,7 +394,7 @@ class DashboardUpdater:
             latest_time = max(latest_trade_time, latest_decision_time)
             
             # Convert to datetime for formatting
-            timestamp = datetime.datetime.fromisoformat(latest_time.replace('Z', '+00:00')).strftime("%Y-%m-%d %H:%M:%S")
+            timestamp = datetime.fromisoformat(latest_time.replace('Z', '+00:00')).strftime("%Y-%m-%d %H:%M:%S")
             
             with open("data/cache/last_updated.txt", "w") as f:
                 f.write(timestamp)

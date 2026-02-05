@@ -369,6 +369,11 @@ class OpportunityManager:
                                       trading_capital: float) -> Dict[str, float]:
         """Calculate weighted capital allocations"""
         
+        # Check if we have enough capital for at least one trade
+        if trading_capital < self.min_trade_allocation:
+            self.logger.warning(f"  Insufficient trading capital: €{trading_capital:.2f} < €{self.min_trade_allocation}")
+            return {}
+        
         # Apply power factor to opportunity scores for more pronounced differences
         weighted_scores = {}
         total_weighted_score = 0
@@ -389,35 +394,35 @@ class OpportunityManager:
         for opp in actionable_opportunities:
             product_id = opp['product_id']
             
+            # Check if we have enough remaining capital for minimum trade
+            if remaining_capital < self.min_trade_allocation:
+                self.logger.debug(f"  {product_id}: Skipped - insufficient remaining capital "
+                                f"(€{remaining_capital:.2f} < €{self.min_trade_allocation})")
+                break
+            
             # Calculate proportional allocation
             weight = weighted_scores[product_id] / total_weighted_score
             base_allocation = trading_capital * weight
             
             # Apply minimum and maximum constraints
             min_allocation = self.min_trade_allocation
-            max_allocation = trading_capital * self.max_single_trade_ratio
-            
-            # Ensure we don't exceed remaining capital
-            max_allocation = min(max_allocation, remaining_capital)
-            
-            if max_allocation < min_allocation:
-                # Not enough capital remaining
-                self.logger.debug(f"  {product_id}: Insufficient remaining capital "
-                                f"(need: €{min_allocation}, available: €{max_allocation:.2f})")
-                continue
+            max_allocation = min(
+                trading_capital * self.max_single_trade_ratio,
+                remaining_capital  # Can't exceed what's left
+            )
             
             # Apply constraints
             final_allocation = max(min_allocation, min(max_allocation, base_allocation))
+            
+            # Final check: ensure we don't exceed remaining capital
+            final_allocation = min(final_allocation, remaining_capital)
             
             allocations[product_id] = final_allocation
             remaining_capital -= final_allocation
             
             self.logger.debug(f"  {product_id}: Weight {weight:.3f}, "
-                            f"Base €{base_allocation:.2f}, Final €{final_allocation:.2f}")
-            
-            # Stop if we don't have enough capital for minimum allocation
-            if remaining_capital < min_allocation:
-                break
+                            f"Base €{base_allocation:.2f}, Final €{final_allocation:.2f}, "
+                            f"Remaining €{remaining_capital:.2f}")
         
         return allocations
     

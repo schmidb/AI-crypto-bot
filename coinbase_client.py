@@ -5,7 +5,7 @@ Client for interacting with Coinbase Advanced Trade API using the official coinb
 import logging
 import time
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from coinbase.rest import RESTClient
 from config import COINBASE_API_KEY, COINBASE_API_SECRET
 
@@ -656,7 +656,7 @@ class CoinbaseClient:
                 return {"1h": 0.0, "4h": 0.0, "24h": 0.0, "5d": 0.0}
             
             # current_price is already a float from get_product_price
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             changes = {}
             
             # Define time periods

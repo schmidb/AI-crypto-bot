@@ -11,7 +11,7 @@ import subprocess
 import time
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Set up logging
@@ -220,7 +220,7 @@ def status():
                 data = json.load(f)
                 if data.get('startup_time'):
                     startup_time = datetime.fromisoformat(data['startup_time'])
-                    session_duration = (datetime.utcnow() - startup_time).total_seconds()
+                    session_duration = (datetime.now(timezone.utc) - startup_time).total_seconds()
                     hours = int(session_duration // 3600)
                     minutes = int((session_duration % 3600) // 60)
                     seconds = int(session_duration % 60)

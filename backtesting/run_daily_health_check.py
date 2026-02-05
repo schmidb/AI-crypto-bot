@@ -55,10 +55,6 @@ class DailyHealthChecker:
     def load_recent_data(self, days: int = 7) -> Dict[str, pd.DataFrame]:
         """Load recent historical data for health check"""
         try:
-            # Ensure EUR data is available
-            from utils.ensure_eur_data import ensure_eur_data_available
-            ensure_eur_data_available(days)
-            
             data = {}
             # Use EUR pairs to match bot configuration
             products = ['BTC-EUR', 'ETH-EUR']

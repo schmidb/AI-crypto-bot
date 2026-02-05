@@ -404,8 +404,19 @@ class PerformanceTracker:
                 logger.warning(f"Unknown period format: {period}, using all data")
                 return snapshots
             
-            # Filter snapshots
-            filtered = [s for s in snapshots if datetime.fromisoformat(s["timestamp"]) >= cutoff_date]
+            # Filter snapshots - ensure both datetimes are timezone-aware
+            filtered = []
+            for s in snapshots:
+                try:
+                    snapshot_time = datetime.fromisoformat(s["timestamp"])
+                    # Make timezone-aware if naive
+                    if snapshot_time.tzinfo is None:
+                        snapshot_time = snapshot_time.replace(tzinfo=timezone.utc)
+                    if snapshot_time >= cutoff_date:
+                        filtered.append(s)
+                except Exception as e:
+                    logger.warning(f"Error parsing snapshot timestamp: {e}")
+                    continue
             
             # Sort by timestamp
             filtered.sort(key=lambda x: x["timestamp"])

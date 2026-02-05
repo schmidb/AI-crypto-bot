@@ -33,7 +33,7 @@ class TradeLogger:
         try:
             # Create rebalancing trade record
             trade_record = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "product_id": product_id,
                 "action": action,
                 "amount": amount,
